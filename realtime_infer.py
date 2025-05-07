@@ -30,9 +30,7 @@ from hf_utils import load_custom_model_from_hf
 from models import ModelFactory
 
 
-#-----
-IS_GRADIO = False
-
+#---
 TOTAL_SEMANTIC_TIME = []  # senmantic 推理时长
 TOTAL_DIT_TIME = []  # Dit 推理时长
 TOTAL_VOCODER_TIME = []  # Vocoder 推理时长
@@ -270,35 +268,37 @@ def custom_infer(model_set,
     
     return output
 
-class Config:
-    def __init__(self):
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
 if __name__ == "__main__":
     class GUIConfig:
         def __init__(self) -> None:
-            self.reference_audio_path: str = ""
+            self.reference_audio_path: str = "testsets/000042.wav"
             # self.index_path: str = ""
-            self.diffusion_steps: int = 10
+            self.diffusion_steps: int = 10  # 10； 
             self.sr_type: str = "sr_model"
-            self.block_time: float = 0.25  # s
+            self.block_time: float = 0.5,  # 0.5 ；这里的 block time 是 0.5s
             self.threhold: int = -60
-            self.crossfade_time: float = 0.05
-            self.extra_time: float = 2.5
-            self.extra_time_right: float = 2.0
+            self.crossfade_time: float = 0.04,  # 0.04 ；用于平滑过渡的交叉渐变长度，这里设定为 0.04 秒。交叉渐变通常用于避免声音中断或“断层”现象。
+            self.extra_time: float = 2.5  # 2.5；  附加时间，设置为 0.5秒。可能用于在处理音频时延长或平滑过渡的时间。
+                                          # 原本默认0.5，后面更新成2.5了
+            self.extra_time_right: float = 0.02  # 0.02； 可能是与“右声道”相关的额外时间，设置为 0.02秒。看起来是为了为右声道音频数据添加一些额外的处理时间。 
+                                                 # 这里RVC好像默认的是2s，需要后续对比一下
             self.I_noise_reduce: bool = False
             self.O_noise_reduce: bool = False
-            self.inference_cfg_rate: float = 0.7
+            self.inference_cfg_rate: float = 0.7  # 0.7；
             self.sg_hostapi: str = ""
             self.wasapi_exclusive: bool = False
             self.sg_input_device: str = ""
             self.sg_output_device: str = ""
+            
+            self.max_prompt_length = 3.0 # 3；
+            self.save_dir = "wavs/output/"  # 新增存储路径
+            self.source_path = "g.wav"  # 新增 output name， gradio时默认的名字
 
 
     class GUI:
         def __init__(self) -> None:
             self.gui_config = GUIConfig()
-            self.config = Config()
+            self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
             self.function = "vc"   # 这个看起来有两个枚举值 [vc, im]
             self.delay_time = 0
             self.hostapis = None
@@ -307,7 +307,7 @@ if __name__ == "__main__":
             self.input_devices_indices = None
             self.output_devices_indices = None
             self.stream = None
-            self.model_set = ModelFactory().get_models()  
+            self.model_set = ModelFactory(device=self.device).get_models()  
             self.reference_wav = None # 先置None
             self.vad_model = self.model_set["vad_model"]
             
@@ -319,105 +319,7 @@ if __name__ == "__main__":
                     # model='damo/speech_dfsmn_ans_psm_48k_causal',
                     model="checkpoints/modelscope_cache/hub/damo/speech_dfsmn_ans_psm_48k_causal",
                     stream_mode=True)
-            #---------------
-            
-            self.launcher()
-            
 
-        def load(self):
-            try:
-                os.makedirs("configs/inuse", exist_ok=True)
-                if not os.path.exists("configs/inuse/config.json"):
-                    shutil.copy("configs/config.json", "configs/inuse/config.json")
-                with open("configs/inuse/config.json", "r") as j:
-                    data = json.load(j)  # 在这里应该会报错，config时个空的，会进入except
-                    data["sr_model"] = data["sr_type"] == "sr_model"  # sr_model 是一个bool值
-                    data["sr_device"] = data["sr_type"] == "sr_device"  # sr_device 也是一个 bool 值, 看起来 sr_type 有两种值 sr_model 或者 sr_device
-                    if data["sg_hostapi"] in self.hostapis:
-                        self.update_devices(hostapi_name=data["sg_hostapi"])
-                        if (
-                            data["sg_input_device"] not in self.input_devices
-                            or data["sg_output_device"] not in self.output_devices
-                        ):
-                            self.update_devices()
-                            data["sg_hostapi"] = self.hostapis[0]
-                            data["sg_input_device"] = self.input_devices[
-                                self.input_devices_indices.index(sd.default.device[0])
-                            ]
-                            data["sg_output_device"] = self.output_devices[
-                                self.output_devices_indices.index(sd.default.device[1])
-                            ]
-                    else:
-                        data["sg_hostapi"] = self.hostapis[0]
-                        data["sg_input_device"] = self.input_devices[
-                            self.input_devices_indices.index(sd.default.device[0])
-                        ]
-                        data["sg_output_device"] = self.output_devices[
-                            self.output_devices_indices.index(sd.default.device[1])
-                        ]
-            except:
-                with open("configs/inuse/config.json", "w") as j:
-                    data = {
-                        "source_path": "g.wav",
-                        "save_dir": "testsets/output/",
-                        "reference_audio_path": "testsets/000042.wav",
-                        "sr_type": "sr_model",  # 
-                        "block_time": 0.5,  # 0.5 ；这里的 block time 是 0.5s
-                        "crossfade_length": 0.04,  # 0.04 ；用于平滑过渡的交叉渐变长度，这里设定为 0.04 秒。交叉渐变通常用于避免声音中断或“断层”现象。
-                        "extra_time": 2.5,  # 2.5；  附加时间，设置为 0.5秒。可能用于在处理音频时延长或平滑过渡的时间。
-                                            # 原本默认0.5，后面更新成2.5了
-                        "extra_time_right": 0.02, # 0.02； 可能是与“右声道”相关的额外时间，设置为 0.02秒。看起来是为了为右声道音频数据添加一些额外的处理时间。
-                        "diffusion_steps": 10, # 10； 
-                        "inference_cfg_rate": 0.7, # 0.7；
-                        "max_prompt_length": 3.0, # 3；
-                    }
-                    data["sr_model"] = data["sr_type"] == "sr_model"  # True
-                    data["sr_device"] = data["sr_type"] == "sr_device"  # False
-                    
-                    
-                    
-                    # ----------------------------
-                    # 直接在这边读区的时候赋值了
-                    self.gui_config.reference_audio_path = data["reference_audio_path"]
-                    self.gui_config.sr_type = ["sr_model", "sr_device"][
-                        [
-                            data["sr_model"],
-                            data["sr_device"],
-                        ].index(True)
-                    ]
-                    # self.gui_config.threhold = data["threhold"]
-                    self.gui_config.diffusion_steps = data["diffusion_steps"]
-                    self.gui_config.inference_cfg_rate = data["inference_cfg_rate"]
-                    self.gui_config.max_prompt_length = data["max_prompt_length"]
-                    self.gui_config.block_time = data["block_time"]
-                    self.gui_config.crossfade_time = data["crossfade_length"]
-                    self.gui_config.extra_time = data["extra_time"]
-                    self.gui_config.extra_time_right = data["extra_time_right"]
-                    self.gui_config.save_dir = data['save_dir']  # 新增存储路径
-                    self.gui_config.source_path = data['source_path']  # 新增 output name， gradio时默认的名字
-                    # ----------------------------
-                    
-            return data
-     
-        def launcher(self):
-            self.config = Config()  # 这个Config只有device，cuda或者cpu
-            data = self.load()  # 一些参数配置
-            
-            with gr.Blocks(title="换声测试") as app:
-                gr.Markdown("## 换声测试")
-
-                with gr.Row():
-                    inputs = gr.Audio(type="numpy")
-                    outputs=gr.Audio(type="numpy", streaming=True, format='mp3')
-                    
-                inputs.change(fn=self.infer, inputs=inputs, outputs=outputs)
-            
-            if IS_GRADIO:
-                app.launch(
-                    server_name="0.0.0.0",
-                    server_port=6006,
-                    quiet=False
-                )
                 
         def load_reference_wav(self):
             """给外置计算reference对应模型输入用的
@@ -503,18 +405,18 @@ if __name__ == "__main__":
                 + self.sola_search_frame
                 + self.block_frame
                 + self.extra_frame_right,
-                device=self.config.device,
+                device=self.device,
                 dtype=torch.float32,
             )  # 2 * 44100 + 0.08 * 44100 + 0.01 * 44100 + 0.25 * 44100
             self.input_wav_denoise: torch.Tensor = self.input_wav.clone()  # ------- 整个篇目仅此一家
             self.input_wav_res: torch.Tensor = torch.zeros(
                 320 * self.input_wav.shape[0] // self.zc,
-                device=self.config.device,
+                device=self.device,
                 dtype=torch.float32,
             )  # input wave 44100 -> 16000   # 16k对应的 input_wav
             self.rms_buffer: np.ndarray = np.zeros(4 * self.zc, dtype="float32")  # callback里面用上的地方，被注释掉了
             self.sola_buffer: torch.Tensor = torch.zeros(
-                self.sola_buffer_frame, device=self.config.device, dtype=torch.float32
+                self.sola_buffer_frame, device=self.device, dtype=torch.float32
             )
             self.nr_buffer: torch.Tensor = self.sola_buffer.clone()
             self.output_buffer: torch.Tensor = self.input_wav.clone()
@@ -531,7 +433,7 @@ if __name__ == "__main__":
                         0.0,
                         1.0,
                         steps=self.sola_buffer_frame,
-                        device=self.config.device,
+                        device=self.device,
                         dtype=torch.float32,
                     )
                 )
@@ -542,7 +444,7 @@ if __name__ == "__main__":
                 orig_freq=self.gui_config.samplerate,
                 new_freq=16000,
                 dtype=torch.float32,
-            ).to(self.config.device)  # 用于从 22050 降低到 16000； 更精细点是从 gui-samplerate 到 16k
+            ).to(self.device)  # 用于从 22050 降低到 16000； 更精细点是从 gui-samplerate 到 16k
                                       # 也就是说有3个samplerate，model-sampelrate, gui-samplerate, 16k
                                       # 但是一般 model和gui的相同； 那么就是两个samplerate： 22050， 16k
             if self.model_set["mel_fn_args"]["sampling_rate"] != self.gui_config.samplerate:  # resampler2 是从 model-samplerate => gui-samplerate
@@ -550,7 +452,7 @@ if __name__ == "__main__":
                     orig_freq=self.model_set["mel_fn_args"]["sampling_rate"],
                     new_freq=self.gui_config.samplerate,
                     dtype=torch.float32,
-                ).to(self.config.device)
+                ).to(self.device)
             else:
                 self.resampler2 = None  
             # ---------------------------------
@@ -679,7 +581,7 @@ if __name__ == "__main__":
             # ].clone()  # 平移 block-frame，留给新的indata
             #            # 改成 16k 之后，这里先不变
             # self.input_wav[-indata.shape[0] :] = torch.from_numpy(indata).to(
-            #     self.config.device
+            #     self.device
             # )  # indata 进入
             # self.input_wav_res[: -self.block_frame_16k] = self.input_wav_res[
             #     self.block_frame_16k :
@@ -702,7 +604,7 @@ if __name__ == "__main__":
             # self.input_wav_res = torch.roll(self.input_wav_res, shifts=-self.block_frame_16k, dims=0)  # 使用更高效的平移手段。
             #                                                                                            # 负方向滚动
             self.input_wav_res[-indata.shape[0] :] = torch.from_numpy(indata).to(
-                self.config.device
+                self.device
             )  # indata 进入;  # 再填值
             # ------------------------------
             preprocess_Time = (time.perf_counter() - start_time)*1000  # ----  放到外面来
@@ -808,7 +710,7 @@ if __name__ == "__main__":
             cor_den = torch.sqrt(
                 F.conv1d(
                     conv_input**2,
-                    torch.ones(1, 1, self.sola_buffer_frame, device=self.config.device),
+                    torch.ones(1, 1, self.sola_buffer_frame, device=self.device),
                 )
                 + 1e-8
             )   # 这里是求分母，input**2 是能量，在 sola_buffer上卷积，最终也得到 sola_search_frame + 1 的长度
@@ -867,131 +769,128 @@ if __name__ == "__main__":
     
     gui = GUI()
     
-    # test
-    if not IS_GRADIO:
+    # -------------------------
+    # 1. 参数解析
+    import argparse
+    def parse_args():
+        parser = argparse.ArgumentParser(description="批量语音转换脚本")
+        parser.add_argument('--reference_audio_path', type=str, 
+                            default="wavs/references/csmsc042-s0.2.wav",
+                            # default="wavs/references/csmsc042.wav", 
+                            # default="wavs/references/csmsc042-s0.5.wav",
+                            # default="wavs/references/csmsc042-s1.0.wav",
+                            help="参考音频文件路径")
         
-        # -------------------------
-        # 1. 参数解析
-        import argparse
-        def parse_args():
-            parser = argparse.ArgumentParser(description="批量语音转换脚本")
-            parser.add_argument('--reference_audio_path', type=str, 
-                                default="wavs/references/csmsc042-s0.2.wav",
-                                # default="wavs/references/csmsc042.wav", 
-                                # default="wavs/references/csmsc042-s0.5.wav",
-                                # default="wavs/references/csmsc042-s1.0.wav",
-                                help="参考音频文件路径")
-            
-            parser.add_argument('--file_list', type=str, 
-                                default=None, 
-                                help="要处理的文件列表 (空格分隔的字符串), 没传默认为 None")
-            
-            parser.add_argument('--save_dir', type=str, 
-                                default='wavs/outputs', 
-                                help="保存目录路径")
-            
-            parser.add_argument('--block_time', type=float, 
-                                default=0.5, 
-                                help="块大小，单位秒，默认值为 0.5 秒")
-            
-            parser.add_argument('--crossfade_length', type=float, 
-                                default=0.04, 
-                                help="交叉渐变长度，单位秒，默认值为 0.04 秒")
-            
-            parser.add_argument('--diffusion_steps', type=int, 
-                                default=10, 
-                                help="扩散步骤，默认值为 3")
-            
-            parser.add_argument('--prompt_len', type=float, 
-                                default=3, 
-                                help="参考截断长度，单位秒，默认值为 3 秒")
-            return parser.parse_args()
+        parser.add_argument('--file_list', type=str, 
+                            default=None, 
+                            help="要处理的文件列表 (空格分隔的字符串), 没传默认为 None")
+        
+        parser.add_argument('--save_dir', type=str, 
+                            default='wavs/outputs', 
+                            help="保存目录路径")
+        
+        parser.add_argument('--block_time', type=float, 
+                            default=0.5, 
+                            help="块大小，单位秒，默认值为 0.5 秒")
+        
+        parser.add_argument('--crossfade_length', type=float, 
+                            default=0.04, 
+                            help="交叉渐变长度，单位秒，默认值为 0.04 秒")
+        
+        parser.add_argument('--diffusion_steps', type=int, 
+                            default=10, 
+                            help="扩散步骤，默认值为 3")
+        
+        parser.add_argument('--prompt_len', type=float, 
+                            default=3, 
+                            help="参考截断长度，单位秒，默认值为 3 秒")
+        return parser.parse_args()
 
-        args = parse_args()
-        reference_audio_path = args.reference_audio_path
-        file_list = args.file_list.split() if args.file_list else None
-        save_dir = args.save_dir 
-        block_time = args.block_time
-        crossfade_length = args.crossfade_length
-        diffusion_steps = args.diffusion_steps
-        PROMPT_LEN = args.prompt_len
+    args = parse_args()
+    reference_audio_path = args.reference_audio_path
+    file_list = args.file_list.split() if args.file_list else None
+    save_dir = args.save_dir 
+    block_time = args.block_time
+    crossfade_length = args.crossfade_length
+    diffusion_steps = args.diffusion_steps
+    PROMPT_LEN = args.prompt_len
+    
+    if file_list is None:
+        # 单通内部赋值
+        file_list = ["wavs/cases/低沉男性-YL-2025-03-14.wav"]  
         
-        if file_list is None:
-            # 单通内部赋值
-            file_list = ["wavs/cases/低沉男性-YL-2025-03-14.wav"]  
-            
-            # 文件夹内部赋值
-            # src_path = Path("wavs/cases")
-            # file_list = [file for file in src_path.iterdir() if file.is_file() and file.name.split('.')[-1] in ['wav']]
+        # 文件夹内部赋值
+        # src_path = Path("wavs/cases")
+        # file_list = [file for file in src_path.iterdir() if file.is_file() and file.name.split('.')[-1] in ['wav']]
 
-        # 输出解析后的值
-        print('-'*21+"ARGS"+'-'*21)
-        print(f"reference_audio_path: {reference_audio_path}")
-        print(f"file_list: {file_list}")
-        print(f"save_dir: {save_dir}")
-        print(f"block_time: {block_time}")
-        print(f"crossfade_length: {crossfade_length}")
-        print(f"diffusion_steps: {diffusion_steps}")
-        print(f"PROMPT_LEN: {PROMPT_LEN}")
-        print('-'*42)
-        # --------------------------
-        
+    # 输出解析后的值
+    print('-'*21+"ARGS"+'-'*21)
+    print(f"reference_audio_path: {reference_audio_path}")
+    print(f"file_list: {file_list}")
+    print(f"save_dir: {save_dir}")
+    print(f"block_time: {block_time}")
+    print(f"crossfade_length: {crossfade_length}")
+    print(f"diffusion_steps: {diffusion_steps}")
+    print(f"PROMPT_LEN: {PROMPT_LEN}")
+    print('-'*42)
+    # --------------------------
+    
 
-        # 2. 对应参数赋值给gui class，并做准备工作
-        gui.gui_config.block_time = block_time
-        gui.gui_config.crossfade_time = crossfade_length
-        gui.gui_config.diffusion_steps = diffusion_steps
-        gui.gui_config.reference_audio_path = reference_audio_path
-        Path(save_dir).mkdir(parents=True, exist_ok=True)
-        gui.gui_config.save_dir = save_dir
-        
-        # 计算 reference, 因为这里外置了 reference，所以不能在初始化的时候计算
-        # 这样里面的代码甚至不用改，应该不会触发计算了
-        gui.load_reference_wav()  # 先读取
-        cal_reference(gui.model_set,
-                      gui.reference_wav,
-                      gui.gui_config.reference_audio_path,
-                      gui.gui_config.max_prompt_length)
+    # 2. 对应参数赋值给gui class，并做准备工作
+    gui.gui_config.block_time = block_time
+    gui.gui_config.crossfade_time = crossfade_length
+    gui.gui_config.diffusion_steps = diffusion_steps
+    gui.gui_config.reference_audio_path = reference_audio_path
+    Path(save_dir).mkdir(parents=True, exist_ok=True)
+    gui.gui_config.save_dir = save_dir
+    
+    # 计算 reference, 因为这里外置了 reference，所以不能在初始化的时候计算
+    # 这样里面的代码甚至不用改，应该不会触发计算了
+    gui.load_reference_wav()  # 先读取
+    cal_reference(gui.model_set,
+                    gui.reference_wav,
+                    gui.gui_config.reference_audio_path,
+                    gui.gui_config.max_prompt_length)
 
 
-        # 3. 开始VC
-        print('-' * 42)
-        print("准备工作完毕，开始文件夹批量换声, 请按回车继续...")
-        try:
-            input()
-        except EOFError:
-            pass  # 忽略 EOFError，直接继续
-        
-        for file in file_list:
-                # wav, sr = librosa.load(file, sr=gui.model_set["mel_fn_args"]["sampling_rate"], mono=True)  # 22050, 默认读取为单声道
-                wav, sr = librosa.load(file, sr=16000, mono=True)  # source 输入统一为16k
-                gui.gui_config.source_path = str(file)
-                for o in gui.infer([sr, wav]):
-                    nonsense = 42
-        
-        # 4. 后处理，相关数据计算
-        cut_num = 5
-        TOTAL_VAD_TIME = TOTAL_VAD_TIME[cut_num:]  # VAD耗时
-        TOTAL_PREPROCESS_TIME = TOTAL_PREPROCESS_TIME[cut_num:]  # 预处理耗时
-        TOTAL_ELAPSED_TIME_MS = TOTAL_ELAPSED_TIME_MS[cut_num:]  # 模型推理耗时； 去掉前5个，设置一个比较大的冗余，测试各种方法时，前面推的会慢很多
-        TOTAL_SEMANTIC_TIME = TOTAL_SEMANTIC_TIME[cut_num:]  # semantic
-        TOTAL_DIT_TIME = TOTAL_DIT_TIME[cut_num:]  # dit
-        TOTAL_VOCODER_TIME = TOTAL_VOCODER_TIME[cut_num:]  # vocoder
-        TOTAL_AUDIO_CALLBACK_TIME = TOTAL_AUDIO_CALLBACK_TIME[cut_num:]  # audio_callback 的耗时
-        TOTAL_TO_BYTES_TIME = TOTAL_TO_BYTES_TIME[cut_num:]  # 转换为Bytes的时间
-        TOTAL_INFER_TIME = TOTAL_INFER_TIME[cut_num:]  # 这个是从INFER进入到出来的完整时间
-        
-        
-        print(f"---Audio CallBack---")
-        print(f"平均每chunk VAD 耗时: {np.mean(TOTAL_VAD_TIME):0.1f}ms")  # VAD平均耗时
-        print(f"平均每chunk 预处理 耗时: {np.mean(TOTAL_PREPROCESS_TIME):0.1f}ms")  # 预处理耗时
-        print(f"Model:")
-        print(f"    Semantic: {np.mean(TOTAL_SEMANTIC_TIME):0.1f}ms")
-        print(f"    Dit: {np.mean(TOTAL_DIT_TIME):0.1f}ms")
-        print(f"    Vocoder: {np.mean(TOTAL_VOCODER_TIME):0.1f}ms")
-        print(f"平均每chunk 模型推理 耗时: {np.mean(TOTAL_ELAPSED_TIME_MS):0.1f}ms")  # 计算平均推理时长
-        print(f"---Chunk 端到端---")
-        print(f"平均每chunk Audio-CallBack总体 耗时: {np.mean(TOTAL_AUDIO_CALLBACK_TIME):0.1f}ms")
-        print(f"平均每chunk to_bytes 耗时: {np.mean(TOTAL_TO_BYTES_TIME):0.1f}ms")
-        print(f"平均每chunk 端到端时长: {np.mean(TOTAL_INFER_TIME):0.1f}ms")  # 计算平均推理时长
- 
+    # 3. 开始VC
+    print('-' * 42)
+    print("准备工作完毕，开始文件夹批量换声, 请按回车继续...")
+    try:
+        input()
+    except EOFError:
+        pass  # 忽略 EOFError，直接继续
+    
+    for file in file_list:
+            # wav, sr = librosa.load(file, sr=gui.model_set["mel_fn_args"]["sampling_rate"], mono=True)  # 22050, 默认读取为单声道
+            wav, sr = librosa.load(file, sr=16000, mono=True)  # source 输入统一为16k
+            gui.gui_config.source_path = str(file)
+            for o in gui.infer([sr, wav]):
+                nonsense = 42
+    
+    # 4. 后处理，相关数据计算
+    cut_num = 5
+    TOTAL_VAD_TIME = TOTAL_VAD_TIME[cut_num:]  # VAD耗时
+    TOTAL_PREPROCESS_TIME = TOTAL_PREPROCESS_TIME[cut_num:]  # 预处理耗时
+    TOTAL_ELAPSED_TIME_MS = TOTAL_ELAPSED_TIME_MS[cut_num:]  # 模型推理耗时； 去掉前5个，设置一个比较大的冗余，测试各种方法时，前面推的会慢很多
+    TOTAL_SEMANTIC_TIME = TOTAL_SEMANTIC_TIME[cut_num:]  # semantic
+    TOTAL_DIT_TIME = TOTAL_DIT_TIME[cut_num:]  # dit
+    TOTAL_VOCODER_TIME = TOTAL_VOCODER_TIME[cut_num:]  # vocoder
+    TOTAL_AUDIO_CALLBACK_TIME = TOTAL_AUDIO_CALLBACK_TIME[cut_num:]  # audio_callback 的耗时
+    TOTAL_TO_BYTES_TIME = TOTAL_TO_BYTES_TIME[cut_num:]  # 转换为Bytes的时间
+    TOTAL_INFER_TIME = TOTAL_INFER_TIME[cut_num:]  # 这个是从INFER进入到出来的完整时间
+    
+    
+    print(f"---Audio CallBack---")
+    print(f"平均每chunk VAD 耗时: {np.mean(TOTAL_VAD_TIME):0.1f}ms")  # VAD平均耗时
+    print(f"平均每chunk 预处理 耗时: {np.mean(TOTAL_PREPROCESS_TIME):0.1f}ms")  # 预处理耗时
+    print(f"Model:")
+    print(f"    Semantic: {np.mean(TOTAL_SEMANTIC_TIME):0.1f}ms")
+    print(f"    Dit: {np.mean(TOTAL_DIT_TIME):0.1f}ms")
+    print(f"    Vocoder: {np.mean(TOTAL_VOCODER_TIME):0.1f}ms")
+    print(f"平均每chunk 模型推理 耗时: {np.mean(TOTAL_ELAPSED_TIME_MS):0.1f}ms")  # 计算平均推理时长
+    print(f"---Chunk 端到端---")
+    print(f"平均每chunk Audio-CallBack总体 耗时: {np.mean(TOTAL_AUDIO_CALLBACK_TIME):0.1f}ms")
+    print(f"平均每chunk to_bytes 耗时: {np.mean(TOTAL_TO_BYTES_TIME):0.1f}ms")
+    print(f"平均每chunk 端到端时长: {np.mean(TOTAL_INFER_TIME):0.1f}ms")  # 计算平均推理时长
+
