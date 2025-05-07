@@ -32,7 +32,6 @@ from models import ModelFactory
 
 #-----
 IS_GRADIO = False
-IS_COMPILE = False  # 是否compile的开关
 
 TOTAL_SEMANTIC_TIME = []  # senmantic 推理时长
 TOTAL_DIT_TIME = []  # Dit 推理时长
@@ -308,16 +307,9 @@ if __name__ == "__main__":
             self.input_devices_indices = None
             self.output_devices_indices = None
             self.stream = None
-            self.model_set = ModelFactory().get_models()  # 这里改成了 dict 而非list
+            self.model_set = ModelFactory().get_models()  
             self.reference_wav = None # 先置None
-            from funasr import AutoModel  # 这是新版本增加的vad模块
-            # self.vad_model = AutoModel(model="fsmn-vad", model_revision="v2.0.4")  # 
-            self.vad_model = AutoModel(model="checkpoints/modelscope_cache/hub/iic/speech_fsmn_vad_zh-cn-16k-common-pytorch")  # --- 改成直接读取
-            # self.vad_model_generate = torch.compile(self.vad_model.generate, mode="max-autotune")  # --- 这里增加vad的提速, 验证失败
-            #---------------
-            # 这里加入降噪模块
-            # 尝试1
-            # self.df_model, self.df_state, _ = init_df()
+            self.vad_model = self.model_set["vad_model"]
             
             # 尝试2
             from modelscope.pipelines import pipeline
@@ -627,7 +619,6 @@ if __name__ == "__main__":
                     output_path = (str(Path(self.gui_config.save_dir).joinpath('.'.join(Path(self.gui_config.source_path).name.split('.')[:-1]))) 
                                    + f"_stream_ds{self.gui_config.diffusion_steps}"
                                    + f"_ref-{'.'.join(Path(self.gui_config.reference_audio_path).name.split('.')[:-1])}"
-                                   + (f"_compile" if IS_COMPILE else f"_no-compile")
                                    + ".wav"
                                    )
                     sf.write(output_path, np.concatenate(total_output), self.gui_config.samplerate)

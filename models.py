@@ -20,6 +20,11 @@ from utils import timer_decorator
 class ModelFactory:
     
     def __init__(self, device="cuda", is_torch_compile=False):
+        """
+        Args:
+            device (str): 设备类型，默认为"cuda"
+            is_torch_compile (bool): 是否使用torch.compile加速，默认为False
+        """
         self.device = device
         self.is_torch_compile = is_torch_compile
         logger.info(f"Using device: {self.device}")
@@ -35,11 +40,13 @@ class ModelFactory:
         self.vocoder_fn = self._load_vocoder_fn()
         self.semantic_fn = self._load_semantic_fn() 
         self.to_mel, self.mel_fn_args = self._load_mel()
+        self.vad_model = self._load_vad_model()
         
         if self.is_torch_compile:  # 是否使用torch.compile加速
             self._torch_compile()
         
         models = {
+            # 主模型
             "campplus_model": self.campplus_model,
             "dit_model": self.dit_model,
             
@@ -48,6 +55,9 @@ class ModelFactory:
             "vocoder_fn": self.vocoder_fn,
             "to_mel": self.to_mel,
             "mel_fn_args": self.mel_fn_args,
+            
+            # 其他辅助模型
+            "vad_model": self.vad_model,
         }
         return models
     
@@ -327,6 +337,20 @@ class ModelFactory:
         self.semantic_fn = torch.compile(self.semantic_fn, mode="max-autotune")  # fullgraph=True 先不用
         self.dit_fn = torch.compile(self.dit_fn, mode="max_autotune")
         # vocoder_fn = torch.compile(self.vocoder_fn, mode="max-autotune")  # mode="max-autotune"
+        
+    @timer_decorator
+    def _load_vad_model(self):
+        """加载vad模型"""
+        
+        logger.info("Loading VAD model...")
+        from funasr import AutoModel  # 这是新版本增加的vad模块
+        vad_model = AutoModel(model="checkpoints/modelscope_cache/hub/iic/speech_fsmn_vad_zh-cn-16k-common-pytorch") 
+        
+        # 计算vad_model的参数量
+        total_params = self.cal_model_params(vad_model.model)
+        logger.info(f"VAD model | parameters: {total_params / 1_000_000:.2f}M")
+        
+        return vad_model
         
         
 if __name__ == "__main__":
