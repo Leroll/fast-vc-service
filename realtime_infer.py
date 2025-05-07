@@ -1,67 +1,38 @@
-import os
-os.environ['HF_HUB_CACHE'] = 'checkpoints/hf_cache'   # ----- 这里把模型地址放过来，
-os.environ["MODELSCOPE_CACHE"] = "checkpoints/modelscope_cache"  # ----- VAD模型用的funasr的，然后它用的是modelscope
-import sys
-# 添加seed-vc路径
-seedvc_path = os.path.abspath(
-    os.path.join(
-        os.path.dirname(__file__), 
-        "seed-vc")
-    )
-sys.path.insert(0, seedvc_path)
-
 from dotenv import load_dotenv
-import shutil
-
+import os
+import sys
 load_dotenv()
 
-os.environ["OMP_NUM_THREADS"] = "4"
-if sys.platform == "darwin":
-    os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"
-
-now_dir = os.getcwd()
-sys.path.append(now_dir)
-import multiprocessing
-import warnings
+import shutil
 import yaml
-
-warnings.simplefilter("ignore")
-
-from tqdm import tqdm
-from modules.commons import *
 import librosa
-import torchaudio
-import torchaudio.compliance.kaldi as kaldi
-
-from hf_utils import load_custom_model_from_hf
-
-import os
-import sys
 import argparse
 import time
-import numpy as np
 import torch
 import torch.nn.functional as F
+import torchaudio
 import torchaudio.transforms as tat
-import librosa
 import soundfile as sf
-
-#-----
 import gradio as gr
-from pydub import AudioSegment
-from pydub.effects import speedup
 import numpy as np
 import io
 from pathlib import Path
-import random
-
 import io  # 为了高效率转换出二进制数据
 from scipy.io.wavfile import write  # 为了高效率转换出二进制数据
+import json
+
+from pathlib import Path
+seedvc_path = (Path(__file__).parent / "seed-vc").resolve()  # 添加seed-vc路径
+sys.path.insert(0, str(seedvc_path))
+from modules.commons import *
+from hf_utils import load_custom_model_from_hf
+
+from models import ModelFactory
 
 
+#-----
 IS_GRADIO = False
 IS_COMPILE = False  # 是否compile的开关
-DIT_FN = None # Dit 函数，先定义全局变量吧
 
 TOTAL_SEMANTIC_TIME = []  # senmantic 推理时长
 TOTAL_DIT_TIME = []  # Dit 推理时长
@@ -95,14 +66,16 @@ def cal_reference(model_set,
     global prompt_condition, mel2, style2
     global reference_wav_name
     global PROMPT_LEN  # ------ 名字换成大写，全局变量
-    (
-        model,
-        semantic_fn,
-        vocoder_fn,
-        campplus_model,
-        to_mel,
-        mel_fn_args,
-    ) = model_set
+    
+    # 获取各 model
+    model = model_set['dit_model']
+    semantic_fn = model_set['semantic_fn']
+    vocoder_fn = model_set['vocoder_fn']
+    campplus_model = model_set['campplus_model']
+    to_mel = model_set['to_mel']
+    mel_fn_args = model_set['mel_fn_args']
+    
+    # 计算
     sr = mel_fn_args["sampling_rate"]
     hop_length = mel_fn_args["hop_size"]
     if prompt_condition is None or reference_wav_name != new_reference_wav_name or PROMPT_LEN != max_prompt_length:
@@ -148,15 +121,16 @@ def custom_infer(model_set,
     global reference_wav_name
     global PROMPT_LEN  # ------ 名字换成大写，全局变量
     global ce_dit_difference  # 这里新加了一个参数，干嘛的？
-    global DIT_FN  # 先简单的写成全局变量
-    (
-        model,
-        semantic_fn,
-        vocoder_fn,
-        campplus_model,
-        to_mel,
-        mel_fn_args,
-    ) = model_set
+    
+    # 获取各 model
+    model = model_set['dit_model']
+    semantic_fn = model_set['semantic_fn']
+    dit_fn = model_set['dit_fn']  
+    vocoder_fn = model_set['vocoder_fn']
+    campplus_model = model_set['campplus_model']
+    to_mel = model_set['to_mel']
+    mel_fn_args = model_set['mel_fn_args']
+    
     sr = mel_fn_args["sampling_rate"]
     hop_length = mel_fn_args["hop_size"]
     # ---- 这里用不上，先彻底注释掉
@@ -241,7 +215,7 @@ def custom_infer(model_set,
     # ----------------
     
     # -----------------
-    vc_target = DIT_FN(   # 这里改成调用 dit_fn
+    vc_target = dit_fn(   # 这里改成调用 dit_fn
         cat_condition,
         x_lens,  # ----- 这里改成上面的值了，不做临时变量了
         mel2,
@@ -297,255 +271,11 @@ def custom_infer(model_set,
     
     return output
 
-def load_models():
-    global DIT_FN  # 这里简单的定义一个全局变量
-    # ----- 这里把args删去
-    
-    
-    # ------- Dit 模型 -------
-    # 原始tiny版本
-    # dit_checkpoint_path, dit_config_path = load_custom_model_from_hf("Plachta/Seed-VC",
-    #                                                                     "DiT_uvit_tat_xlsr_ema.pth",
-    #                                                                     "config_dit_mel_seed_uvit_xlsr_tiny.yml")
-    
-    # small 版本
-    dit_checkpoint_path, dit_config_path = load_custom_model_from_hf("Plachta/Seed-VC",
-                                                                         "DiT_seed_v2_uvit_whisper_small_wavenet_bigvgan_pruned.pth",
-                                                                         "config_dit_mel_seed_uvit_whisper_small_wavenet.yml")
-    
-    # base 版本 - 转换不太行
-    # dit_checkpoint_path, dit_config_path = load_custom_model_from_hf("Plachta/Seed-VC",
-    #                                                                      "DiT_seed_v2_uvit_whisper_base_f0_44k_bigvgan_pruned_ft_ema_v2.pth",
-    #                                                                      "config_dit_mel_seed_uvit_whisper_base_f0_44k.yml")
-    
-    # 这里尝试load fintune之后的模型看看
-    # dit_checkpoint_path = "/root/autodl-tmp/seed-vc-cus/runs/csmsc_fintune_10/ft_model.pth"
-    # dit_config_path = "/root/autodl-tmp/seed-vc-cus/runs/csmsc_fintune_10/config_dit_mel_seed_uvit_xlsr_tiny.yml"
-
-    
-    # dit_checkpoint_path = "/root/autodl-tmp/seed-vc-cus/runs/csmsc_fintune_10_bigvgan/ft_model.pth"
-    # dit_config_path = "/root/autodl-tmp/seed-vc-cus/runs/csmsc_fintune_10_bigvgan/config_dit_mel_seed_uvit_xlsr_tiny_bigvgan.yml"
-    # ------- Dit 模型 -------
-    
-    
-    config = yaml.safe_load(open(dit_config_path, "r"))
-    model_params = recursive_munch(config["model_params"])
-    model_params.dit_type = 'DiT'
-    model = build_model(model_params, stage="DiT")
-    hop_length = config["preprocess_params"]["spect_params"]["hop_length"]
-    sr = config["preprocess_params"]["sr"]
-
-    # Load checkpoints
-    model, _, _, _ = load_checkpoint(
-        model,
-        None,
-        dit_checkpoint_path,
-        load_only_params=True,
-        ignore_modules=[],
-        is_distributed=False,
-    )
-    for key in model:
-        model[key].eval()
-        model[key].to(device)
-    model.cfm.estimator.setup_caches(max_batch_size=1, max_seq_length=8192)
-
-    # Load additional modules
-    from modules.campplus.DTDNN import CAMPPlus
-
-    campplus_ckpt_path = load_custom_model_from_hf(
-        "funasr/campplus", "campplus_cn_common.bin", config_filename=None
-    )
-    campplus_model = CAMPPlus(feat_dim=80, embedding_size=192)
-    campplus_model.load_state_dict(torch.load(campplus_ckpt_path, map_location="cpu"))
-    campplus_model.eval()
-    campplus_model.to(device)
-
-    vocoder_type = model_params.vocoder.type
-
-    if vocoder_type == 'bigvgan':  # bigvgan
-        from modules.bigvgan import bigvgan
-        bigvgan_name = model_params.vocoder.name  #  # bigvgan_name = "nvidia/bigvgan_v2_22khz_80band_256x"
-        bigvgan_model = bigvgan.BigVGAN.from_pretrained(bigvgan_name, use_cuda_kernel=False)
-        # remove weight norm in the model and set to eval mode
-        bigvgan_model.remove_weight_norm()
-        bigvgan_model = bigvgan_model.eval().to(device)
-        vocoder_fn = bigvgan_model
-    elif vocoder_type == 'hifigan':
-        from modules.hifigan.generator import HiFTGenerator
-        from modules.hifigan.f0_predictor import ConvRNNF0Predictor
-        hift_config = yaml.safe_load(open('configs/hifigan.yml', 'r'))
-        hift_gen = HiFTGenerator(**hift_config['hift'], f0_predictor=ConvRNNF0Predictor(**hift_config['f0_predictor']))
-        hift_path = load_custom_model_from_hf("FunAudioLLM/CosyVoice-300M", 'hift.pt', None)
-        hift_gen.load_state_dict(torch.load(hift_path, map_location='cpu'))
-        hift_gen.eval()
-        hift_gen.to(device)
-        vocoder_fn = hift_gen
-    elif vocoder_type == "vocos":
-        vocos_config = yaml.safe_load(open(model_params.vocoder.vocos.config, 'r'))
-        vocos_path = model_params.vocoder.vocos.path
-        vocos_model_params = recursive_munch(vocos_config['model_params'])
-        vocos = build_model(vocos_model_params, stage='mel_vocos')
-        vocos_checkpoint_path = vocos_path
-        vocos, _, _, _ = load_checkpoint(vocos, None, vocos_checkpoint_path,
-                                         load_only_params=True, ignore_modules=[], is_distributed=False)
-        _ = [vocos[key].eval().to(device) for key in vocos]
-        _ = [vocos[key].to(device) for key in vocos]
-        total_params = sum(sum(p.numel() for p in vocos[key].parameters() if p.requires_grad) for key in vocos.keys())
-        print(f"Vocoder model total parameters: {total_params / 1_000_000:.2f}M")
-        vocoder_fn = vocos.decoder
-    else:
-        raise ValueError(f"Unknown vocoder type: {vocoder_type}")
-
-    speech_tokenizer_type = model_params.speech_tokenizer.type
-    if speech_tokenizer_type == 'whisper':
-        # whisper
-        from transformers import AutoFeatureExtractor, WhisperModel
-        whisper_name = model_params.speech_tokenizer.name
-        whisper_model = WhisperModel.from_pretrained(whisper_name, torch_dtype=torch.float16).to(device)
-        del whisper_model.decoder
-        whisper_feature_extractor = AutoFeatureExtractor.from_pretrained(whisper_name)
-
-        def semantic_fn(waves_16k):
-            ori_inputs = whisper_feature_extractor([waves_16k.squeeze(0).cpu().numpy()],
-                                                   return_tensors="pt",
-                                                   return_attention_mask=True)
-            ori_input_features = whisper_model._mask_input_features(
-                ori_inputs.input_features, attention_mask=ori_inputs.attention_mask).to(device)
-            with torch.no_grad():
-                ori_outputs = whisper_model.encoder(
-                    ori_input_features.to(whisper_model.encoder.dtype),
-                    head_mask=None,
-                    output_attentions=False,
-                    output_hidden_states=False,
-                    return_dict=True,
-                )
-            S_ori = ori_outputs.last_hidden_state.to(torch.float32)
-            S_ori = S_ori[:, :waves_16k.size(-1) // 320 + 1]
-            return S_ori
-    elif speech_tokenizer_type == 'cnhubert':
-        from transformers import (
-            Wav2Vec2FeatureExtractor,
-            HubertModel,
-        )
-        hubert_model_name = config['model_params']['speech_tokenizer']['name']
-        hubert_feature_extractor = Wav2Vec2FeatureExtractor.from_pretrained(hubert_model_name)
-        hubert_model = HubertModel.from_pretrained(hubert_model_name)
-        hubert_model = hubert_model.to(device)
-        hubert_model = hubert_model.eval()
-        hubert_model = hubert_model.half()
-
-        def semantic_fn(waves_16k):
-            ori_waves_16k_input_list = [
-                waves_16k[bib].cpu().numpy()
-                for bib in range(len(waves_16k))
-            ]
-            ori_inputs = hubert_feature_extractor(ori_waves_16k_input_list,
-                                                  return_tensors="pt",
-                                                  return_attention_mask=True,
-                                                  padding=True,
-                                                  sampling_rate=16000).to(device)
-            with torch.no_grad():
-                ori_outputs = hubert_model(
-                    ori_inputs.input_values.half(),
-                )
-            S_ori = ori_outputs.last_hidden_state.float()
-            return S_ori
-    elif speech_tokenizer_type == 'xlsr':
-        from transformers import (
-            Wav2Vec2FeatureExtractor,
-            Wav2Vec2Model,
-        )
-        model_name = config['model_params']['speech_tokenizer']['name']
-        output_layer = config['model_params']['speech_tokenizer']['output_layer']
-        wav2vec_feature_extractor = Wav2Vec2FeatureExtractor.from_pretrained(model_name, local_files_only=True)
-        wav2vec_model = Wav2Vec2Model.from_pretrained(model_name, local_files_only=True)
-        wav2vec_model.encoder.layers = wav2vec_model.encoder.layers[:output_layer]
-        wav2vec_model = wav2vec_model.to(device)
-        wav2vec_model = wav2vec_model.eval()
-        wav2vec_model = wav2vec_model.half()
-
-        def semantic_fn(waves_16k):
-            ori_waves_16k_input_list = [
-                waves_16k[bib].cpu().numpy()
-                for bib in range(len(waves_16k))
-            ]
-            ori_inputs = wav2vec_feature_extractor(ori_waves_16k_input_list,
-                                                   return_tensors="pt",
-                                                   return_attention_mask=True,
-                                                   padding=True,
-                                                   sampling_rate=16000).to(device)
-            with torch.no_grad():
-                ori_outputs = wav2vec_model(
-                    ori_inputs.input_values.half(),
-                )
-            S_ori = ori_outputs.last_hidden_state.float()
-            return S_ori
-    else:
-        raise ValueError(f"Unknown speech tokenizer type: {speech_tokenizer_type}")
-    # Generate mel spectrograms
-    mel_fn_args = {
-        "n_fft": config['preprocess_params']['spect_params']['n_fft'],
-        "win_size": config['preprocess_params']['spect_params']['win_length'],
-        "hop_size": config['preprocess_params']['spect_params']['hop_length'],
-        "num_mels": config['preprocess_params']['spect_params']['n_mels'],
-        "sampling_rate": sr,
-        "fmin": config['preprocess_params']['spect_params'].get('fmin', 0),
-        "fmax": None if config['preprocess_params']['spect_params'].get('fmax', "None") == "None" else 8000,
-        "center": False
-    }
-    from modules.audio import mel_spectrogram
-
-    to_mel = lambda x: mel_spectrogram(x, **mel_fn_args)
-    
-    # --------------------------------
-    # 这里用 torch.compile() 加速一下看看
-    if IS_COMPILE:
-        semantic_fn = torch.compile(semantic_fn, mode="max-autotune")  # fullgraph=True 先不用
-        DIT_FN = torch.compile(model.cfm.inference, mode="max_autotune")
-        # vocoder_fn = torch.compile(vocoder_fn, mode="max-autotune")  # mode="max-autotune"
-    else:
-        DIT_FN = model.cfm.inference
-    # --------------------------------
-
-    return (
-        model,
-        semantic_fn,
-        vocoder_fn,
-        campplus_model,
-        to_mel,
-        mel_fn_args,
-    )
-
-def printt(strr, *args):
-    if len(args) == 0:
-        print(strr)
-    else:
-        print(strr % args)
-
 class Config:
     def __init__(self):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-
 if __name__ == "__main__":
-    import json
-    import multiprocessing
-    import re
-    import threading
-    import time
-    import traceback
-    from multiprocessing import Queue, cpu_count
-
-    import librosa
-    import numpy as np
-    import FreeSimpleGUI as sg
-    import torch
-    import torch.nn.functional as F
-    import torchaudio.transforms as tat
-
-
-    current_dir = os.getcwd()
-    n_cpu = cpu_count()
     class GUIConfig:
         def __init__(self) -> None:
             self.reference_audio_path: str = ""
@@ -578,7 +308,7 @@ if __name__ == "__main__":
             self.input_devices_indices = None
             self.output_devices_indices = None
             self.stream = None
-            self.model_set = load_models()
+            self.model_set = ModelFactory().get_models()  # 这里改成了 dict 而非list
             self.reference_wav = None # 先置None
             from funasr import AutoModel  # 这是新版本增加的vad模块
             # self.vad_model = AutoModel(model="fsmn-vad", model_revision="v2.0.4")  # 
@@ -701,7 +431,7 @@ if __name__ == "__main__":
             """给外置计算reference对应模型输入用的
             """
             self.reference_wav, _ = librosa.load(
-                    self.gui_config.reference_audio_path, sr=self.model_set[-1]["sampling_rate"]  # 22050
+                    self.gui_config.reference_audio_path, sr=self.model_set["mel_fn_args"]["sampling_rate"]  # 22050
             )
        
        
@@ -717,12 +447,12 @@ if __name__ == "__main__":
             # ---- referebce 彻底放在外面读取
             # if self.reference_wav is None:
             #     self.reference_wav, _ = librosa.load(
-            #         self.gui_config.reference_audio_path, sr=self.model_set[-1]["sampling_rate"]  # 22050
+            #         self.gui_config.reference_audio_path, sr=self.model_set["mel_fn_args"]["sampling_rate"]  # 22050
             #     )
             # ---- referebce 彻底放在外面读取
                 
             self.gui_config.samplerate = (
-                self.model_set[-1]["sampling_rate"]
+                self.model_set["mel_fn_args"]["sampling_rate"]
                 if self.gui_config.sr_type == "sr_model"
                 else self.get_device_samplerate()
             )  # gui-samplerate 赋值，22050
@@ -823,9 +553,9 @@ if __name__ == "__main__":
             ).to(self.config.device)  # 用于从 22050 降低到 16000； 更精细点是从 gui-samplerate 到 16k
                                       # 也就是说有3个samplerate，model-sampelrate, gui-samplerate, 16k
                                       # 但是一般 model和gui的相同； 那么就是两个samplerate： 22050， 16k
-            if self.model_set[-1]["sampling_rate"] != self.gui_config.samplerate:  # resampler2 是从 model-samplerate => gui-samplerate
+            if self.model_set["mel_fn_args"]["sampling_rate"] != self.gui_config.samplerate:  # resampler2 是从 model-samplerate => gui-samplerate
                 self.resampler2 = tat.Resample(
-                    orig_freq=self.model_set[-1]["sampling_rate"],
+                    orig_freq=self.model_set["mel_fn_args"]["sampling_rate"],
                     new_freq=self.gui_config.samplerate,
                     dtype=torch.float32,
                 ).to(self.config.device)
@@ -1215,7 +945,6 @@ if __name__ == "__main__":
         print('-'*42)
         # --------------------------
         
-       
 
         # 2. 对应参数赋值给gui class，并做准备工作
         gui.gui_config.block_time = block_time
@@ -1243,7 +972,7 @@ if __name__ == "__main__":
             pass  # 忽略 EOFError，直接继续
         
         for file in file_list:
-                # wav, sr = librosa.load(file, sr=gui.model_set[-1]["sampling_rate"], mono=True)  # 22050, 默认读取为单声道
+                # wav, sr = librosa.load(file, sr=gui.model_set["mel_fn_args"]["sampling_rate"], mono=True)  # 22050, 默认读取为单声道
                 wav, sr = librosa.load(file, sr=16000, mono=True)  # source 输入统一为16k
                 gui.gui_config.source_path = str(file)
                 for o in gui.infer([sr, wav]):
