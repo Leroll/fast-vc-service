@@ -20,6 +20,8 @@ from pathlib import Path
 import io  # 为了高效率转换出二进制数据
 from scipy.io.wavfile import write  # 为了高效率转换出二进制数据
 import json
+from pydantic import BaseModel, Field
+from rich import print
 
 from pathlib import Path
 seedvc_path = (Path(__file__).parent / "seed-vc").resolve()  # 添加seed-vc路径
@@ -42,44 +44,83 @@ TOTAL_AUDIO_CALLBACK_TIME = []  # Audio callback 函数总耗时
 TOTAL_TO_BYTES_TIME = []  # 完成推理后，转换为 Bytes 的耗时
 #-----
 
-
-# Load model and configuration
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-prompt_condition, mel2, style2 = None, None, None
-reference_wav_name = ""
-
-PROMPT_LEN = 3  # in seconds
-ce_dit_difference = 2  # 2 seconds
-
-@torch.no_grad()
-def cal_reference(model_set,
-                  reference_wav,
-                  new_reference_wav_name,
-                  max_prompt_length,
-                 ):
-    """提前计算 prompt_condition
-    """
-    global prompt_condition, mel2, style2
-    global reference_wav_name
-    global PROMPT_LEN  # ------ 名字换成大写，全局变量
+class RealtimeInferConfig(BaseModel):
+    reference_audio_path: str = "testsets/000042.wav"
+    # index_path: str = ""
+    diffusion_steps: int = 10  # 10； 
+    sr_type: str = "sr_model"  # 这个指的是 samplerate 来自哪里，是model本身，还是设备 device，获取设备的 samplerate
+    block_time: float = 0.5,  # 0.5 ；这里的 block time 是 0.5s
+    threhold: int = -60
+    crossfade_time: float = 0.04,  # 0.04 ；用于平滑过渡的交叉渐变长度，这里设定为 0.04 秒。交叉渐变通常用于避免声音中断或“断层”现象。
+    extra_time: float = 2.5  # 2.5；  附加时间，设置为 0.5秒。可能用于在处理音频时延长或平滑过渡的时间。
+                             # 原本默认0.5，后面更新成2.5了
+    extra_time_right: float = 0.02  # 0.02； 可能是与“右声道”相关的额外时间，设置为 0.02秒。看起来是为了为右声道音频数据添加一些额外的处理时间。 
+                                    # 这里RVC好像默认的是2s，需要后续对比一下
+    I_noise_reduce: bool = False
+    O_noise_reduce: bool = False
+    inference_cfg_rate: float = 0.7  # 0.7；
+    sg_hostapi: str = ""
+    wasapi_exclusive: bool = False
+    sg_input_device: str = ""
+    sg_output_device: str = ""
     
-    # 获取各 model
-    model = model_set['dit_model']
-    semantic_fn = model_set['semantic_fn']
-    vocoder_fn = model_set['vocoder_fn']
-    campplus_model = model_set['campplus_model']
-    to_mel = model_set['to_mel']
-    mel_fn_args = model_set['mel_fn_args']
+    max_prompt_length: float = 3.0 # 3；
+    save_dir: str = "wavs/output/"  # 存储
+    source_path: str = "g.wav"  # 源音频文件的地址
     
-    # 计算
-    sr = mel_fn_args["sampling_rate"]
-    hop_length = mel_fn_args["hop_size"]
-    if prompt_condition is None or reference_wav_name != new_reference_wav_name or PROMPT_LEN != max_prompt_length:
-        PROMPT_LEN = max_prompt_length
-        print(f"Setting max prompt length to {max_prompt_length} seconds.")
-        reference_wav = reference_wav[:int(sr * PROMPT_LEN)]
-        reference_wav_tensor = torch.from_numpy(reference_wav).to(device)
+    ce_dit_difference: float = 2  # 2 seconds  # 这个参数还不知道是用来干嘛的
+    
+    samplerate: float = None  # infer的时候会赋值
+    
+
+class RealtimeInfer:
+    def __init__(self, cfg:RealtimeInferConfig) -> None:
+        self.cfg = cfg
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.models = ModelFactory(device=self.device).get_models()  
+        self.reference = self._update_reference()
+        self.vad_model = self.models["vad_model"]
+        
+        # 尝试2
+        from modelscope.pipelines import pipeline
+        from modelscope.utils.constant import Tasks
+        self.denoise_fn = pipeline(
+                Tasks.acoustic_noise_suppression,
+                # model='damo/speech_dfsmn_ans_psm_48k_causal',
+                model="checkpoints/modelscope_cache/hub/damo/speech_dfsmn_ans_psm_48k_causal",
+                stream_mode=True)
+        
+    def _update_reference(self):
+        """读取reference音频，并计算相关的模型输入
+        """
+        reference_wav = self._load_reference_wav()
+        reference = self._cal_reference(reference_wav=reference_wav)
+        return reference
+        
+    def _load_reference_wav(self):
+        """给外置计算reference对应模型输入用的
+        """
+        reference_wav, _ = librosa.load(
+                self.cfg.reference_audio_path, sr=self.models["mel_fn_args"]["sampling_rate"]  # 22050
+        )
+        return reference_wav
+    
+    @torch.no_grad()
+    def _cal_reference(self, reference_wav):
+        """计算reference相关的模型输入
+        """
+        
+        # 获取各 model
+        model = self.models['dit_model']
+        semantic_fn = self.models['semantic_fn']
+        campplus_model = self.models['campplus_model']
+        to_mel = self.models['to_mel']
+        mel_fn_args = self.models['mel_fn_args']
+        
+        # 计算
+        sr = mel_fn_args["sampling_rate"]
+        reference_wav = reference_wav[:int(sr * self.cfg.max_prompt_length)]  # reference_wav如果不够长，会截断
+        reference_wav_tensor = torch.from_numpy(reference_wav).to(self.device)
 
         ori_waves_16k = torchaudio.functional.resample(reference_wav_tensor, sr, 16000)  # 这里也是先转换成了16k
         S_ori = semantic_fn(ori_waves_16k.unsqueeze(0))
@@ -95,236 +136,163 @@ def cal_reference(model_set,
             S_ori, ylens=target2_lengths, n_quantizers=3, f0=None
         )[0]
 
-        reference_wav_name = new_reference_wav_name
-        
+        reference = {
+            "wav": reference_wav,
+            "prompt_condition": prompt_condition,
+            "mel2": mel2,
+            "style2": style2,
+        }
         # 最终输出的是 prompt_condition ; 16k-need
         #            style2 ;  16k-need
         #            mel2 ; 22050-need
+        return reference
 
-@torch.no_grad()
-def custom_infer(model_set,
-                 reference_wav,
-                 new_reference_wav_name,
-                 input_wav_res,  # 这里是16k的输入
-                 block_frame_16k,
-                 skip_head,
-                 skip_tail,
-                 return_length,
-                 diffusion_steps,
-                 inference_cfg_rate,
-                 max_prompt_length,
-                 ):
-    global prompt_condition, mel2, style2
-    global reference_wav_name
-    global PROMPT_LEN  # ------ 名字换成大写，全局变量
-    global ce_dit_difference  # 这里新加了一个参数，干嘛的？
-    
-    # 获取各 model
-    model = model_set['dit_model']
-    semantic_fn = model_set['semantic_fn']
-    dit_fn = model_set['dit_fn']  
-    vocoder_fn = model_set['vocoder_fn']
-    campplus_model = model_set['campplus_model']
-    to_mel = model_set['to_mel']
-    mel_fn_args = model_set['mel_fn_args']
-    
-    sr = mel_fn_args["sampling_rate"]
-    hop_length = mel_fn_args["hop_size"]
-    # ---- 这里用不上，先彻底注释掉
-    # if prompt_condition is None or reference_wav_name != new_reference_wav_name or PROMPT_LEN != max_prompt_length:
-    #     print("哎嗨，我进来计算reference了！")  # ------ 增加一个信号
-    #     PROMPT_LEN = max_prompt_length
-    #     print(f"Setting max prompt length to {max_prompt_length} seconds.")
-    #     reference_wav = reference_wav[:int(sr * PROMPT_LEN)]
-    #     reference_wav_tensor = torch.from_numpy(reference_wav).to(device)
-
-    #     ori_waves_16k = torchaudio.functional.resample(reference_wav_tensor, sr, 16000)
-    #     S_ori = semantic_fn(ori_waves_16k.unsqueeze(0))
-    #     feat2 = torchaudio.compliance.kaldi.fbank(
-    #         ori_waves_16k.unsqueeze(0), num_mel_bins=80, dither=0, sample_frequency=16000
-    #     )
-    #     feat2 = feat2 - feat2.mean(dim=0, keepdim=True)
-    #     style2 = campplus_model(feat2.unsqueeze(0))
-
-    #     mel2 = to_mel(reference_wav_tensor.unsqueeze(0))
-    #     target2_lengths = torch.LongTensor([mel2.size(2)]).to(mel2.device)
-    #     prompt_condition = model.length_regulator(
-    #         S_ori, ylens=target2_lengths, n_quantizers=3, f0=None
-    #     )[0]
-
-    #     reference_wav_name = new_reference_wav_name
-    # ---- 这里用不上，先彻底注释掉
-
-    converted_waves_16k = input_wav_res  # 这里转换成 16k 了已经？
-    start_event = torch.cuda.Event(enable_timing=True)
-    end_event = torch.cuda.Event(enable_timing=True)
-    torch.cuda.synchronize()
-    start_event.record()
-    S_alt = semantic_fn(converted_waves_16k.unsqueeze(0))  # 之前一大段whisper的计算，这里成了一行，very nice
-    end_event.record()
-    torch.cuda.synchronize()  # Wait for the events to be recorded!
-    elapsed_time_ms_semantic = start_event.elapsed_time(end_event)
-
-    S_alt = S_alt[:, ce_dit_difference * 50:]  # 这是新的改动，干嘛的？
-    target_lengths = torch.LongTensor([(skip_head + return_length + skip_tail - ce_dit_difference * 50) / 50 * sr // hop_length]).to(S_alt.device)
-    cond = model.length_regulator(
-        S_alt, ylens=target_lengths , n_quantizers=3, f0=None
-    )[0]
-    cat_condition = torch.cat([prompt_condition, cond], dim=1)
-    
-    #---------------
-    # 参数优化for 推理加速
-    # diffusion_steps += 1  # 模型代码还没有改，这里先注释掉
-    
-    #---------------
-    
-    
-    #----------------
-    # bs 测试
-    bs = 1
-    
-    if cat_condition.shape[0] != bs:
-        cat_condition = cat_condition.repeat(bs, 1, 1)
-    x_lens = torch.LongTensor([cat_condition.size(1)]).to(mel2.device)  # 先把变量拿过来
-    # x_lens = x_lens.repeat(bs, 1)
-    if mel2.shape[0] != bs:
-        mel2 = mel2.repeat(bs,1,1)
-    if style2.shape[0] != bs:
-        style2 = style2.repeat(bs,1)
-    #----------------
-    
-    # vc_target = model.cfm.forward(
-    #     cat_condition,
-    #     x_lens,
-    #     mel2,
-    #     style2,
-    #     # None,  # 去掉 f0 的输入
-    #     n_timesteps=diffusion_steps,  # 去掉 ds 输入
-    #     # inference_cfg_rate=inference_cfg_rate,  # 去掉 inference_cfg_rate 输入
-    # )
-    
-    # ----------------
-    # 增加 dit 的时间消耗记录
-    start_event = torch.cuda.Event(enable_timing=True)
-    end_event = torch.cuda.Event(enable_timing=True)
-    torch.cuda.synchronize()
-    start_event.record()
-    # ----------------
-    
-    # -----------------
-    vc_target = dit_fn(   # 这里改成调用 dit_fn
-        cat_condition,
-        x_lens,  # ----- 这里改成上面的值了，不做临时变量了
-        mel2,
-        style2,
-        None,
-        n_timesteps=diffusion_steps,
-        inference_cfg_rate=inference_cfg_rate,
-    )
-    vc_target = vc_target[:, :, mel2.size(-1) :]
-    # print(f"vc_target.shape: {vc_target.shape}")  # -----这行注释掉，不显示了
-    
-    # ----------------
-    # 增加 dit 的时间消耗记录
-    end_event.record()
-    torch.cuda.synchronize()  # Wait for the events to be recorded!
-    elapsed_time_ms_dit = start_event.elapsed_time(end_event)
-    # ----------------
-    
-    
-    # ----------------
-    # 增加 vocoder 的时间消耗记录
-    start_event = torch.cuda.Event(enable_timing=True)
-    end_event = torch.cuda.Event(enable_timing=True)
-    torch.cuda.synchronize()
-    start_event.record()
-    # ----------------
-    vc_wave = vocoder_fn(vc_target).squeeze()
-    # ----------------
-    # 增加 vocoder 的时间消耗记录
-    end_event.record()
-    torch.cuda.synchronize()  # Wait for the events to be recorded!
-    elapsed_time_ms_vocoder = start_event.elapsed_time(end_event)
-    # ----------------
-    
-    output_len = return_length * sr // 50
-    tail_len = skip_tail * sr // 50
-    
-    # -------------
-    # output 增加 batch-size 的兼容
-    if len(vc_wave.shape) == 2:
-        output = vc_wave[0, -output_len - tail_len: -tail_len]
-    else:
-        output = vc_wave[-output_len - tail_len: -tail_len]  # 原版的
-    # -------------
-    
-    # -------------
-    # 时间记录
-    print(f"Model_Time: ( semantic: {elapsed_time_ms_semantic:0.1f}ms | dit: {elapsed_time_ms_dit:0.1f}ms | vocoder: {elapsed_time_ms_vocoder:0.1f}ms )")
-    TOTAL_SEMANTIC_TIME.append(elapsed_time_ms_semantic)
-    TOTAL_DIT_TIME.append(elapsed_time_ms_dit)
-    TOTAL_VOCODER_TIME.append(elapsed_time_ms_vocoder)
-    # -------------
-    
-    return output
-
-class RealtimeInferConfig:
-    def __init__(self) -> None:
-        self.reference_audio_path: str = "testsets/000042.wav"
-        # self.index_path: str = ""
-        self.diffusion_steps: int = 10  # 10； 
-        self.sr_type: str = "sr_model"
-        self.block_time: float = 0.5,  # 0.5 ；这里的 block time 是 0.5s
-        self.threhold: int = -60
-        self.crossfade_time: float = 0.04,  # 0.04 ；用于平滑过渡的交叉渐变长度，这里设定为 0.04 秒。交叉渐变通常用于避免声音中断或“断层”现象。
-        self.extra_time: float = 2.5  # 2.5；  附加时间，设置为 0.5秒。可能用于在处理音频时延长或平滑过渡的时间。
-                                        # 原本默认0.5，后面更新成2.5了
-        self.extra_time_right: float = 0.02  # 0.02； 可能是与“右声道”相关的额外时间，设置为 0.02秒。看起来是为了为右声道音频数据添加一些额外的处理时间。 
-                                                # 这里RVC好像默认的是2s，需要后续对比一下
-        self.I_noise_reduce: bool = False
-        self.O_noise_reduce: bool = False
-        self.inference_cfg_rate: float = 0.7  # 0.7；
-        self.sg_hostapi: str = ""
-        self.wasapi_exclusive: bool = False
-        self.sg_input_device: str = ""
-        self.sg_output_device: str = ""
+    @torch.no_grad()
+    def _custom_infer(self,
+                    input_wav_res,  # 这里是16k的输入
+                    block_frame_16k,
+                    skip_head,
+                    skip_tail,
+                    return_length,
+                    diffusion_steps,
+                    inference_cfg_rate,
+                    max_prompt_length,
+                    ):
+        # 获取 前global参数
+        ce_dit_difference = self.cfg.ce_dit_difference  
         
-        self.max_prompt_length = 3.0 # 3；
-        self.save_dir = "wavs/output/"  # 新增存储路径
-        self.source_path = "g.wav"  # 新增 output name， gradio时默认的名字
-
-class RealtimeInfer:
-    def __init__(self) -> None:
-        self.cfg = RealtimeInferConfig()
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.function = "vc"   # 这个看起来有两个枚举值 [vc, im]
-        self.delay_time = 0
-        self.hostapis = None
-        self.input_devices = None
-        self.output_devices = None
-        self.input_devices_indices = None
-        self.output_devices_indices = None
-        self.stream = None
-        self.model_set = ModelFactory(device=self.device).get_models()  
-        self.reference_wav = None # 先置None
-        self.vad_model = self.model_set["vad_model"]
+        # 获取 reference 相关
+        prompt_condition = self.reference["prompt_condition"]
+        mel2 = self.reference["mel2"]
+        style2 = self.reference["style2"]
         
-        # 尝试2
-        from modelscope.pipelines import pipeline
-        from modelscope.utils.constant import Tasks
-        self.denoise_fn = pipeline(
-                Tasks.acoustic_noise_suppression,
-                # model='damo/speech_dfsmn_ans_psm_48k_causal',
-                model="checkpoints/modelscope_cache/hub/damo/speech_dfsmn_ans_psm_48k_causal",
-                stream_mode=True)
- 
-    def load_reference_wav(self):
-        """给外置计算reference对应模型输入用的
-        """
-        self.reference_wav, _ = librosa.load(
-                self.cfg.reference_audio_path, sr=self.model_set["mel_fn_args"]["sampling_rate"]  # 22050
+        # 获取各 model
+        model = self.models['dit_model']
+        semantic_fn = self.models['semantic_fn']
+        dit_fn = self.models['dit_fn']  
+        vocoder_fn = self.models['vocoder_fn']
+        campplus_model = self.models['campplus_model']
+        to_mel = self.models['to_mel']
+        mel_fn_args = self.models['mel_fn_args']
+        
+        sr = mel_fn_args["sampling_rate"]
+        hop_length = mel_fn_args["hop_size"]
+        
+
+        converted_waves_16k = input_wav_res  # 这里转换成 16k 了已经？
+        start_event = torch.cuda.Event(enable_timing=True)
+        end_event = torch.cuda.Event(enable_timing=True)
+        torch.cuda.synchronize()
+        start_event.record()
+        S_alt = semantic_fn(converted_waves_16k.unsqueeze(0))  # 之前一大段whisper的计算，这里成了一行，very nice
+        end_event.record()
+        torch.cuda.synchronize()  # Wait for the events to be recorded!
+        elapsed_time_ms_semantic = start_event.elapsed_time(end_event)
+
+        S_alt = S_alt[:, ce_dit_difference * 50:]  # 这是新的改动，干嘛的？
+        target_lengths = torch.LongTensor([(skip_head + return_length + skip_tail - ce_dit_difference * 50) / 50 * sr // hop_length]).to(S_alt.device)
+        cond = model.length_regulator(
+            S_alt, ylens=target_lengths , n_quantizers=3, f0=None
+        )[0]
+        cat_condition = torch.cat([prompt_condition, cond], dim=1)
+        
+        #---------------
+        # 参数优化for 推理加速
+        # diffusion_steps += 1  # 模型代码还没有改，这里先注释掉
+        #---------------
+        
+        
+        #----------------
+        # bs 测试
+        bs = 1
+        
+        if cat_condition.shape[0] != bs:
+            cat_condition = cat_condition.repeat(bs, 1, 1)
+        x_lens = torch.LongTensor([cat_condition.size(1)]).to(mel2.device)  # 先把变量拿过来
+        # x_lens = x_lens.repeat(bs, 1)
+        if mel2.shape[0] != bs:
+            mel2 = mel2.repeat(bs,1,1)
+        if style2.shape[0] != bs:
+            style2 = style2.repeat(bs,1)
+        #----------------
+        
+        # vc_target = model.cfm.forward(
+        #     cat_condition,
+        #     x_lens,
+        #     mel2,
+        #     style2,
+        #     # None,  # 去掉 f0 的输入
+        #     n_timesteps=diffusion_steps,  # 去掉 ds 输入
+        #     # inference_cfg_rate=inference_cfg_rate,  # 去掉 inference_cfg_rate 输入
+        # )
+        
+        # ----------------
+        # 增加 dit 的时间消耗记录
+        start_event = torch.cuda.Event(enable_timing=True)
+        end_event = torch.cuda.Event(enable_timing=True)
+        torch.cuda.synchronize()
+        start_event.record()
+        # ----------------
+        
+        # -----------------
+        vc_target = dit_fn(   # 这里改成调用 dit_fn
+            cat_condition,
+            x_lens,  # ----- 这里改成上面的值了，不做临时变量了
+            mel2,
+            style2,
+            None,
+            n_timesteps=diffusion_steps,
+            inference_cfg_rate=inference_cfg_rate,
         )
+        vc_target = vc_target[:, :, mel2.size(-1) :]
+        # print(f"vc_target.shape: {vc_target.shape}")  # -----这行注释掉，不显示了
         
+        # ----------------
+        # 增加 dit 的时间消耗记录
+        end_event.record()
+        torch.cuda.synchronize()  # Wait for the events to be recorded!
+        elapsed_time_ms_dit = start_event.elapsed_time(end_event)
+        # ----------------
+        
+        
+        # ----------------
+        # 增加 vocoder 的时间消耗记录
+        start_event = torch.cuda.Event(enable_timing=True)
+        end_event = torch.cuda.Event(enable_timing=True)
+        torch.cuda.synchronize()
+        start_event.record()
+        # ----------------
+        vc_wave = vocoder_fn(vc_target).squeeze()
+        # ----------------
+        # 增加 vocoder 的时间消耗记录
+        end_event.record()
+        torch.cuda.synchronize()  # Wait for the events to be recorded!
+        elapsed_time_ms_vocoder = start_event.elapsed_time(end_event)
+        # ----------------
+        
+        output_len = return_length * sr // 50
+        tail_len = skip_tail * sr // 50
+        
+        # -------------
+        # output 增加 batch-size 的兼容
+        if len(vc_wave.shape) == 2:
+            output = vc_wave[0, -output_len - tail_len: -tail_len]
+        else:
+            output = vc_wave[-output_len - tail_len: -tail_len]  # 原版的
+        # -------------
+        
+        # -------------
+        # 时间记录
+        print(f"Model_Time: ( semantic: {elapsed_time_ms_semantic:0.1f}ms | dit: {elapsed_time_ms_dit:0.1f}ms | vocoder: {elapsed_time_ms_vocoder:0.1f}ms )")
+        TOTAL_SEMANTIC_TIME.append(elapsed_time_ms_semantic)
+        TOTAL_DIT_TIME.append(elapsed_time_ms_dit)
+        TOTAL_VOCODER_TIME.append(elapsed_time_ms_vocoder)
+        # -------------
+        
+        return output
+
+
+            
     def infer(self, input_audio):
         """
         input_audio: 为了兼容gradio, [sr, wav]
@@ -333,20 +301,10 @@ class RealtimeInfer:
         # start vc 部分
         # -------------------------
         torch.cuda.empty_cache()
-        
-        # ---- referebce 彻底放在外面读取
-        # if self.reference_wav is None:
-        #     self.reference_wav, _ = librosa.load(
-        #         self.gui_config.reference_audio_path, sr=self.model_set["mel_fn_args"]["sampling_rate"]  # 22050
-        #     )
-        # ---- referebce 彻底放在外面读取
             
         self.cfg.samplerate = (
-            self.model_set["mel_fn_args"]["sampling_rate"]
-            if self.cfg.sr_type == "sr_model"
-            else self.get_device_samplerate()
+            self.models["mel_fn_args"]["sampling_rate"]
         )  # gui-samplerate 赋值，22050
-        self.cfg.channels = 1  # 这里channel就默认是1了
         self.zc = self.cfg.samplerate // 50  # 44100 // 100 = 441， 代表10ms; 
                                                     # 22050//50 = 441, 代表 20ms； 
                                                     # 是一个精度因子，20ms为一个最小精度。
@@ -443,9 +401,9 @@ class RealtimeInfer:
         ).to(self.device)  # 用于从 22050 降低到 16000； 更精细点是从 gui-samplerate 到 16k
                                     # 也就是说有3个samplerate，model-sampelrate, gui-samplerate, 16k
                                     # 但是一般 model和gui的相同； 那么就是两个samplerate： 22050， 16k
-        if self.model_set["mel_fn_args"]["sampling_rate"] != self.cfg.samplerate:  # resampler2 是从 model-samplerate => gui-samplerate
+        if self.models["mel_fn_args"]["sampling_rate"] != self.cfg.samplerate:  # resampler2 是从 model-samplerate => gui-samplerate
             self.resampler2 = tat.Resample(
-                orig_freq=self.model_set["mel_fn_args"]["sampling_rate"],
+                orig_freq=self.models["mel_fn_args"]["sampling_rate"],
                 new_freq=self.cfg.samplerate,
                 dtype=torch.float32,
             ).to(self.device)
@@ -672,10 +630,7 @@ class RealtimeInfer:
             end_event = torch.cuda.Event(enable_timing=True)
             torch.cuda.synchronize()
             start_event.record()
-            infer_wav = custom_infer(
-                self.model_set,
-                self.reference_wav,
-                self.cfg.reference_audio_path,
+            infer_wav = self._custom_infer(
                 self.input_wav_res,  # 整个input_res 放进去了。
                 self.block_frame_16k,
                 self.skip_head,
@@ -765,9 +720,6 @@ class RealtimeInfer:
 
 
 if __name__ == "__main__":
-    
-    realtime_infer = RealtimeInfer()
-    
     # -------------------------
     # 1. 参数解析
     import argparse
@@ -792,7 +744,7 @@ if __name__ == "__main__":
                             default=0.5, 
                             help="块大小，单位秒，默认值为 0.5 秒")
         
-        parser.add_argument('--crossfade_length', type=float, 
+        parser.add_argument('--crossfade_time', type=float, 
                             default=0.04, 
                             help="交叉渐变长度，单位秒，默认值为 0.04 秒")
         
@@ -800,7 +752,7 @@ if __name__ == "__main__":
                             default=10, 
                             help="扩散步骤，默认值为 3")
         
-        parser.add_argument('--prompt_len', type=float, 
+        parser.add_argument('--max_prompt_length', type=float, 
                             default=3, 
                             help="参考截断长度，单位秒，默认值为 3 秒")
         return parser.parse_args()
@@ -810,9 +762,9 @@ if __name__ == "__main__":
     file_list = args.file_list.split() if args.file_list else None
     save_dir = args.save_dir 
     block_time = args.block_time
-    crossfade_length = args.crossfade_length
+    crossfade_time = args.crossfade_time
     diffusion_steps = args.diffusion_steps
-    PROMPT_LEN = args.prompt_len
+    max_prompt_length = args.max_prompt_length
     
     if file_list is None:
         # 单通内部赋值
@@ -828,30 +780,25 @@ if __name__ == "__main__":
     print(f"file_list: {file_list}")
     print(f"save_dir: {save_dir}")
     print(f"block_time: {block_time}")
-    print(f"crossfade_length: {crossfade_length}")
+    print(f"crossfade_time: {crossfade_time}")
     print(f"diffusion_steps: {diffusion_steps}")
-    print(f"PROMPT_LEN: {PROMPT_LEN}")
+    print(f"max_prompt_length: {max_prompt_length}")
     print('-'*42)
     # --------------------------
     
-
-    # 2. 对应参数赋值给gui class，并做准备工作
-    realtime_infer.cfg.block_time = block_time
-    realtime_infer.cfg.crossfade_time = crossfade_length
-    realtime_infer.cfg.diffusion_steps = diffusion_steps
-    realtime_infer.cfg.reference_audio_path = reference_audio_path
+    # 2. 对应参数赋值给cfg
     Path(save_dir).mkdir(parents=True, exist_ok=True)
-    realtime_infer.cfg.save_dir = save_dir
+    cfg = RealtimeInferConfig(block_time=block_time,
+                              crossfade_time=crossfade_time,
+                              diffusion_steps=diffusion_steps, 
+                              reference_audio_path=reference_audio_path, 
+                              save_dir=save_dir,
+                              max_prompt_length=max_prompt_length,)
+    print(cfg)
     
-    # 计算 reference, 因为这里外置了 reference，所以不能在初始化的时候计算
-    # 这样里面的代码甚至不用改，应该不会触发计算了
-    realtime_infer.load_reference_wav()  # 先读取
-    cal_reference(realtime_infer.model_set,
-                    realtime_infer.reference_wav,
-                    realtime_infer.cfg.reference_audio_path,
-                    realtime_infer.cfg.max_prompt_length)
-
-
+    # 获取推理实例
+    realtime_infer = RealtimeInfer(cfg=cfg)
+    
     # 3. 开始VC
     print('-' * 42)
     print("准备工作完毕，开始文件夹批量换声, 请按回车继续...")
