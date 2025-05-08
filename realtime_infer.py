@@ -46,11 +46,16 @@ TOTAL_TO_BYTES_TIME = []  # 完成推理后，转换为 Bytes 的耗时
 
 class RealtimeInferConfig(BaseModel):
     reference_audio_path: str = "testsets/000042.wav"
-    # index_path: str = ""
-    diffusion_steps: int = 10  # 10； 
+    
     sr_type: str = "sr_model"  # 这个指的是 samplerate 来自哪里，是model本身，还是设备 device，获取设备的 samplerate
     block_time: float = 0.5,  # 0.5 ；这里的 block time 是 0.5s
-    threhold: int = -60
+    
+    # noise_gata
+    noise_gate: bool = True  # 是否使用噪声门
+    noise_gate_threshold: float = -60  # 噪声门的阈值，单位是分贝，-60dB
+    
+    diffusion_steps: int = 10  # 10； 
+    
     crossfade_time: float = 0.04,  # 0.04 ；用于平滑过渡的交叉渐变长度，这里设定为 0.04 秒。交叉渐变通常用于避免声音中断或“断层”现象。
     extra_time: float = 2.5  # 2.5；  附加时间，设置为 0.5秒。可能用于在处理音频时延长或平滑过渡的时间。
                              # 原本默认0.5，后面更新成2.5了
@@ -291,15 +296,9 @@ class RealtimeInfer:
         
         return output
 
-
-            
-    def infer(self, input_audio):
+    def start_vc(self):
+        """推理前的相关准备
         """
-        input_audio: 为了兼容gradio, [sr, wav]
-        """
-        # -------------------------
-        # start vc 部分
-        # -------------------------
         torch.cuda.empty_cache()
             
         self.cfg.samplerate = (
@@ -308,6 +307,8 @@ class RealtimeInfer:
         self.zc = self.cfg.samplerate // 50  # 44100 // 100 = 441， 代表10ms; 
                                                     # 22050//50 = 441, 代表 20ms； 
                                                     # 是一个精度因子，20ms为一个最小精度。
+        self.zc_16k = 16_000 // 50 # 320，代表20ms, 添加16k精度因子
+        
         self.block_frame = (
             int(
                 np.round( 
@@ -362,13 +363,12 @@ class RealtimeInfer:
             device=self.device,
             dtype=torch.float32,
         )  # 2 * 44100 + 0.08 * 44100 + 0.01 * 44100 + 0.25 * 44100
-        self.input_wav_denoise: torch.Tensor = self.input_wav.clone()  # ------- 整个篇目仅此一家
         self.input_wav_res: torch.Tensor = torch.zeros(
             320 * self.input_wav.shape[0] // self.zc,
             device=self.device,
             dtype=torch.float32,
         )  # input wave 44100 -> 16000   # 16k对应的 input_wav
-        self.rms_buffer: np.ndarray = np.zeros(4 * self.zc, dtype="float32")  # callback里面用上的地方，被注释掉了
+        self.rms_buffer: np.ndarray = np.zeros(4 * self.zc_16k, dtype="float32")  # 大小换成16k对应的
         self.sola_buffer: torch.Tensor = torch.zeros(
             self.sola_buffer_frame, device=self.device, dtype=torch.float32
         )
@@ -416,22 +416,15 @@ class RealtimeInfer:
         self.vad_speech_detected = False
         self.set_speech_detected_false_at_end_flag = False
         # ---------------------------------
-    
-    
-        # -------------------------
-        # start stream 部分
-        # -------------------------
-        # input_sr, input_audio_data = self.audio_preprocess(input_audio)  # 这里给gradio留着，如果还有需要的话。
-        input_sr, input_audio_data = input_audio
-        
-        # -----  这里的 22050 转换可以删去
-        # if input_sr != self.gui_config.samplerate:    # TODO-1
-        #     print(f'输入音频重采样:{input_sr} => {self.gui_config.samplerate}')  # 这里是重采样到 22050
-        #     input_audio_data = librosa.resample(input_audio_data, orig_sr=input_sr, target_sr=self.gui_config.samplerate)
-        # -----   直接用 16k 音频
-        
 
-        # num_blocks = len(input_audio_data) // self.block_frame 
+            
+    def infer(self, input_audio_data):
+        """推理完整的音频
+        Args:
+            input_audio_data: 输入音频数据,采样率必须为16k
+        """
+        self.start_vc()  # 这里是初始化的函数，主要是计算一些参数
+    
         num_blocks = len(input_audio_data) // self.block_frame_16k  # 这里block-frame改成16k
         total_output = []     
         for i in range(num_blocks):
@@ -451,11 +444,7 @@ class RealtimeInfer:
             # 转换成有效输出
             t_trans_start = time.time()  # ---- 增加转换时间记录
             output_wave = (output_wave * 32768.0).astype(np.int16)  # 这里和最终存储音频无关，源代码也是这样，是为了转化成mp3
-            # wav_bytes = AudioSegment(
-            #     output_wave.tobytes(), frame_rate=self.gui_config.samplerate,
-            #     sample_width=output_wave.dtype.itemsize, channels=1
-            # ).export(format="mp3").read()
-            # -------------
+            
             # 换一种方式转换成二进制码
             wav_buffer = io.BytesIO()  # 使用 io.BytesIO 来存储 WAV 数据
             write(wav_buffer, self.cfg.samplerate, output_wave)  # 用 scipy 的 write 函数直接写入 WAV 格式
@@ -489,45 +478,72 @@ class RealtimeInfer:
             print("------Chunk Out------", end='\n\n')
             # ----------------------
             yield wav_bytes
-                
-    def audio_preprocess(self, audio:tuple):
-        sample_rate, audio_data = audio  # 解包音频数据
-        # print(audio_data) 
-        # print(type(audio_data[0]))
-        assert isinstance(audio_data, np.ndarray)
-        if audio_data.ndim > 1:
-            audio_data = np.mean(audio_data, axis=0)  # 合并为单声道（简单的做法）
-            print(f"audio_data channels bigger than 1:{audio_data.ndim}")
             
-        if isinstance(audio_data[0], np.int16):
-            audio_data = audio_data.astype(np.float32) / 32768.0 
-        return sample_rate, audio_data
+    def _noise_gate(self, indata):
+        """通过分贝阈值的方式，讲低于某个分贝的音频数据置为0
+        """
+        if self.vad_speech_detected:  # vad 检测出来人声才会进行 noise-gate
+            indata = np.append(self.rms_buffer, indata)  # rms_buffer 仅用在这个地方
+            rms = librosa.feature.rms(
+                y=indata, frame_length=4 * self.zc_16k, hop_length=self.zc_16k
+            )[:, 2:]  # 这里丢掉了前2个frame的数据， hop_length是1个精度，所以丢掉了前 40ms 的值
+            self.rms_buffer[:] = indata[-4 * self.zc_16k :]  # 替换新的 rms_buffer
+            indata = indata[2 * self.zc_16k - self.zc_16k // 2 :]  # indata 切掉了 1.5个zc，也就是30ms，所以这里做了10ms的重叠？为了让声音更平滑吗？
+            db_threhold = (
+                librosa.amplitude_to_db(rms, ref=1.0)[0] < self.cfg.noise_gate_threshold
+            )
+            for i in range(db_threhold.shape[0]):
+                if db_threhold[i]:
+                    indata[i * self.zc_16k : (i + 1) * self.zc_16k] = 0  # 这里是以 zc 为一个窗格的，20ms
+            indata = indata[self.zc_16k // 2 :]   # 这里最终输出的indata 前面贴了 2个zc，40ms 的 rms-buffer
+                                                  # 这个在后面的 input_wav_res 填入的时候给平掉了
+        else:
+            self.rms_buffer[:] = 0  # vad 检测不出来的时候，缓存置0
+            
+        return indata
+        
 
-    def audio_callback(
-        self, indata: np.ndarray
-    ):
-        print("Audio_callback in...")
+    def audio_callback(self, indata: np.ndarray):
+        """chunk推理函数
+        Args:
+            indata: 16k 采样率的chunk 音频数据
         """
-        Audio block callback function
-        """
-        # print(indata.shape)
         start_time = time.perf_counter()
         indata = librosa.to_mono(indata.T)  # 转换完之后的indata shape: (11025,), max=1.0116995573043823, min=-1.0213052034378052
         
-        # if self.gui_config.threhold > -60:
-        #     indata = np.append(self.rms_buffer, indata)
-        #     rms = librosa.feature.rms(
-        #         y=indata, frame_length=4 * self.zc, hop_length=self.zc
-        #     )[:, 2:]
-        #     self.rms_buffer[:] = indata[-4 * self.zc :]
-        #     indata = indata[2 * self.zc - self.zc // 2 :]
-        #     db_threhold = (
-        #         librosa.amplitude_to_db(rms, ref=1.0)[0] < self.gui_config.threhold
-        #     )
-        #     for i in range(db_threhold.shape[0]):
-        #         if db_threhold[i]:
-        #             indata[i * self.zc : (i + 1) * self.zc] = 0
-        #     indata = indata[self.zc // 2 :]
+        
+        # -----------------------
+        # 与新版一致，这里加入vad模块
+        # 这里把vad放到预处理的后面来，为了加入降噪模块后性能更好
+        # 本身vad和预处理两个就是独立的，互不影响，谁放前面都行
+        
+        # VAD first
+        start_event = torch.cuda.Event(enable_timing=True)
+        end_event = torch.cuda.Event(enable_timing=True)
+        torch.cuda.synchronize()
+        start_event.record()
+        # indata_16k = librosa.resample(indata, orig_sr=self.gui_config.samplerate, target_sr=16000)  # 由于输入本来就是16k，这里也省略了
+        indata_16k = indata  # 改成直接赋值
+        res = self.vad_model.generate(input=indata_16k, cache=self.vad_cache, is_final=False, chunk_size=self.vad_chunk_size)  # ---- 改成优化后的函数
+        # res = self.vad_model_generate(input=indata_16k, cache=self.vad_cache, is_final=False, chunk_size=self.vad_chunk_size)  # ---- 改成优化后的函数， 验证失败
+        res_value = res[0]["value"]
+        # print(res_value)
+        if len(res_value) % 2 == 1 and not self.vad_speech_detected:
+            self.vad_speech_detected = True
+        elif len(res_value) % 2 == 1 and self.vad_speech_detected:
+            self.set_speech_detected_false_at_end_flag = True
+        end_event.record()
+        torch.cuda.synchronize()  # Wait for the events to be recorded!
+        elapsed_time_ms = start_event.elapsed_time(end_event)
+        print(f"VAD_Time: {elapsed_time_ms:0.1f}ms")
+        
+        TOTAL_VAD_TIME.append(elapsed_time_ms)  # 这里增加一个全局VAD均值计算
+        # -----------------------
+        
+        
+        
+        if self.cfg.noise_gate and (self.cfg.noise_gate_threshold > -60):
+            indata = self._noise_gate(indata)
         
         # ----- 原本预处理注释掉 -----
         # self.input_wav[: -self.block_frame] = self.input_wav[
@@ -565,58 +581,8 @@ class RealtimeInfer:
         print(f"Preprocess_Time: {preprocess_Time:.1f}ms")  # ----- 改成ms
         TOTAL_PREPROCESS_TIME.append(preprocess_Time)  # ---- 增加全局的记录
         
+        
     
-        # ------------------------------
-        # 这里加入降噪模块
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        # -----------------------------
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        # -----------------------
-        # 与新版一致，这里加入vad模块
-        # 这里把vad放到预处理的后面来，为了加入降噪模块后性能更好
-        # 本身vad和预处理两个就是独立的，互不影响，谁放前面都行
-        # VAD first
-        start_event = torch.cuda.Event(enable_timing=True)
-        end_event = torch.cuda.Event(enable_timing=True)
-        torch.cuda.synchronize()
-        start_event.record()
-        # indata_16k = librosa.resample(indata, orig_sr=self.gui_config.samplerate, target_sr=16000)  # 由于输入本来就是16k，这里也省略了
-        indata_16k = indata  # 改成直接赋值
-        res = self.vad_model.generate(input=indata_16k, cache=self.vad_cache, is_final=False, chunk_size=self.vad_chunk_size)  # ---- 改成优化后的函数
-        # res = self.vad_model_generate(input=indata_16k, cache=self.vad_cache, is_final=False, chunk_size=self.vad_chunk_size)  # ---- 改成优化后的函数， 验证失败
-        res_value = res[0]["value"]
-        # print(res_value)
-        if len(res_value) % 2 == 1 and not self.vad_speech_detected:
-            self.vad_speech_detected = True
-        elif len(res_value) % 2 == 1 and self.vad_speech_detected:
-            self.set_speech_detected_false_at_end_flag = True
-        end_event.record()
-        torch.cuda.synchronize()  # Wait for the events to be recorded!
-        elapsed_time_ms = start_event.elapsed_time(end_event)
-        print(f"VAD_Time: {elapsed_time_ms:0.1f}ms")
-        
-        TOTAL_VAD_TIME.append(elapsed_time_ms)  # 这里增加一个全局VAD均值计算
-        # -----------------------
-
-        
-            
         # -------------------------------
         # 与新版一致，加入vad部分
         # 它这个有点奇怪为什么先推理再放，其实可以直接返回zeros的
@@ -808,10 +774,9 @@ if __name__ == "__main__":
         pass  # 忽略 EOFError，直接继续
     
     for file in file_list:
-            # wav, sr = librosa.load(file, sr=gui.model_set["mel_fn_args"]["sampling_rate"], mono=True)  # 22050, 默认读取为单声道
-            wav, sr = librosa.load(file, sr=16000, mono=True)  # source 输入统一为16k
+            wav, _ = librosa.load(file, sr=16000, mono=True)  # source 输入统一为16k
             realtime_infer.cfg.source_path = str(file)
-            for o in realtime_infer.infer([sr, wav]):
+            for o in realtime_infer.infer(wav):
                 nonsense = 42
     
     # 4. 后处理，相关数据计算
