@@ -42,6 +42,7 @@ TOTAL_VAD_TIME = []  # 记录每次VAD的耗时
 TOTAL_PREPROCESS_TIME = []  # 记录VAD之后的预处理部分的耗时
 TOTAL_AUDIO_CALLBACK_TIME = []  # Audio callback 函数总耗时
 TOTAL_TO_BYTES_TIME = []  # 完成推理后，转换为 Bytes 的耗时
+TOTAL_RMS_TIME = []
 #-----
 
 class RealtimeInferConfig(BaseModel):
@@ -77,12 +78,17 @@ class RealtimeInferConfig(BaseModel):
     
     samplerate: float = None  # infer的时候会赋值
     
+    rms_mix_rate: float = 0    # 0.25； 这个参数是用来控制 RMS 混合的比例，
+                               # 范围是 0 到 1。
+                               # 0 表示完全使用 Input 的包络，1 表示完全使用 Infer 包络。
+    
+    device: str = str(torch.device("cuda" if torch.cuda.is_available() else "cpu"))
+    
 
 class RealtimeInfer:
     def __init__(self, cfg:RealtimeInferConfig) -> None:
         self.cfg = cfg
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.models = ModelFactory(device=self.device).get_models()  
+        self.models = ModelFactory(device=self.cfg.device).get_models()  
         self.reference = self._update_reference()
         self.vad_model = self.models["vad_model"]
         
@@ -116,7 +122,7 @@ class RealtimeInfer:
         # 计算
         sr = mel_fn_args["sampling_rate"]
         reference_wav = reference_wav[:int(sr * self.cfg.max_prompt_length)]  # reference_wav如果不够长，会截断
-        reference_wav_tensor = torch.from_numpy(reference_wav).to(self.device)
+        reference_wav_tensor = torch.from_numpy(reference_wav).to(self.cfg.device)
 
         ori_waves_16k = torchaudio.functional.resample(reference_wav_tensor, sr, 16000)  # 这里也是先转换成了16k
         S_ori = semantic_fn(ori_waves_16k.unsqueeze(0))
@@ -335,6 +341,7 @@ class RealtimeInfer:
             )
             * self.zc
         )
+        self.extra_frame_16k = 320 * self.extra_frame // self.zc  # 16k对应的 extra_frame, 用在包络混合
         self.extra_frame_right = (  # 同理
                 int(
                     np.round(
@@ -351,17 +358,17 @@ class RealtimeInfer:
             + self.sola_search_frame
             + self.block_frame
             + self.extra_frame_right,
-            device=self.device,
+            device=self.cfg.device,
             dtype=torch.float32,
         )  # 2 * 44100 + 0.08 * 44100 + 0.01 * 44100 + 0.25 * 44100
         self.input_wav_res: torch.Tensor = torch.zeros(
             320 * self.input_wav.shape[0] // self.zc,
-            device=self.device,
+            device=self.cfg.device,
             dtype=torch.float32,
         )  # input wave 44100 -> 16000   # 16k对应的 input_wav
         self.rms_buffer: np.ndarray = np.zeros(4 * self.zc_16k, dtype="float32")  # 大小换成16k对应的
         self.sola_buffer: torch.Tensor = torch.zeros(
-            self.sola_buffer_frame, device=self.device, dtype=torch.float32
+            self.sola_buffer_frame, device=self.cfg.device, dtype=torch.float32
         )
         self.nr_buffer: torch.Tensor = self.sola_buffer.clone()
         self.output_buffer: torch.Tensor = self.input_wav.clone()
@@ -378,7 +385,7 @@ class RealtimeInfer:
                     0.0,
                     1.0,
                     steps=self.sola_buffer_frame,
-                    device=self.device,
+                    device=self.cfg.device,
                     dtype=torch.float32,
                 )
             )
@@ -389,7 +396,7 @@ class RealtimeInfer:
             orig_freq=self.cfg.samplerate,
             new_freq=16000,
             dtype=torch.float32,
-        ).to(self.device)  # 用于从 22050 降低到 16000； 更精细点是从 gui-samplerate 到 16k
+        ).to(self.cfg.device)  # 用于从 22050 降低到 16000； 更精细点是从 gui-samplerate 到 16k
                                     # 也就是说有3个samplerate，model-sampelrate, gui-samplerate, 16k
                                     # 但是一般 model和gui的相同； 那么就是两个samplerate： 22050， 16k
         if self.models["mel_fn_args"]["sampling_rate"] != self.cfg.samplerate:  # resampler2 是从 model-samplerate => gui-samplerate
@@ -397,7 +404,7 @@ class RealtimeInfer:
                 orig_freq=self.models["mel_fn_args"]["sampling_rate"],
                 new_freq=self.cfg.samplerate,
                 dtype=torch.float32,
-            ).to(self.device)
+            ).to(self.cfg.device)
         else:
             self.resampler2 = None  
         # ---------------------------------
@@ -530,7 +537,7 @@ class RealtimeInfer:
             self.block_frame_16k :
         ].clone()  # input_res 做同样的操作; # 先做平移
         self.input_wav_res[-indata.shape[0] :] = torch.from_numpy(indata).to(
-            self.device
+            self.cfg.device
         )  # indata 进入;  # 再填值
         
         preprocess_time = time.perf_counter() - t0
@@ -587,7 +594,7 @@ class RealtimeInfer:
         cor_den = torch.sqrt(
             F.conv1d(
                 conv_input**2,
-                torch.ones(1, 1, self.sola_buffer_frame, device=self.device),
+                torch.ones(1, 1, self.sola_buffer_frame, device=self.cfg.device),
             )
             + 1e-8
         )   # 这里是求分母，input**2 是能量，在 sola_buffer上卷积，最终也得到 sola_search_frame + 1 的长度
@@ -604,7 +611,88 @@ class RealtimeInfer:
             # 由于下面输出的是最前面 block_frame的音频，这里就取后续的这部分留下来做 sola 和 fade
             
         return infer_wav
- 
+    
+    def _compute_rms(self, waveform:torch.tensor, 
+                     frame_length=2048, hop_length=512, center:bool=True):
+        """实现libroasa.feature.rms的torch.tensor版本
+        
+        仅实现了 幅值到 rms 的部分，频谱到 rms 的部分没有实现
+        """
+        assert waveform.ndim == 1, "waveform must be 1D tensor"
+        
+        if center:
+            # 针对 torch.nn.functional.pad 
+            # 它的 pad 形式是一个 list, 从最低维度开始，每两位，代表该纬度的前后 padding 个数
+            # 相对比 np.pad, np 是一个 list，里面每个维度对应一个小list，行如（before，after），而且是从最高的维度开始，也就是第一个维度
+            padding = [int(frame_length // 2), int(frame_length // 2)]
+            waveform = F.pad(waveform, padding, mode="constant", value=0)
+            
+        # 分帧
+        frames = torch.nn.functional.unfold(
+            waveform.reshape(1, -1, 1),
+            kernel_size=(frame_length, 1),
+            stride=(hop_length, 1),
+        )
+        
+        # 计算每帧的均方根
+        rms = torch.sqrt(torch.mean(frames**2, dim=-2, keepdim=True))
+        return rms  # 这里输出的shape == (1,30)
+        
+    def _rms_mixing(self, infer_wav):
+        """依据输入音频与输出音频的短时rms值进行音频融合
+        
+        为了进行性能加速，改为GPU上计算，而非转换到cpu上计算
+        
+        Args:
+            infer_wav: 换声模型推理结果
+        """
+        
+        if self.vad_speech_detected:  # 检测到人声才会进行vc，才会需要rms-mix
+            t0 = time.perf_counter()
+            
+            input_wav = self.input_wav_res[self.extra_frame_16k :]  # rvc 和 seed-vc input_wav 组成式一样的
+                                                                        # 由于输入已经改成了16k采样率，这里也要调整一下
+                                                                        # 由于 seed-vc 里面增加了 extra-right 20ms
+                                                                        # 所以这里 input_wav_res 相比 infer_wav 多了 20ms
+                                                                        # input_wav_res 是 500ms
+                                                                        # infer_wav 是 560ms
+                                                                        # 不过影响很小，后面 rms 都会插值成 560ms * 22050 的长度
+            # 计算 输入音频 rms
+            rms_input = self._compute_rms(
+                waveform = input_wav,  # 这里先不取 infer-wav.shape 了， 后面再插值
+                frame_length = 4 * self.zc_16k,  # frame_length 对应 80ms
+                hop_length = self.zc_16k,  # 对应 320 帧， 20ms
+            )
+            rms_input = F.interpolate(  # 插值函数
+                rms_input.unsqueeze(0),  # 这里把 shape 转换成 (1, 1, 30)，
+                size = infer_wav.shape[0] + 1,  
+                mode = "linear", 
+                align_corners = True,
+            )[0, 0, :-1]  # 这里转换成1维
+            
+            # 计算 换声音频 rms
+            rms_infer = self._compute_rms(
+                waveform =infer_wav[:],
+                frame_length=4 * self.zc,  
+                hop_length=self.zc,
+            )
+            rms_infer = F.interpolate(
+                rms_infer.unsqueeze(0),
+                size=infer_wav.shape[0] + 1,
+                mode="linear",
+                align_corners=True,
+            )[0, 0, :-1]
+            rms_infer = torch.max(rms_infer, torch.zeros_like(rms_infer) + 1e-3)
+            
+            infer_wav *= torch.pow(
+                rms_input / rms_infer, torch.tensor(1 - self.cfg.rms_mix_rate)
+            )
+            
+            rms_mix_time = time.perf_counter() - t0
+        else:
+            rms_mix_time = None
+            
+        return infer_wav, rms_mix_time
 
     def audio_callback(self, indata: np.ndarray):
         """chunk推理函数
@@ -627,9 +715,20 @@ class RealtimeInfer:
         # 4. 换声
         infer_wav = self._voice_conversion() 
         
-        # 5. 后处理
+        # 5. rms—mix 
+        if self.cfg.rms_mix_rate < 1:  
+            infer_wav, rms_mix_time = self._rms_mixing(infer_wav)
+            TOTAL_RMS_TIME.append(rms_mix_time)
+        
+        # 6. sola
         infer_wav = self._sola(infer_wav) 
         
+        # vad 标记位处理
+        if self.set_speech_detected_false_at_end_flag:
+            self.vad_speech_detected = False
+            self.set_speech_detected_false_at_end_flag = False
+        
+        # 7. 输出 
         outdata = (
             infer_wav[: self.block_frame]  # 每次输出一个 bloack_frame
             .t()
@@ -638,23 +737,9 @@ class RealtimeInfer:
         )  # outdata.shape => (11025,)
         
         
-        # ----------------------------
-        # 对输出幅值再加一层限制，防止单根线那种的尖爆音
-        threshold = 0.7
-        outdata = np.clip(outdata, -threshold, threshold)
-        # ----------------------------
-        
-        
         total_time = time.perf_counter() - start_time
-        # --------------------------
-        # 与新版一样，加入vad部分
-        if self.set_speech_detected_false_at_end_flag:
-            self.vad_speech_detected = False
-            self.set_speech_detected_false_at_end_flag = False
-        # --------------------------
-        print(f"\nAudio_callback_time: {total_time*1000:.1f}ms")
-        TOTAL_AUDIO_CALLBACK_TIME.append(total_time*1000)
-        
+        TOTAL_AUDIO_CALLBACK_TIME.append(total_time*1000)   
+             
         return outdata
 
 
@@ -732,7 +817,9 @@ if __name__ == "__main__":
                               diffusion_steps=diffusion_steps, 
                               reference_audio_path=reference_audio_path, 
                               save_dir=save_dir,
-                              max_prompt_length=max_prompt_length,)
+                              max_prompt_length=max_prompt_length,
+                              arbitrary_types_allowed=True,  # 这里允许任意类型
+                              )
     print(cfg)
     
     # 获取推理实例
