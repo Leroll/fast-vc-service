@@ -45,7 +45,7 @@ TOTAL_TO_BYTES_TIME = []  # 完成推理后，转换为 Bytes 的耗时
 TOTAL_RMS_TIME = []
 #-----
 
-class RealtimeInferConfig(BaseModel):
+class RealtimeVoiceConversionConfig(BaseModel):
     reference_audio_path: str = "testsets/000042.wav"
     
     sr_type: str = "sr_model"  # 这个指的是 samplerate 来自哪里，是model本身，还是设备 device，获取设备的 samplerate
@@ -85,8 +85,8 @@ class RealtimeInferConfig(BaseModel):
     device: str = str(torch.device("cuda" if torch.cuda.is_available() else "cpu"))
     
 
-class RealtimeInfer:
-    def __init__(self, cfg:RealtimeInferConfig) -> None:
+class RealtimeVoiceConversion:
+    def __init__(self, cfg:RealtimeVoiceConversionConfig) -> None:
         self.cfg = cfg
         self.models = ModelFactory(device=self.cfg.device).get_models()  
         self.reference = self._update_reference()
@@ -812,7 +812,7 @@ if __name__ == "__main__":
     
     # 2. 对应参数赋值给cfg
     Path(save_dir).mkdir(parents=True, exist_ok=True)
-    cfg = RealtimeInferConfig(block_time=block_time,
+    cfg = RealtimeVoiceConversionConfig(block_time=block_time,
                               crossfade_time=crossfade_time,
                               diffusion_steps=diffusion_steps, 
                               reference_audio_path=reference_audio_path, 
@@ -823,7 +823,7 @@ if __name__ == "__main__":
     print(cfg)
     
     # 获取推理实例
-    realtime_infer = RealtimeInfer(cfg=cfg)
+    realtime_infer = RealtimeVoiceConversion(cfg=cfg)
     
     # 3. 开始VC
     print('-' * 42)
