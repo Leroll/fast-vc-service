@@ -86,15 +86,6 @@ class RealtimeInfer:
         self.reference = self._update_reference()
         self.vad_model = self.models["vad_model"]
         
-        # 尝试2
-        from modelscope.pipelines import pipeline
-        from modelscope.utils.constant import Tasks
-        self.denoise_fn = pipeline(
-                Tasks.acoustic_noise_suppression,
-                # model='damo/speech_dfsmn_ans_psm_48k_causal',
-                model="checkpoints/modelscope_cache/hub/damo/speech_dfsmn_ans_psm_48k_causal",
-                stream_mode=True)
-        
     def _update_reference(self):
         """读取reference音频，并计算相关的模型输入
         """
@@ -428,13 +419,10 @@ class RealtimeInfer:
         num_blocks = len(input_audio_data) // self.block_frame_16k  # 这里block-frame改成16k
         total_output = []     
         for i in range(num_blocks):
-            # ---------------------
             # 增加每个chunk整体时间记录
             print("------Chunk In------")
             infer_start_time = time.time()                
-            # ----------------------
             
-            # block = input_audio_data[i * self.block_frame: (i + 1) * self.block_frame]  
             block = input_audio_data[i * self.block_frame_16k: (i + 1) * self.block_frame_16k]  # 这里也切换成16k
             
             # 传递给 callback 函数处理
@@ -478,7 +466,34 @@ class RealtimeInfer:
             print("------Chunk Out------", end='\n\n')
             # ----------------------
             yield wav_bytes
+                
+    def _vad(self, indata):
+        """VAD函数
+        
+        Args:
+            indata: 输入音频数据，采样率必须为16k
+        """
+        
+        # 与新版一致，这里加入vad模块
+        # 这里把vad放到预处理的后面来，为了加入降噪模块后性能更好
+        # 本身vad和预处理两个就是独立的，互不影响，谁放前面都行
+        # 在加入 noise_gate 之后，vad 耗时异常增加，v100上会增加到 600，700ms，这个还有待排查，先把原始的数据交给vad吧
+        # 这个放在前面就正常了，应该是zc级别的精度置0给vad造成了很大的困惑
+        
+        # VAD first
+        t0 = time.perf_counter()
+        
+        res = self.vad_model.generate(input=indata, cache=self.vad_cache, is_final=False, chunk_size=self.vad_chunk_size)  # ---- 改成优化后的函数
+        res_value = res[0]["value"]
+        if len(res_value) % 2 == 1 and not self.vad_speech_detected:
+            self.vad_speech_detected = True
+        elif len(res_value) % 2 == 1 and self.vad_speech_detected:
+            self.set_speech_detected_false_at_end_flag = True
             
+        vad_time = time.perf_counter() - t0
+        print(f"vad_time: {vad_time:0.3f}s")
+        TOTAL_VAD_TIME.append(vad_time)  # 这里增加一个全局VAD均值计算
+    
     def _noise_gate(self, indata):
         """通过分贝阈值的方式，讲低于某个分贝的音频数据置为0
         """
@@ -501,101 +516,40 @@ class RealtimeInfer:
             self.rms_buffer[:] = 0  # vad 检测不出来的时候，缓存置0
             
         return indata
+    
+    def _preprocessing(self, indata):
+        """预处理函数
         
-
-    def audio_callback(self, indata: np.ndarray):
-        """chunk推理函数
-        Args:
-            indata: 16k 采样率的chunk 音频数据
+        尝试使用 torch.roll() 耗时反而增加
         """
-        start_time = time.perf_counter()
-        indata = librosa.to_mono(indata.T)  # 转换完之后的indata shape: (11025,), max=1.0116995573043823, min=-1.0213052034378052
         
-        
-        # -----------------------
-        # 与新版一致，这里加入vad模块
-        # 这里把vad放到预处理的后面来，为了加入降噪模块后性能更好
-        # 本身vad和预处理两个就是独立的，互不影响，谁放前面都行
-        
-        # VAD first
-        start_event = torch.cuda.Event(enable_timing=True)
-        end_event = torch.cuda.Event(enable_timing=True)
-        torch.cuda.synchronize()
-        start_event.record()
-        # indata_16k = librosa.resample(indata, orig_sr=self.gui_config.samplerate, target_sr=16000)  # 由于输入本来就是16k，这里也省略了
-        indata_16k = indata  # 改成直接赋值
-        res = self.vad_model.generate(input=indata_16k, cache=self.vad_cache, is_final=False, chunk_size=self.vad_chunk_size)  # ---- 改成优化后的函数
-        # res = self.vad_model_generate(input=indata_16k, cache=self.vad_cache, is_final=False, chunk_size=self.vad_chunk_size)  # ---- 改成优化后的函数， 验证失败
-        res_value = res[0]["value"]
-        # print(res_value)
-        if len(res_value) % 2 == 1 and not self.vad_speech_detected:
-            self.vad_speech_detected = True
-        elif len(res_value) % 2 == 1 and self.vad_speech_detected:
-            self.set_speech_detected_false_at_end_flag = True
-        end_event.record()
-        torch.cuda.synchronize()  # Wait for the events to be recorded!
-        elapsed_time_ms = start_event.elapsed_time(end_event)
-        print(f"VAD_Time: {elapsed_time_ms:0.1f}ms")
-        
-        TOTAL_VAD_TIME.append(elapsed_time_ms)  # 这里增加一个全局VAD均值计算
-        # -----------------------
-        
-        
-        
-        if self.cfg.noise_gate and (self.cfg.noise_gate_threshold > -60):
-            indata = self._noise_gate(indata)
-        
-        # ----- 原本预处理注释掉 -----
-        # self.input_wav[: -self.block_frame] = self.input_wav[
-        #     self.block_frame :
-        # ].clone()  # 平移 block-frame，留给新的indata
-        #            # 改成 16k 之后，这里先不变
-        # self.input_wav[-indata.shape[0] :] = torch.from_numpy(indata).to(
-        #     self.device
-        # )  # indata 进入
-        # self.input_wav_res[: -self.block_frame_16k] = self.input_wav_res[
-        #     self.block_frame_16k :
-        # ].clone()  # input_res 做同样的操作
-        # self.input_wav_res[-320 * (indata.shape[0] // self.zc + 1) :] = (
-        #     self.resampler(self.input_wav[-indata.shape[0] - 2 * self.zc :])[
-        #         320:
-        #     ]
-        # )  # 这里有点小动作，resampler的时候多加了2个zc，应该是为了resample的更好，然后再取一个 zc + indata长度，和赋值的 + 1 对应上了
-        #    # 在 16k 里，一个zc就是320
-        #    #  那这个耗时也清楚了是 resampler 导致的
-        # ----- 原本预处理注释掉 -----
-        
-        # -------------------------------
         # 预处理直接全改，改成16k对应的预处理
-        # assert indata.shape[0] == self.block_frame_16k
+        t0 = time.perf_counter()
+        
         self.input_wav_res[: -self.block_frame_16k] = self.input_wav_res[
             self.block_frame_16k :
         ].clone()  # input_res 做同样的操作; # 先做平移
-        # self.input_wav_res = torch.roll(self.input_wav_res, shifts=-self.block_frame_16k, dims=0)  # 使用更高效的平移手段。
-        #                                                                                            # 负方向滚动
         self.input_wav_res[-indata.shape[0] :] = torch.from_numpy(indata).to(
             self.device
         )  # indata 进入;  # 再填值
-        # ------------------------------
-        preprocess_Time = (time.perf_counter() - start_time)*1000  # ----  放到外面来
-        print(f"Preprocess_Time: {preprocess_Time:.1f}ms")  # ----- 改成ms
-        TOTAL_PREPROCESS_TIME.append(preprocess_Time)  # ---- 增加全局的记录
         
+        preprocess_time = time.perf_counter() - t0
+        print(f"Preprocess_Time: {preprocess_time:.3f}s")  
+        TOTAL_PREPROCESS_TIME.append(preprocess_time) 
         
-    
-        # -------------------------------
-        # 与新版一致，加入vad部分
-        # 它这个有点奇怪为什么先推理再放，其实可以直接返回zeros的
-        if not self.vad_speech_detected:
-            print(f"speech not detected...")
+    def _voice_conversion(self):
+        """换声模型推理
+        """
+
+        if not self.vad_speech_detected:  # 如果没有检测到说话人，则置为0
             infer_wav = torch.zeros_like(self.input_wav[self.extra_frame :])  # 这里只是取了一个维度，与里面的值无关
-        # --------------------------------
-        else:  # 这里逻辑改成如果有说话人，才进入推理，而不是每次无脑推了。没有推理的时间也不会记录。
-            # infer
+            
+        else:  
             start_event = torch.cuda.Event(enable_timing=True)
             end_event = torch.cuda.Event(enable_timing=True)
             torch.cuda.synchronize()
             start_event.record()
+            
             infer_wav = self._custom_infer(
                 self.input_wav_res,  # 整个input_res 放进去了。
                 self.block_frame_16k,
@@ -606,24 +560,30 @@ class RealtimeInfer:
                 self.cfg.inference_cfg_rate,
                 self.cfg.max_prompt_length,
             )
+            
             if self.resampler2 is not None:
                 infer_wav = self.resampler2(infer_wav)
+                
             end_event.record()
             torch.cuda.synchronize()  # Wait for the events to be recorded!
             elapsed_time_ms = start_event.elapsed_time(end_event)
             print(f"Total_Model_Time: {elapsed_time_ms:0.1f}ms")
             TOTAL_ELAPSED_TIME_MS.append(elapsed_time_ms)
-        # --------------------------------
-
+            
+        return infer_wav 
+    
+    def _sola(self, infer_wav):
+        """SOLA算法
+        """
+        
         # SOLA algorithm from https://github.com/yxlllc/DDSP-SVC
         conv_input = infer_wav[
             None, None, : self.sola_buffer_frame + self.sola_search_frame  # 这里说明前面的 input_wav 那一堆还不能删
         ]  # 这里取的是 0 : sola_buffer+sola_search 的长度
             # None， None 是拓展新的维度，比如 一维变三维
-
         cor_nom = F.conv1d(conv_input, self.sola_buffer[None, None, :])  # sola-buffer 一开始是zeros
-                                                                            # 这里是滑动窗口 点积， 每个buffer-frame的长度跟buffer点积
-                                                                            # 结果是的到长度为 sola_search_frame + 1 的值
+                                                                         # 这里是滑动窗口 点积， 每个buffer-frame的长度跟buffer点积
+                                                                         # 结果是的到长度为 sola_search_frame + 1 的值
         cor_den = torch.sqrt(
             F.conv1d(
                 conv_input**2,
@@ -631,15 +591,8 @@ class RealtimeInfer:
             )
             + 1e-8
         )   # 这里是求分母，input**2 是能量，在 sola_buffer上卷积，最终也得到 sola_search_frame + 1 的长度
-        if sys.platform == "darwin":
-            _, sola_offset = torch.max(cor_nom[0, 0] / cor_den[0, 0])
-            sola_offset = sola_offset.item()
-        else:
-            sola_offset = torch.argmax(cor_nom[0, 0] / cor_den[0, 0])  # 这里就是相似度了，找到最相似的 arg
+        sola_offset = torch.argmax(cor_nom[0, 0] / cor_den[0, 0])  # 这里就是相似度了，找到最相似的 arg
 
-        print(f"sola_offset = {int(sola_offset)}")
-
-        #post_process_start = time.perf_counter()
         infer_wav = infer_wav[sola_offset:]  # 这里从最相似的部分索引出来
         infer_wav[: self.sola_buffer_frame] *= self.fade_in_window  # sola_buffer 的长度进行 fade_in
         infer_wav[: self.sola_buffer_frame] += (
@@ -649,28 +602,48 @@ class RealtimeInfer:
             self.block_frame : self.block_frame + self.sola_buffer_frame
         ]  # 这里再得到新的 sola_buffer, 从 block_frame 开始 增加 buffer_frame；相当于前一个音频片段推理输出
             # 由于下面输出的是最前面 block_frame的音频，这里就取后续的这部分留下来做 sola 和 fade
+            
+        return infer_wav
+ 
+
+    def audio_callback(self, indata: np.ndarray):
+        """chunk推理函数
+        Args:
+            indata: 16k 采样率的chunk 音频数据
+        """
+        start_time = time.perf_counter()
+        indata = librosa.to_mono(indata.T)  # 转换完之后的indata shape: (11025,), max=1.0116995573043823, min=-1.0213052034378052
+        
+        # 1. vad
+        self._vad(indata) 
+        
+        # 2. noise_gate
+        if self.cfg.noise_gate and (self.cfg.noise_gate_threshold > -60):
+            indata = self._noise_gate(indata)
+        
+        # 3. 预处理
+        self._preprocessing(indata)  
+        
+        # 4. 换声
+        infer_wav = self._voice_conversion() 
+        
+        # 5. 后处理
+        infer_wav = self._sola(infer_wav) 
+        
         outdata = (
             infer_wav[: self.block_frame]  # 每次输出一个 bloack_frame
             .t()
             .cpu()
             .numpy()
         )  # outdata.shape => (11025,)
+        
+        
         # ----------------------------
         # 对输出幅值再加一层限制，防止单根线那种的尖爆音
         threshold = 0.7
         outdata = np.clip(outdata, -threshold, threshold)
         # ----------------------------
         
-        
-        # ---------------------------
-        # 对输出进行后处理降噪
-        outdata = librosa.resample(outdata, orig_sr=22050, target_sr=48000)  # 先粗暴更换采样率, 这个更换之后会导致长度超长
-        outdata = (outdata * 32768.0).astype(np.int16)
-        result = self.denoise_fn(outdata.tobytes())
-        outdata = np.frombuffer(result['output_pcm'], dtype='int16')
-        outdata = outdata.astype(np.float32) / 32768.0  # 先转换成float，格式对齐，后面再改
-        outdata = librosa.resample(outdata, orig_sr=48000, target_sr=22050)  # 这里先转回去，因为samplerate在保存的时候还没变
-        # ---------------------------
         
         total_time = time.perf_counter() - start_time
         # --------------------------
