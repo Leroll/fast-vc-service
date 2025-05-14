@@ -22,6 +22,9 @@ from scipy.io.wavfile import write  # 为了高效率转换出二进制数据
 import json
 from pydantic import BaseModel, Field
 from rich import print
+from collections import deque
+from loguru import logger
+import traceback
 
 from pathlib import Path
 seedvc_path = (Path(__file__).parent / "seed-vc").resolve()  # 添加seed-vc路径
@@ -31,19 +34,6 @@ from hf_utils import load_custom_model_from_hf
 
 from models import ModelFactory
 
-
-#---
-TOTAL_SEMANTIC_TIME = []  # senmantic 推理时长
-TOTAL_DIT_TIME = []  # Dit 推理时长
-TOTAL_VOCODER_TIME = []  # Vocoder 推理时长
-TOTAL_ELAPSED_TIME_MS = []  # 模型推理时长
-TOTAL_INFER_TIME = []  # 记录每一次的infer—time, 每个chunk 端到端时间
-TOTAL_VAD_TIME = []  # 记录每次VAD的耗时
-TOTAL_PREPROCESS_TIME = []  # 记录VAD之后的预处理部分的耗时
-TOTAL_AUDIO_CALLBACK_TIME = []  # Audio callback 函数总耗时
-TOTAL_TO_BYTES_TIME = []  # 完成推理后，转换为 Bytes 的耗时
-TOTAL_RMS_TIME = []
-#-----
 
 class RealtimeVoiceConversionConfig(BaseModel):
     reference_audio_path: str = "testsets/000042.wav"
@@ -84,13 +74,73 @@ class RealtimeVoiceConversionConfig(BaseModel):
     
     device: str = str(torch.device("cuda" if torch.cuda.is_available() else "cpu"))
     
+    max_tracking_counter: int = 10_000  # 用于记录单chunk推理时间损耗的最大记录数量
+    
 
 class RealtimeVoiceConversion:
     def __init__(self, cfg:RealtimeVoiceConversionConfig) -> None:
         self.cfg = cfg
         self.models = ModelFactory(device=self.cfg.device).get_models()  
+        self._init_performance_tracking()  # 初始化耗时记录
         self.reference = self._update_reference()
         self.vad_model = self.models["vad_model"]
+    
+    def _init_performance_tracking(self):
+        """初始化耗时记录，用于计算平均各模块耗时
+        """
+        self.vad_time = deque(maxlen=self.cfg.max_tracking_counter)  # 用于记录每次VAD的耗时
+        self.noise_gate_time = deque(maxlen=self.cfg.max_tracking_counter)  # 用于记录每次噪声门的耗时
+        self.preprocessing_time = deque(maxlen=self.cfg.max_tracking_counter)  # 用于记录每次预处理的耗时
+        
+        self.senmantic_time = deque(maxlen=self.cfg.max_tracking_counter)  # 用于记录每次senmantic推理的耗时
+        self.dit_time = deque(maxlen=self.cfg.max_tracking_counter)  # 用于记录每次dit推理的耗时
+        self.vocoder_time = deque(maxlen=self.cfg.max_tracking_counter)  # 用于记录每次vocoder推理的耗时
+        self.vc_time = deque(maxlen=self.cfg.max_tracking_counter)  # 用于记录每次换声模型整体推理的耗时
+        
+        self.rms_mix_time = deque(maxlen=self.cfg.max_tracking_counter)  # 用于记录每次RMS混合的耗时
+        self.sola_time = deque(maxlen=self.cfg.max_tracking_counter)  # 用于记录每次SOLA算法的耗时
+        
+        self.chunk_time = deque(maxlen=self.cfg.max_tracking_counter)  # 用于记录每次chunk整体推理的耗时
+        
+        self.tracking_counter = 0  # 用于记录时间的计数器
+        
+    def _performance_report(self):
+        """Report module timing statistics"""
+        msg = "\n"
+        time_records = {
+            "VAD": self.vad_time,
+            "Noise Gate": self.noise_gate_time,
+            "Preprocessing": self.preprocessing_time,
+            "Semantic Extraction": self.senmantic_time,
+            "Diffusion Model": self.dit_time,
+            "Vocoder": self.vocoder_time,
+            "Voice Conversion Overall": self.vc_time,
+            "RMS Mixing": self.rms_mix_time,
+            "SOLA Algorithm": self.sola_time,
+            "Chunk Overall": self.chunk_time
+        }
+        
+        
+        msg += "========== Voice Conversion Module Timing Statistics (ms) ==========\n"
+        stats = {}
+        for name, records in time_records.items():
+            if not records:  # Skip if queue is empty
+                continue
+                
+            records_arr = np.array(list(records)) * 1000 # Convert to milliseconds
+            temp_stats = {
+                "Mean": f"{np.mean(records_arr):0.1f}",
+                "Min": f"{np.min(records_arr):0.1f}",
+                "Max": f"{np.max(records_arr):0.1f}",
+                "Median": f"{np.median(records_arr):0.1f}",
+                "Std Dev": f"{np.std(records_arr):0.1f}",
+                "Count": len(records)
+            }
+            stats[name] = temp_stats    
+        
+        msg += json.dumps(stats, indent=4, ensure_ascii=False) + "\n"
+        msg += "====================================================================\n"
+        logger.info(msg)
         
     def _update_reference(self):
         """读取reference音频，并计算相关的模型输入
@@ -182,14 +232,10 @@ class RealtimeVoiceConversion:
         
 
         converted_waves_16k = input_wav_res  # 这里转换成 16k 了已经？
-        start_event = torch.cuda.Event(enable_timing=True)
-        end_event = torch.cuda.Event(enable_timing=True)
-        torch.cuda.synchronize()
-        start_event.record()
+        t0 = time.perf_counter()
         S_alt = semantic_fn(converted_waves_16k.unsqueeze(0))  # 之前一大段whisper的计算，这里成了一行，very nice
-        end_event.record()
-        torch.cuda.synchronize()  # Wait for the events to be recorded!
-        elapsed_time_ms_semantic = start_event.elapsed_time(end_event)
+        senmantic_time = time.perf_counter() - t0
+        self.senmantic_time.append(senmantic_time)
 
         S_alt = S_alt[:, ce_dit_difference * 50:]  # 这是新的改动，干嘛的？
         target_lengths = torch.LongTensor([(skip_head + return_length + skip_tail - ce_dit_difference * 50) / 50 * sr // hop_length]).to(S_alt.device)
@@ -218,25 +264,9 @@ class RealtimeVoiceConversion:
             style2 = style2.repeat(bs,1)
         #----------------
         
-        # vc_target = model.cfm.forward(
-        #     cat_condition,
-        #     x_lens,
-        #     mel2,
-        #     style2,
-        #     # None,  # 去掉 f0 的输入
-        #     n_timesteps=diffusion_steps,  # 去掉 ds 输入
-        #     # inference_cfg_rate=inference_cfg_rate,  # 去掉 inference_cfg_rate 输入
-        # )
-        
-        # ----------------
-        # 增加 dit 的时间消耗记录
-        start_event = torch.cuda.Event(enable_timing=True)
-        end_event = torch.cuda.Event(enable_timing=True)
-        torch.cuda.synchronize()
-        start_event.record()
-        # ----------------
-        
-        # -----------------
+        # ------ dit model ------
+        t0 = time.perf_counter()    
+    
         vc_target = dit_fn(   # 这里改成调用 dit_fn
             cat_condition,
             x_lens,  # ----- 这里改成上面的值了，不做临时变量了
@@ -247,30 +277,21 @@ class RealtimeVoiceConversion:
             inference_cfg_rate=inference_cfg_rate,
         )
         vc_target = vc_target[:, :, mel2.size(-1) :]
-        # print(f"vc_target.shape: {vc_target.shape}")  # -----这行注释掉，不显示了
         
-        # ----------------
-        # 增加 dit 的时间消耗记录
-        end_event.record()
-        torch.cuda.synchronize()  # Wait for the events to be recorded!
-        elapsed_time_ms_dit = start_event.elapsed_time(end_event)
-        # ----------------
+        dit_time = time.perf_counter() - t0
+        self.dit_time.append(dit_time)
+        # -----------------------
         
         
-        # ----------------
-        # 增加 vocoder 的时间消耗记录
-        start_event = torch.cuda.Event(enable_timing=True)
-        end_event = torch.cuda.Event(enable_timing=True)
-        torch.cuda.synchronize()
-        start_event.record()
-        # ----------------
+        # ------ vocoder ------
+        t0 = time.perf_counter()
+   
         vc_wave = vocoder_fn(vc_target).squeeze()
-        # ----------------
-        # 增加 vocoder 的时间消耗记录
-        end_event.record()
-        torch.cuda.synchronize()  # Wait for the events to be recorded!
-        elapsed_time_ms_vocoder = start_event.elapsed_time(end_event)
-        # ----------------
+        
+        vocoder_time = time.perf_counter() - t0
+        self.vocoder_time.append(vocoder_time)
+        # ---------------------
+        
         
         output_len = return_length * sr // 50
         tail_len = skip_tail * sr // 50
@@ -282,15 +303,6 @@ class RealtimeVoiceConversion:
         else:
             output = vc_wave[-output_len - tail_len: -tail_len]  # 原版的
         # -------------
-        
-        # -------------
-        # 时间记录
-        print(f"Model_Time: ( semantic: {elapsed_time_ms_semantic:0.1f}ms | dit: {elapsed_time_ms_dit:0.1f}ms | vocoder: {elapsed_time_ms_vocoder:0.1f}ms )")
-        TOTAL_SEMANTIC_TIME.append(elapsed_time_ms_semantic)
-        TOTAL_DIT_TIME.append(elapsed_time_ms_dit)
-        TOTAL_VOCODER_TIME.append(elapsed_time_ms_vocoder)
-        # -------------
-        
         return output
 
     def start_vc(self):
@@ -426,10 +438,8 @@ class RealtimeVoiceConversion:
         num_blocks = len(input_audio_data) // self.block_frame_16k  # 这里block-frame改成16k
         total_output = []     
         for i in range(num_blocks):
-            # 增加每个chunk整体时间记录
-            print("------Chunk In------")
-            infer_start_time = time.time()                
-            
+            t0 = time.perf_counter()              
+
             block = input_audio_data[i * self.block_frame_16k: (i + 1) * self.block_frame_16k]  # 这里也切换成16k
             
             # 传递给 callback 函数处理
@@ -437,21 +447,10 @@ class RealtimeVoiceConversion:
             total_output.append(output_wave)  # 这里是存储的地方
             
             # 转换成有效输出
-            t_trans_start = time.time()  # ---- 增加转换时间记录
             output_wave = (output_wave * 32768.0).astype(np.int16)  # 这里和最终存储音频无关，源代码也是这样，是为了转化成mp3
-            
-            # 换一种方式转换成二进制码
             wav_buffer = io.BytesIO()  # 使用 io.BytesIO 来存储 WAV 数据
             write(wav_buffer, self.cfg.samplerate, output_wave)  # 用 scipy 的 write 函数直接写入 WAV 格式
             wav_bytes = wav_buffer.getvalue()  # 获取 WAV 数据
-            # -------------
-            
-            # -------------
-            t_trans_end = time.time()  # ---- 增加转换时间记录
-            to_bytes_time = (t_trans_end-t_trans_start)*1000  # --- 单独计算一下
-            print(f'To_Bytes_Time: {to_bytes_time:0.1f}') # ---- 增加转换时间记录
-            TOTAL_TO_BYTES_TIME.append(to_bytes_time)
-            # -------------
             
             # 最后一个chunk，保存
             if i == (num_blocks - 1):
@@ -462,15 +461,10 @@ class RealtimeVoiceConversion:
                                 + ".wav"
                                 )
                 sf.write(output_path, np.concatenate(total_output), self.cfg.samplerate)
-                print(f"完整音频已存储:{output_path}")
+                logger.info(f"完整音频已存储:{output_path}")
                 
-            # ---------------------
-            # 增加每个chunk整体时间记录
-            infer_end_time = time.time()
-            infer_use_time = (infer_end_time - infer_start_time)*1000
-            print(f"Chunk_Total_Time: {infer_use_time:0.1f}ms")
-            TOTAL_INFER_TIME.append(infer_use_time)
-            print("------Chunk Out------", end='\n\n')
+            chunk_time = time.perf_counter() - t0
+            self.chunk_time.append(chunk_time)
             # ----------------------
             yield wav_bytes
                 
@@ -498,13 +492,14 @@ class RealtimeVoiceConversion:
             self.set_speech_detected_false_at_end_flag = True
             
         vad_time = time.perf_counter() - t0
-        print(f"vad_time: {vad_time:0.3f}s")
-        TOTAL_VAD_TIME.append(vad_time)  # 这里增加一个全局VAD均值计算
+        self.vad_time.append(vad_time)
     
     def _noise_gate(self, indata):
         """通过分贝阈值的方式，讲低于某个分贝的音频数据置为0
         """
         if self.vad_speech_detected:  # vad 检测出来人声才会进行 noise-gate
+            t0 = time.perf_counter()
+            
             indata = np.append(self.rms_buffer, indata)  # rms_buffer 仅用在这个地方
             rms = librosa.feature.rms(
                 y=indata, frame_length=4 * self.zc_16k, hop_length=self.zc_16k
@@ -519,6 +514,9 @@ class RealtimeVoiceConversion:
                     indata[i * self.zc_16k : (i + 1) * self.zc_16k] = 0  # 这里是以 zc 为一个窗格的，20ms
             indata = indata[self.zc_16k // 2 :]   # 这里最终输出的indata 前面贴了 2个zc，40ms 的 rms-buffer
                                                   # 这个在后面的 input_wav_res 填入的时候给平掉了
+            
+            noise_gate_time = time.perf_counter() - t0
+            self.noise_gate_time.append(noise_gate_time)
         else:
             self.rms_buffer[:] = 0  # vad 检测不出来的时候，缓存置0
             
@@ -541,8 +539,7 @@ class RealtimeVoiceConversion:
         )  # indata 进入;  # 再填值
         
         preprocess_time = time.perf_counter() - t0
-        print(f"Preprocess_Time: {preprocess_time:.3f}s")  
-        TOTAL_PREPROCESS_TIME.append(preprocess_time) 
+        self.preprocessing_time.append(preprocess_time)
         
     def _voice_conversion(self):
         """换声模型推理
@@ -552,10 +549,7 @@ class RealtimeVoiceConversion:
             infer_wav = torch.zeros_like(self.input_wav[self.extra_frame :])  # 这里只是取了一个维度，与里面的值无关
             
         else:  
-            start_event = torch.cuda.Event(enable_timing=True)
-            end_event = torch.cuda.Event(enable_timing=True)
-            torch.cuda.synchronize()
-            start_event.record()
+            t0 = time.perf_counter()
             
             infer_wav = self._custom_infer(
                 self.input_wav_res,  # 整个input_res 放进去了。
@@ -571,17 +565,15 @@ class RealtimeVoiceConversion:
             if self.resampler2 is not None:
                 infer_wav = self.resampler2(infer_wav)
                 
-            end_event.record()
-            torch.cuda.synchronize()  # Wait for the events to be recorded!
-            elapsed_time_ms = start_event.elapsed_time(end_event)
-            print(f"Total_Model_Time: {elapsed_time_ms:0.1f}ms")
-            TOTAL_ELAPSED_TIME_MS.append(elapsed_time_ms)
+            voice_conversion_time = time.perf_counter() - t0
+            self.vc_time.append(voice_conversion_time)
             
         return infer_wav 
     
     def _sola(self, infer_wav):
         """SOLA算法
         """
+        t0 = time.perf_counter()
         
         # SOLA algorithm from https://github.com/yxlllc/DDSP-SVC
         conv_input = infer_wav[
@@ -610,6 +602,8 @@ class RealtimeVoiceConversion:
         ]  # 这里再得到新的 sola_buffer, 从 block_frame 开始 增加 buffer_frame；相当于前一个音频片段推理输出
             # 由于下面输出的是最前面 block_frame的音频，这里就取后续的这部分留下来做 sola 和 fade
             
+        sola_time = time.perf_counter() - t0
+        self.sola_time.append(sola_time)
         return infer_wav
     
     def _compute_rms(self, waveform:torch.tensor, 
@@ -689,17 +683,17 @@ class RealtimeVoiceConversion:
             )
             
             rms_mix_time = time.perf_counter() - t0
+            self.rms_mix_time.append(rms_mix_time)
         else:
             rms_mix_time = None
             
-        return infer_wav, rms_mix_time
+        return infer_wav
 
     def audio_callback(self, indata: np.ndarray):
         """chunk推理函数
         Args:
             indata: 16k 采样率的chunk 音频数据
         """
-        start_time = time.perf_counter()
         indata = librosa.to_mono(indata.T)  # 转换完之后的indata shape: (11025,), max=1.0116995573043823, min=-1.0213052034378052
         
         # 1. vad
@@ -713,33 +707,35 @@ class RealtimeVoiceConversion:
         self._preprocessing(indata)  
         
         # 4. 换声
-        infer_wav = self._voice_conversion() 
+        vc_wav = self._voice_conversion() 
         
         # 5. rms—mix 
         if self.cfg.rms_mix_rate < 1:  
-            infer_wav, rms_mix_time = self._rms_mixing(infer_wav)
-            TOTAL_RMS_TIME.append(rms_mix_time)
+            vc_wav = self._rms_mixing(vc_wav)
         
         # 6. sola
-        infer_wav = self._sola(infer_wav) 
+        vc_wav = self._sola(vc_wav) 
         
-        # vad 标记位处理
+        # 7. 输出 
+        outdata = (
+            vc_wav[: self.block_frame]  # 每次输出一个 bloack_frame
+            .t()
+            .cpu()
+            .numpy()
+        )  # outdata.shape => (11025,) 
+
+        
+        # vad 标记位
         if self.set_speech_detected_false_at_end_flag:
             self.vad_speech_detected = False
             self.set_speech_detected_false_at_end_flag = False
         
-        # 7. 输出 
-        outdata = (
-            infer_wav[: self.block_frame]  # 每次输出一个 bloack_frame
-            .t()
-            .cpu()
-            .numpy()
-        )  # outdata.shape => (11025,)
-        
-        
-        total_time = time.perf_counter() - start_time
-        TOTAL_AUDIO_CALLBACK_TIME.append(total_time*1000)   
-             
+        # tracking
+        self.tracking_counter += 1  # 每chunk +1 
+        if self.tracking_counter >= self.cfg.max_tracking_counter:
+            self._performance_report()
+            self.tracking_counter = 0
+
         return outdata
 
 
@@ -823,7 +819,7 @@ if __name__ == "__main__":
     print(cfg)
     
     # 获取推理实例
-    realtime_infer = RealtimeVoiceConversion(cfg=cfg)
+    realtime_vc = RealtimeVoiceConversion(cfg=cfg)
     
     # 3. 开始VC
     print('-' * 42)
@@ -835,33 +831,9 @@ if __name__ == "__main__":
     
     for file in file_list:
             wav, _ = librosa.load(file, sr=16000, mono=True)  # source 输入统一为16k
-            realtime_infer.cfg.source_path = str(file)
-            for o in realtime_infer.infer(wav):
+            realtime_vc.cfg.source_path = str(file)
+            for o in realtime_vc.infer(wav):
                 nonsense = 42
-    
-    # 4. 后处理，相关数据计算
-    cut_num = 5
-    TOTAL_VAD_TIME = TOTAL_VAD_TIME[cut_num:]  # VAD耗时
-    TOTAL_PREPROCESS_TIME = TOTAL_PREPROCESS_TIME[cut_num:]  # 预处理耗时
-    TOTAL_ELAPSED_TIME_MS = TOTAL_ELAPSED_TIME_MS[cut_num:]  # 模型推理耗时； 去掉前5个，设置一个比较大的冗余，测试各种方法时，前面推的会慢很多
-    TOTAL_SEMANTIC_TIME = TOTAL_SEMANTIC_TIME[cut_num:]  # semantic
-    TOTAL_DIT_TIME = TOTAL_DIT_TIME[cut_num:]  # dit
-    TOTAL_VOCODER_TIME = TOTAL_VOCODER_TIME[cut_num:]  # vocoder
-    TOTAL_AUDIO_CALLBACK_TIME = TOTAL_AUDIO_CALLBACK_TIME[cut_num:]  # audio_callback 的耗时
-    TOTAL_TO_BYTES_TIME = TOTAL_TO_BYTES_TIME[cut_num:]  # 转换为Bytes的时间
-    TOTAL_INFER_TIME = TOTAL_INFER_TIME[cut_num:]  # 这个是从INFER进入到出来的完整时间
-    
-    
-    print(f"---Audio CallBack---")
-    print(f"平均每chunk VAD 耗时: {np.mean(TOTAL_VAD_TIME):0.1f}ms")  # VAD平均耗时
-    print(f"平均每chunk 预处理 耗时: {np.mean(TOTAL_PREPROCESS_TIME):0.1f}ms")  # 预处理耗时
-    print(f"Model:")
-    print(f"    Semantic: {np.mean(TOTAL_SEMANTIC_TIME):0.1f}ms")
-    print(f"    Dit: {np.mean(TOTAL_DIT_TIME):0.1f}ms")
-    print(f"    Vocoder: {np.mean(TOTAL_VOCODER_TIME):0.1f}ms")
-    print(f"平均每chunk 模型推理 耗时: {np.mean(TOTAL_ELAPSED_TIME_MS):0.1f}ms")  # 计算平均推理时长
-    print(f"---Chunk 端到端---")
-    print(f"平均每chunk Audio-CallBack总体 耗时: {np.mean(TOTAL_AUDIO_CALLBACK_TIME):0.1f}ms")
-    print(f"平均每chunk to_bytes 耗时: {np.mean(TOTAL_TO_BYTES_TIME):0.1f}ms")
-    print(f"平均每chunk 端到端时长: {np.mean(TOTAL_INFER_TIME):0.1f}ms")  # 计算平均推理时长
+                
+    realtime_vc._performance_report()
 
