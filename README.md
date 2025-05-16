@@ -1,8 +1,9 @@
-# 🌟 fast-vc-service
-基于 [Seed-VC](https://github.com/Plachtaa/seed-vc) 的 ​**高性能流式语音转换云服务**，专为工业级部署设计
+![fast-vc-service](https://raw.githubusercontent.com/Leroll/fast-vc-service/main/asserts/cover.PNG)
+ ​**高性能流式语音转换云服务**，专为工业级部署设计
+ 目前基于 基于 [Seed-VC](https://github.com/Plachtaa/seed-vc) 换声模型开发
 
 
-# 🚧 TODO
+# 🚧 施工中...TODO
 - [ ] tag - v0.1 - 基础服务相关 - v2025-xx
     - [x] 完成初版流式推理代码 
     - [x] 新增.env用于存放源等相关变量
@@ -17,3 +18,5 @@
 - [ ] tag - v0.2 - 音频质量相关 -  v2025-xx
     - [ ] 声音貌似有些抖动，待排查
     - [ ] 针对男性低沉嗓音转换效果不加的情况，添加流式场景下的音高提取功能
+- [ ] tag - v0.3 - 服务灵活稳定相关 - v2025-xx
+    - [ ] 配置化启动不同的模型实例，配置为不同的微服务？
