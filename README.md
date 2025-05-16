@@ -2,8 +2,8 @@
     <img src="https://raw.githubusercontent.com/Leroll/fast-vc-service/main/asserts/cover.PNG" alt="repo cover" width=80%>
 </p>
 
- ​**高性能流式语音转换云服务**，专为工业级部署设计
- 目前基于 基于 [Seed-VC](https://github.com/Plachtaa/seed-vc) 换声模型开发
+**高性能流式换声服务，专为工业级部署打造，助力高效、稳定的语音交互体验。**  
+目前基于 基于 [Seed-VC](https://github.com/Plachtaa/seed-vc) 换声模型开发  
 
 
 # 🚧 施工中...TODO
@@ -18,6 +18,7 @@
     - [ ] 添加配置信息
     - [ ] 完善log系统
     - [ ] 完成ws服务代码 / webRTC
+    - [ ] 裁剪封面图
 - [ ] tag - v0.2 - 音频质量相关 -  v2025-xx
     - [ ] 声音貌似有些抖动，待排查
     - [ ] 针对男性低沉嗓音转换效果不加的情况，添加流式场景下的音高提取功能
