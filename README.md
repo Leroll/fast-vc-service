@@ -1,4 +1,7 @@
-![fast-vc-service](https://raw.githubusercontent.com/Leroll/fast-vc-service/main/asserts/cover.PNG)
+<p align="center">
+    <img src="https://raw.githubusercontent.com/Leroll/fast-vc-service/main/asserts/cover.PNG" alt="repo cover" width=80%>
+</p>
+
  ​**高性能流式语音转换云服务**，专为工业级部署设计
  目前基于 基于 [Seed-VC](https://github.com/Plachtaa/seed-vc) 换声模型开发
 
