@@ -443,7 +443,7 @@ class RealtimeVoiceConversion:
             block = input_audio_data[i * self.block_frame_16k: (i + 1) * self.block_frame_16k]  # 这里也切换成16k
             
             # 传递给 callback 函数处理
-            output_wave = self.audio_callback(block).reshape(-1,)  # 这里出来的是22050的音频
+            output_wave = self.chunk_vc(block).reshape(-1,)  # 这里出来的是22050的音频
             total_output.append(output_wave)  # 这里是存储的地方
             
             # 转换成有效输出
@@ -689,7 +689,7 @@ class RealtimeVoiceConversion:
             
         return infer_wav
 
-    def audio_callback(self, indata: np.ndarray):
+    def chunk_vc(self, indata: np.ndarray):
         """chunk推理函数
         Args:
             indata: 16k 采样率的chunk 音频数据
