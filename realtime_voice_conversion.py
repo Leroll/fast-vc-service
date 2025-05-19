@@ -32,58 +32,53 @@ sys.path.insert(0, str(seedvc_path))
 from modules.commons import *
 from hf_utils import load_custom_model_from_hf
 
-from models import ModelFactory
+from models import models
 
 
 class RealtimeVoiceConversionConfig(BaseModel):
+    # 设备
+    device: str = str(torch.device("cuda" if torch.cuda.is_available() else "cpu"))
+    
+    # wav 相关
     reference_audio_path: str = "testsets/000042.wav"
+    source_path: str = "g.wav"  # 源音频文件的地址，用于在文件推理时
+    save_dir: str = "wavs/output/"  # 存储
     
-    sr_type: str = "sr_model"  # 这个指的是 samplerate 来自哪里，是model本身，还是设备 device，获取设备的 samplerate
-    block_time: float = 0.5,  # 0.5 ；这里的 block time 是 0.5s
-    
-    # noise_gata
-    noise_gate: bool = True  # 是否使用噪声门
-    noise_gate_threshold: float = -60  # 噪声门的阈值，单位是分贝，-60dB
-    
-    diffusion_steps: int = 10  # 10； 
-    
-    crossfade_time: float = 0.04,  # 0.04 ；用于平滑过渡的交叉渐变长度，这里设定为 0.04 秒。交叉渐变通常用于避免声音中断或“断层”现象。
+    # realtime 
+    samplerate: float = 16_000  # 音频流在vc过程中基础采样率，
+                                # 某些环节采样率会改变，比如dit model会更改为22050，需要再次转换回来
+    block_time: float = 0.5  # 0.5 ；这里的 block time 是 0.5s                    
+    crossfade_time: float = 0.04  # 0.04 ；用于平滑过渡的交叉渐变长度，这里设定为 0.04 秒。交叉渐变通常用于避免声音中断或“断层”现象。
     extra_time: float = 2.5  # 2.5；  附加时间，设置为 0.5秒。可能用于在处理音频时延长或平滑过渡的时间。
                              # 原本默认0.5，后面更新成2.5了
     extra_time_right: float = 0.02  # 0.02； 可能是与“右声道”相关的额外时间，设置为 0.02秒。看起来是为了为右声道音频数据添加一些额外的处理时间。 
                                     # 这里RVC好像默认的是2s，需要后续对比一下
-    I_noise_reduce: bool = False
-    O_noise_reduce: bool = False
-    inference_cfg_rate: float = 0.7  # 0.7；
-    sg_hostapi: str = ""
-    wasapi_exclusive: bool = False
-    sg_input_device: str = ""
-    sg_output_device: str = ""
+
+    # noise_gata
+    noise_gate: bool = True  # 是否使用噪声门
+    noise_gate_threshold: float = -60  # 噪声门的阈值，单位是分贝，-60dB
     
-    max_prompt_length: float = 3.0 # 3；
-    save_dir: str = "wavs/output/"  # 存储
-    source_path: str = "g.wav"  # 源音频文件的地址
-    
+    # vc models
+    diffusion_steps: int = 10  # 10；                    
+    inference_cfg_rate: float = 0.7  # 0.7
+    max_prompt_length: float = 3.0 # 3； 
     ce_dit_difference: float = 2  # 2 seconds  # 这个参数还不知道是用来干嘛的
     
-    samplerate: float = None  # infer的时候会赋值
-    
+    # rms_mix
     rms_mix_rate: float = 0    # 0.25； 这个参数是用来控制 RMS 混合的比例，
                                # 范围是 0 到 1。
                                # 0 表示完全使用 Input 的包络，1 表示完全使用 Infer 包络。
-    
-    device: str = str(torch.device("cuda" if torch.cuda.is_available() else "cpu"))
-    
+                               
+    # 辅助参数
     max_tracking_counter: int = 10_000  # 用于记录单chunk推理时间损耗的最大记录数量
     
 
 class RealtimeVoiceConversion:
     def __init__(self, cfg:RealtimeVoiceConversionConfig) -> None:
         self.cfg = cfg
-        self.models = ModelFactory(device=self.cfg.device).get_models()  
+        self.models = models
         self._init_performance_tracking()  # 初始化耗时记录
         self.reference = self._update_reference()
-        self.vad_model = self.models["vad_model"]
     
     def _init_performance_tracking(self):
         """初始化耗时记录，用于计算平均各模块耗时
@@ -308,11 +303,9 @@ class RealtimeVoiceConversion:
     def start_vc(self):
         """推理前的相关准备
         """
-        torch.cuda.empty_cache()
+        torch.cuda.empty_cache()  
             
-        self.cfg.samplerate = (
-            self.models["mel_fn_args"]["sampling_rate"]
-        )  # gui-samplerate 赋值，22050
+        self.cfg.samplerate = self.models["mel_fn_args"]["sampling_rate"]  # 赋值，22050
         self.zc = self.cfg.samplerate // 50  # 44100 // 100 = 441， 代表10ms; 
                                                     # 22050//50 = 441, 代表 20ms； 
                                                     # 是一个精度因子，20ms为一个最小精度。
@@ -484,7 +477,8 @@ class RealtimeVoiceConversion:
         # VAD first
         t0 = time.perf_counter()
         
-        res = self.vad_model.generate(input=indata, cache=self.vad_cache, is_final=False, chunk_size=self.vad_chunk_size)  # ---- 改成优化后的函数
+        vad_model = self.models["vad_model"]
+        res = vad_model.generate(input=indata, cache=self.vad_cache, is_final=False, chunk_size=self.vad_chunk_size)  # ---- 改成优化后的函数
         res_value = res[0]["value"]
         if len(res_value) % 2 == 1 and not self.vad_speech_detected:
             self.vad_speech_detected = True
@@ -689,22 +683,23 @@ class RealtimeVoiceConversion:
             
         return infer_wav
 
-    def chunk_vc(self, indata: np.ndarray):
+    def chunk_vc(self, in_data: np.ndarray, in_sr: int = 16000):
         """chunk推理函数
         Args:
-            indata: 16k 采样率的chunk 音频数据
+            indata: in_sr 采样率的 chunk 音频数据，pcm
+            in_sr: 输入音频采样率
         """
-        indata = librosa.to_mono(indata.T)  # 转换完之后的indata shape: (11025,), max=1.0116995573043823, min=-1.0213052034378052
+        in_data = librosa.to_mono(in_data.T)  # 转换完之后的indata shape: (11025,), max=1.0116995573043823, min=-1.0213052034378052
         
         # 1. vad
-        self._vad(indata) 
+        self._vad(in_data) 
         
         # 2. noise_gate
         if self.cfg.noise_gate and (self.cfg.noise_gate_threshold > -60):
-            indata = self._noise_gate(indata)
+            in_data = self._noise_gate(in_data)
         
         # 3. 预处理
-        self._preprocessing(indata)  
+        self._preprocessing(in_data)  
         
         # 4. 换声
         vc_wav = self._voice_conversion() 

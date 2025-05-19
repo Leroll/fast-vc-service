@@ -351,14 +351,13 @@ class ModelFactory:
         logger.info(f"VAD model | parameters: {total_params / 1_000_000:.2f}M")
         
         return vad_model
-        
-        
-if __name__ == "__main__":
-    
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-    model_factory = ModelFactory(device=device, is_torch_compile=False)
-    models = model_factory.get_models()
 
+
+device = "cuda" if torch.cuda.is_available() else "cpu"
+model_factory = ModelFactory(device=device, is_torch_compile=False)
+models = model_factory.get_models()
+      
+if __name__ == "__main__":
     print('-' * 42)
     print(f"Models loaded successfully.")
     print(models.keys())
