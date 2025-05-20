@@ -226,9 +226,10 @@ class ModelFactory:
             def semantic_fn(waves_16k):
                 ori_inputs = whisper_feature_extractor([waves_16k.squeeze(0).cpu().numpy()],
                                                     return_tensors="pt",
-                                                    return_attention_mask=True)
+                                                    return_attention_mask=True)  # 计算mel频谱
                 ori_input_features = whisper_model._mask_input_features(
-                    ori_inputs.input_features, attention_mask=ori_inputs.attention_mask).to(self.device)
+                    ori_inputs.input_features, attention_mask=ori_inputs.attention_mask
+                    ).to(self.device)  # 对输入特征进行掩码处理，模拟训练时的 dropout
                 with torch.no_grad():
                     ori_outputs = whisper_model.encoder(
                         ori_input_features.to(whisper_model.encoder.dtype),
@@ -237,8 +238,9 @@ class ModelFactory:
                         output_hidden_states=False,
                         return_dict=True,
                     )
-                S_ori = ori_outputs.last_hidden_state.to(torch.float32)
-                S_ori = S_ori[:, :waves_16k.size(-1) // 320 + 1]
+                S_ori = ori_outputs.last_hidden_state.to(torch.float32)  # [batch, length, dim]
+                S_ori = S_ori[:, :waves_16k.size(-1) // 320 + 1]  # 320是 whisper 的 hop_size, 或者下采样率
+                                                                  # // 320 + 1 和原始的对齐
                 return S_ori
         elif speech_tokenizer_type == 'cnhubert':
             from transformers import (
