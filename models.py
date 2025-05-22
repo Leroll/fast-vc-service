@@ -80,18 +80,18 @@ class ModelFactory:
         # -------------------
         # 原始tiny版本
         # dit_checkpoint_path, dit_config_path = load_custom_model_from_hf("Plachta/Seed-VC",
-        #                                                                     "DiT_uvit_tat_xlsr_ema.pth",
-        #                                                                     "config_dit_mel_seed_uvit_xlsr_tiny.yml")
+        #                                                                  "DiT_uvit_tat_xlsr_ema.pth",
+        #                                                                  "config_dit_mel_seed_uvit_xlsr_tiny.yml")
         
         # small 版本
         dit_checkpoint_path, dit_config_path = load_custom_model_from_hf("Plachta/Seed-VC",
-                                                                            "DiT_seed_v2_uvit_whisper_small_wavenet_bigvgan_pruned.pth",
-                                                                            "config_dit_mel_seed_uvit_whisper_small_wavenet.yml")
+                                                                         "DiT_seed_v2_uvit_whisper_small_wavenet_bigvgan_pruned.pth",
+                                                                         "config_dit_mel_seed_uvit_whisper_small_wavenet.yml")
         
         # base 版本 - 转换不太行
         # dit_checkpoint_path, dit_config_path = load_custom_model_from_hf("Plachta/Seed-VC",
-        #                                                                      "DiT_seed_v2_uvit_whisper_base_f0_44k_bigvgan_pruned_ft_ema_v2.pth",
-        #                                                                      "config_dit_mel_seed_uvit_whisper_base_f0_44k.yml")
+    #                                                                      "DiT_seed_v2_uvit_whisper_base_f0_44k_bigvgan_pruned_ft_ema_v2.pth",
+    #                                                                      "config_dit_mel_seed_uvit_whisper_base_f0_44k.yml")
         
         # 这里尝试load fintune之后的模型看看
         # dit_checkpoint_path = "/root/autodl-tmp/seed-vc-cus/runs/csmsc_fintune_10/ft_model.pth"
@@ -239,8 +239,8 @@ class ModelFactory:
                         return_dict=True,
                     )
                 S_ori = ori_outputs.last_hidden_state.to(torch.float32)  # [batch, length, dim]
-                S_ori = S_ori[:, :waves_16k.size(-1) // 320 + 1]  # 320是 whisper 的 hop_size, 或者下采样率
-                                                                  # // 320 + 1 和原始的对齐
+                S_ori = S_ori[:, :waves_16k.size(-1) // 320 + 1]  # whisper downsample 320x 
+                                                                  # (hop_size=160, cnn_stride=2)
                 return S_ori
         elif speech_tokenizer_type == 'cnhubert':
             from transformers import (
@@ -319,13 +319,13 @@ class ModelFactory:
         
         # Generate mel spectrograms
         mel_fn_args = {
-            "n_fft": self.config['preprocess_params']['spect_params']['n_fft'],
-            "win_size": self.config['preprocess_params']['spect_params']['win_length'],
-            "hop_size": self.config['preprocess_params']['spect_params']['hop_length'],
-            "num_mels": self.config['preprocess_params']['spect_params']['n_mels'],
-            "sampling_rate": self.sr,
-            "fmin": self.config['preprocess_params']['spect_params'].get('fmin', 0),
-            "fmax": None if self.config['preprocess_params']['spect_params'].get('fmax', "None") == "None" else 8000,
+            "n_fft": self.config['preprocess_params']['spect_params']['n_fft'],  # tiny=1024, small=1024, base=2048
+            "win_size": self.config['preprocess_params']['spect_params']['win_length'],  # tiny=1024, small=1024, base=2048
+            "hop_size": self.config['preprocess_params']['spect_params']['hop_length'],  # tiny=256, small=256, base=512
+            "num_mels": self.config['preprocess_params']['spect_params']['n_mels'],  # tiny=80, small=80, base=128
+            "sampling_rate": self.sr,  # tiny=22050, small=22050, base=44100
+            "fmin": self.config['preprocess_params']['spect_params'].get('fmin', 0),  # tiny=0, small=0, base=0
+            "fmax": None if self.config['preprocess_params']['spect_params'].get('fmax', "None") == "None" else 8000,  # tiny=8000, small="None", base="None"
             "center": False
         }
         from modules.audio import mel_spectrogram
