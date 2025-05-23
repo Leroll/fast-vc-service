@@ -40,7 +40,7 @@ def parse_args():
                         help="参考截断长度，单位秒，默认值为 3 秒")
     
     parser.add_argument('--rms_mix_rate', type=float,
-                        default=1.0,
+                        default=0,
                         help="输入输出 rmx_mix 比例，0.0 代表只使用输入音频，1.0 代表只使用输出音频")
     
     parser.add_argument("--zc_framerate", type=int,

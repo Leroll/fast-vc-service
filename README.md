@@ -63,6 +63,7 @@ python file_vc.py --reference_audio_path "wavs/references/your_ref.wav" \
     - [ ] Crop cover image
     - [ ] Fix file_vc for the last block issue
     - [ ] Handle exceptional cases, e.g., when a chunk converts with rta>1, what processing solutions exist?
+    - [ ] Optimizing Package Management for Better Usability and Stability
 - [ ] tag - v0.2 - Audio Quality - v2025-xx
     - [ ] Investigate chunk size issue in infer_wav, 8781 after vcmodel, 9120 without it [sola module record]
     - [ ] Investigate potential sound jitter issues

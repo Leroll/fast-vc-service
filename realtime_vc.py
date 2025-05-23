@@ -17,6 +17,7 @@ from pathlib import Path
 
 from models import models
 from session import Session
+from utils import Singleton
 
 
 class RealtimeVoiceConversionConfig(BaseModel):
@@ -62,7 +63,7 @@ class RealtimeVoiceConversionConfig(BaseModel):
     # 辅助参数
     max_tracking_counter: int = 10_000  # 用于记录单chunk推理时间损耗的最大记录数量
 
-
+@Singleton
 class RealtimeVoiceConversion:
     """流式换声服务核心类"""
 
