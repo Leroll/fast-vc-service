@@ -1,10 +1,10 @@
 from fastapi import FastAPI
 from routers.base_router import base_router
 from routers.websocket_router import websocket_router
-from logging_config import setup_logging
+from logging_config import LoggingSetup
 import uvicorn
 
-setup_logging()  # solve uviron loguru conflict
+LoggingSetup.setup()  # solve uviron loguru conflict
 
 # Create FastAPI application
 app = FastAPI(
