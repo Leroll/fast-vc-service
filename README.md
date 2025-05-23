@@ -9,7 +9,7 @@
 </div>
 
 <div align="center">
-  <h3>High-performance streaming voice conversion service, designed for industrial-grade deployment, enabling efficient and stable voice interaction experiences.</h3>
+  <h3>Industrial-grade streaming voice conversion service designed for cloud deployment, from Git repository to private API platform</h3>
 </div> 
 
 <div align="center">
