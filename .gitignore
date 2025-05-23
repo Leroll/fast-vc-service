@@ -56,3 +56,5 @@ checkpoints*
 wavs*
 
 *ipynb
+
+.env
