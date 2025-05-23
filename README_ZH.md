@@ -1,0 +1,76 @@
+<p align="center">
+    <img src="https://raw.githubusercontent.com/Leroll/fast-vc-service/main/asserts/cover.PNG" alt="repo cover" width=80%>
+</p>
+
+<div align="center">
+  <img alt="GitHub stars" src="https://img.shields.io/github/stars/Leroll/fast-vc-service?style=social">
+  <img alt="License" src="https://img.shields.io/badge/License-MIT-blue.svg">
+  <img alt="Python 3.8+" src="https://img.shields.io/badge/python-3.8+-blue.svg">
+</div>
+
+<div align="center">
+  <h3>高性能流式换声服务，专为工业级部署打造，助力高效、稳定的语音交互体验。</h3>
+</div> 
+
+<div align="center">
+  <a href="README.md">English</a> | 简体中文
+</div>
+
+# 🛠️ 安装
+```
+# 克隆仓库
+git clone https://github.com/Leroll/fast-vc-service.git
+cd fast-vc-service
+
+# 安装依赖
+pip install -r requirements.txt
+
+# 配置环境变量（可选）
+cp .env.example .env
+# 编辑.env配置相关参数
+```
+
+# 🔧 使用
+**1. 批量音频文件流式换声, 用于流式效果测试**
+```
+python file_vc.py --reference_audio_path "wavs/references/your_ref.wav" \
+                 --wav_files "input1.wav input2.wav" \
+                 --block_time 0.5 \
+                 --diffusion_steps 10 \
+                 --rms_mix_rate 0.8
+```
+
+
+# 🚧 施工中...TODO
+- [ ] tag - v0.1 - 基础服务相关 - v2025-xx
+    - [x] 完成初版流式推理代码 
+    - [x] 新增.env用于存放源等相关变量
+    - [x] 拆分流式推理各模块
+    - [x] 新增性能追踪统计模块
+    - [x] 增加opus编解码模块
+    - [x] 新增asgi app服务和log日志系统，解决uvicorn与loguru的冲突问题
+    - [x] 输出ouput转换为16k之后再输出，同时使用切片赋值
+    - [x] 新增session类，用于流式推理过程中上下文存储
+    - [x] 冗余代码清理，删去不必要的逻辑
+    - [x] 完成各模块流水线重构
+    - [x] session 部分的替换完善
+    - [ ] 添加配置信息
+    - [x] 完善log系统
+    - [ ] 完成ws服务代码 / webRTC
+    - [ ] 裁剪封面图
+    - [ ] file_vc，针对最后一个block的问题
+    - [ ] 针对 异常情况，比如某个chunk转换rta>1的时候，有没有什么处理方案？
+- [ ] tag - v0.2 - 音频质量相关 -  v2025-xx
+    - [ ] infer_wav 每个chunk大小问题排查，在经过vcmodel之后，为8781，不经过的话为9120【sola模块记录】
+    - [ ] 声音貌似有些抖动，待排查
+    - [ ] 针对男性低沉嗓音转换效果不加的情况，添加流式场景下的音高提取功能
+    - [ ] 完成对seed-vc V2.0 模型支持
+- [ ] tag - v0.3 - 服务灵活稳定相关 - v2025-xx
+    - [ ] reference 使用torchaudio 直接读取到GPU中，省去转移的步骤。
+    - [ ] 配置化启动不同的模型实例，配置为不同的微服务？
+    - [ ] 制作AutoDL镜像，方便一键部署
+    - [ ] 新增get请求返回加密wav
+
+# 🙏 致谢
+- [Seed-VC](https://github.com/Plachtaa/seed-vc) - 提供了强大的底层变声模型
+- [RVC](https://github.com/RVC-Project/Retrieval-based-Voice-Conversion-WebUI) - 提供了基础的流式换声pipeline
