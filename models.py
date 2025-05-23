@@ -25,24 +25,24 @@ class ModelConfig(BaseModel):
     # dit model
     dit_repo_id: str = "Plachta/Seed-VC"
     
-    # dit_model_filename: str = "DiT_uvit_tat_xlsr_ema.pth"  # tiny version
-    # dit_config_filename: str = "config_dit_mel_seed_uvit_xlsr_tiny.yml"  
+    # tiny version
+    dit_model_filename: str = "DiT_uvit_tat_xlsr_ema.pth"  
+    dit_config_filename: str = "config_dit_mel_seed_uvit_xlsr_tiny.yml"  
     
-    dit_model_filename: str = "DiT_seed_v2_uvit_whisper_small_wavenet_bigvgan_pruned.pth"  # small version
-    dit_config_filename: str = "config_dit_mel_seed_uvit_whisper_small_wavenet.yml"
+    # small version
+    # dit_model_filename: str = "DiT_seed_v2_uvit_whisper_small_wavenet_bigvgan_pruned.pth"  
+    # dit_config_filename: str = "config_dit_mel_seed_uvit_whisper_small_wavenet.yml"
     
-    # dit_model_filename: str = "DiT_seed_v2_uvit_whisper_base_f0_44k_bigvgan_pruned.pth"  # base version
+    # base version
+    # dit_model_filename: str = "DiT_seed_v2_uvit_whisper_base_f0_44k_bigvgan_pruned.pth"  
     # dit_config_filename: str = "config_dit_mel_seed_uvit_whisper_base_f0_44k.yml"
 
 
 class ModelFactory:
     
     def __init__(self,model_config:ModelConfig):
-        """
-        Args:
-            device (str): 设备类型，默认为"cuda"
-            is_torch_compile (bool): 是否使用torch.compile加速，默认为False
-        """
+        """model factory, all models are loaded here"""
+        
         self.cfg = model_config
         self.device = self.cfg.device
         self.is_torch_compile = self.cfg.is_torch_compile
@@ -178,7 +178,7 @@ class ModelFactory:
         elif vocoder_type == 'hifigan':
             from modules.hifigan.generator import HiFTGenerator
             from modules.hifigan.f0_predictor import ConvRNNF0Predictor
-            hift_config = yaml.safe_load(open('configs/hifigan.yml', 'r'))
+            hift_config = yaml.safe_load(open('seed-vc/configs/hifigan.yml', 'r'))
             hift_gen = HiFTGenerator(**hift_config['hift'], f0_predictor=ConvRNNF0Predictor(**hift_config['f0_predictor']))
             hift_path = load_custom_model_from_hf("FunAudioLLM/CosyVoice-300M", 'hift.pt', None)
             hift_gen.load_state_dict(torch.load(hift_path, map_location='cpu'))
