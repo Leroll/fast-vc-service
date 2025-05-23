@@ -53,7 +53,7 @@ class RealtimeVoiceConversionConfig(BaseModel):
                                 # 不可修改，需要保证为 16k，vad，senmantic 都是 16k 模型
                                 # 某些环节采样率会改变，比如dit model会更改为22050，需要再次转换回来
     
-    zc_framerate: int = 100  # zc = samplerate // zc_framerate, rvc:100, seed-vc: 50
+    zc_framerate: int = 50  # zc = samplerate // zc_framerate, rvc:100, seed-vc: 50
     block_time: float = 0.5  # 0.5 ；这里的 block time 是 0.5s                    
     crossfade_time: float = 0.04  # 0.04 ；用于平滑过渡的交叉渐变长度，这里设定为 0.04 秒。交叉渐变通常用于避免声音中断或“断层”现象。
     extra_time: float = 2.5  # 2.5；  附加时间，设置为 0.5秒。可能用于在处理音频时延长或平滑过渡的时间。
@@ -654,13 +654,8 @@ class RealtimeVoiceConversion:
         )  # 之前的 sola_buffer 进行 fade_out
         
         # set new sola_buffer
-        # 基于某些未知原因，infer_wav进入的长度只有8781,理论应该是640+160+8000=8800
-        # 产生了 infer_wav - sola_offset < block_frame + sola_buffer_frame 的情况，引发报错
-        # 于是先改成 负向索引，后续再继续研究
-        # ori: self.block_frame : self.block_frame + self.sola_buffer_frame
-        # fix: -self.sola_buffer_frame - self.sola_search_frame : -self.sola_search_frame
         session.sola_buffer[:] = infer_wav[
-            -self.sola_buffer_frame - self.sola_search_frame : -self.sola_search_frame
+            self.block_frame : self.block_frame + self.sola_buffer_frame
         ]
         # Index(block_frame + sola_buffer_frame) = Index(- sola_search)
         # this chunk: new_sola_buffer + sola_search + extra_right
