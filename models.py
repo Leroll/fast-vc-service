@@ -7,6 +7,7 @@ import yaml
 import torch
 import time
 from loguru import logger
+from pydantic import BaseModel
 
 from pathlib import Path
 seedvc_path = (Path(__file__).parent / "seed-vc").resolve()  # 添加seed-vc路径
@@ -16,17 +17,35 @@ from hf_utils import load_custom_model_from_hf
 
 from utils import timer_decorator
 
+class ModelConfig(BaseModel):
+    """model config"""
+    device: str = "cuda"
+    is_torch_compile: bool = False  # use torch.compile to accelerate
+    
+    # dit model
+    dit_repo_id: str = "Plachta/Seed-VC"
+    
+    # dit_model_filename: str = "DiT_uvit_tat_xlsr_ema.pth"  # tiny version
+    # dit_config_filename: str = "config_dit_mel_seed_uvit_xlsr_tiny.yml"  
+    
+    dit_model_filename: str = "DiT_seed_v2_uvit_whisper_small_wavenet_bigvgan_pruned.pth"  # small version
+    dit_config_filename: str = "config_dit_mel_seed_uvit_whisper_small_wavenet.yml"
+    
+    # dit_model_filename: str = "DiT_seed_v2_uvit_whisper_base_f0_44k_bigvgan_pruned.pth"  # base version
+    # dit_config_filename: str = "config_dit_mel_seed_uvit_whisper_base_f0_44k.yml"
+
 
 class ModelFactory:
     
-    def __init__(self, device="cuda", is_torch_compile=False):
+    def __init__(self,model_config:ModelConfig):
         """
         Args:
             device (str): 设备类型，默认为"cuda"
             is_torch_compile (bool): 是否使用torch.compile加速，默认为False
         """
-        self.device = device
-        self.is_torch_compile = is_torch_compile
+        self.cfg = model_config
+        self.device = self.cfg.device
+        self.is_torch_compile = self.cfg.is_torch_compile
         logger.info(f"Using device: {self.device}")
         logger.info(f"Using torch compile: {self.is_torch_compile}")
         
@@ -75,28 +94,14 @@ class ModelFactory:
         """加载Dit模型"""
         
         logger.info("Loading DiT model...")
-        # -------------------
-        # model_path
-        # -------------------
-        # 原始tiny版本
-        # dit_checkpoint_path, dit_config_path = load_custom_model_from_hf("Plachta/Seed-VC",
-        #                                                                  "DiT_uvit_tat_xlsr_ema.pth",
-        #                                                                  "config_dit_mel_seed_uvit_xlsr_tiny.yml")
         
-        # small 版本
-        dit_checkpoint_path, dit_config_path = load_custom_model_from_hf("Plachta/Seed-VC",
-                                                                         "DiT_seed_v2_uvit_whisper_small_wavenet_bigvgan_pruned.pth",
-                                                                         "config_dit_mel_seed_uvit_whisper_small_wavenet.yml")
-        
-        # base 版本 - 转换不太行
-        # dit_checkpoint_path, dit_config_path = load_custom_model_from_hf("Plachta/Seed-VC",
-    #                                                                      "DiT_seed_v2_uvit_whisper_base_f0_44k_bigvgan_pruned_ft_ema_v2.pth",
-    #                                                                      "config_dit_mel_seed_uvit_whisper_base_f0_44k.yml")
+        dit_checkpoint_path, dit_config_path = load_custom_model_from_hf(self.cfg.dit_repo_id,
+                                                                         self.cfg.dit_model_filename,
+                                                                         self.cfg.dit_config_filename)
         
         # 这里尝试load fintune之后的模型看看
         # dit_checkpoint_path = "/root/autodl-tmp/seed-vc-cus/runs/csmsc_fintune_10/ft_model.pth"
         # dit_config_path = "/root/autodl-tmp/seed-vc-cus/runs/csmsc_fintune_10/config_dit_mel_seed_uvit_xlsr_tiny.yml"
-
         
         # dit_checkpoint_path = "/root/autodl-tmp/seed-vc-cus/runs/csmsc_fintune_10_bigvgan/ft_model.pth"
         # dit_config_path = "/root/autodl-tmp/seed-vc-cus/runs/csmsc_fintune_10_bigvgan/config_dit_mel_seed_uvit_xlsr_tiny_bigvgan.yml"
@@ -104,10 +109,7 @@ class ModelFactory:
         logger.info(f"Dit_checkpoint_path: {dit_checkpoint_path}")
         logger.info(f"Dit_config_path: {dit_config_path}")
         
-        
-        # --------------------
         # load
-        # --------------------
         config = yaml.safe_load(open(dit_config_path, "r"))
         model_params = recursive_munch(config["model_params"])
         model_params.dit_type = 'DiT'
@@ -355,8 +357,8 @@ class ModelFactory:
         return vad_model
 
 
-device = "cuda" if torch.cuda.is_available() else "cpu"
-model_factory = ModelFactory(device=device, is_torch_compile=False)
+model_config = ModelConfig()
+model_factory = ModelFactory(model_config)
 models = model_factory.get_models()
       
 if __name__ == "__main__":

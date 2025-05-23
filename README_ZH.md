@@ -59,7 +59,8 @@ python file_vc.py --reference_audio_path "wavs/references/your_ref.wav" \
     - [x] session 部分的替换完善
     - [ ] 添加配置信息
     - [x] 完善log系统
-    - [ ] 完成ws服务代码 / webRTC
+    - [ ] 完成ws服务代码
+    - [ ] 支持webRTC
     - [ ] 裁剪封面图
     - [ ] file_vc，针对最后一个block的问题
     - [ ] 针对 异常情况，比如某个chunk转换rta>1的时候，有没有什么处理方案？

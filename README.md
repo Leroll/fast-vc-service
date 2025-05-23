@@ -58,7 +58,8 @@ python file_vc.py --reference_audio_path "wavs/references/your_ref.wav" \
     - [x] Complete session replacement improvements
     - [ ] Add configuration information
     - [x] Improve log system
-    - [ ] Complete WS service code / webRTC
+    - [ ] Complete WS service code
+    - [ ] Support webRTC
     - [ ] Crop cover image
     - [ ] Fix file_vc for the last block issue
     - [ ] Handle exceptional cases, e.g., when a chunk converts with rta>1, what processing solutions exist?
