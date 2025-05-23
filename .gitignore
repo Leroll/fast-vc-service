@@ -24,7 +24,7 @@ pip-selfcheck.json
 ### 运行时文件 ###
 # 日志与监控
 *.log
-logs/
+logs/*.log
 metrics.csv
 prometheus_data/
 
