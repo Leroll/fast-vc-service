@@ -53,7 +53,9 @@ checkpoints*
 
 
 ## 测试音频相关
-wavs*
+wavs/cases/*
+wavs/outputs/*.wav
+wavs/references/*.wav
 
 *ipynb
 
