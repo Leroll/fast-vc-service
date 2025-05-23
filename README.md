@@ -16,6 +16,7 @@
   English | <a href="README_ZH.md">简体中文</a>
 </div>
 
+> Features are continuously being updated. Stay tuned for our latest developments... ✨
 
 # 🛠️ Installation
 ```
