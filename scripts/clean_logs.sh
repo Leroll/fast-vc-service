@@ -7,7 +7,7 @@ LOG_DIR="logs/"
 
 # 检查.logs/目录是否存在
 if [ ! -d "$LOG_DIR" ]; then
-    echo "错误：$LOG_DIR 目录不存在"
+    echo "ERROR: $LOG_DIR directory does not exist."
     exit 1
 fi
 
@@ -19,9 +19,9 @@ if [ -n "$found_files" ]; then
     while IFS= read -r file; do
         # 删除文件
         rm -f "$file"
-        echo "已删除: $file"
+        echo "deleted: $file"
     done <<< "$found_files"
-    echo "所有包含 .log 的日志文件已删除"
+    echo "all log files deleted."
 else
-    echo "没有找到包含 .log 的文件"
+    echo "No log files found to delete."
 fi
