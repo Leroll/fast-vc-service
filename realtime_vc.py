@@ -657,7 +657,7 @@ class RealtimeVoiceConversion:
         # add new chunk: new_sola_buffer + sola_search + extra_right + block
         # new infer wav: new_sola_buffer + sola_search + block
         # the new sola_buffer is the same wav_area as the next infer_wav[：sola_buffer_frame]
-        # it means that sola_buffer is the area tos smoothing between two chunks
+        # it means that sola_buffer is the area to smoothing between two chunks
     
         sola_time = time.perf_counter() - t0
         self.sola_time.append(sola_time)
