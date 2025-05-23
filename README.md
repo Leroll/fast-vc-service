@@ -15,6 +15,7 @@
 <div align="center">
   English | <a href="README_ZH.md">简体中文</a>
 </div>
+<br>
 
 > Features are continuously being updated. Stay tuned for our latest developments... ✨
 

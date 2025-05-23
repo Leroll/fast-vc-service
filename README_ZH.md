@@ -15,6 +15,7 @@
 <div align="center">
   <a href="README.md">English</a> | 简体中文
 </div>
+<br>
 
 > 功能持续迭代更新中。欢迎关注我们的最新进展... ✨
 
