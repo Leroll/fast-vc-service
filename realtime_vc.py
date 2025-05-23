@@ -53,7 +53,7 @@ class RealtimeVoiceConversionConfig(BaseModel):
                                 # 不可修改，需要保证为 16k，vad，senmantic 都是 16k 模型
                                 # 某些环节采样率会改变，比如dit model会更改为22050，需要再次转换回来
     
-    zc_framerate: int = 100  # zc = samplerate // zc_framerate, 
+    zc_framerate: int = 100  # zc = samplerate // zc_framerate, rvc:100, seed-vc: 50
     block_time: float = 0.5  # 0.5 ；这里的 block time 是 0.5s                    
     crossfade_time: float = 0.04  # 0.04 ；用于平滑过渡的交叉渐变长度，这里设定为 0.04 秒。交叉渐变通常用于避免声音中断或“断层”现象。
     extra_time: float = 2.5  # 2.5；  附加时间，设置为 0.5秒。可能用于在处理音频时延长或平滑过渡的时间。
@@ -89,8 +89,8 @@ class Session:
         torch.cuda.empty_cache()  
         self.sampelrate = samplerate  # 后续存储输入、输出音频用，对应common_sr
         self.unique_id = unique_id  # 唯一标识符
-        self.input_data = []
-        self.output_data = []
+        self.input_wav_record = []
+        self.output_wav_record = []
         
         # wav 相关
         self.input_wav: torch.Tensor = torch.zeros( 
@@ -109,7 +109,9 @@ class Session:
         self.set_speech_detected_false_at_end_flag = False
         
         # vc models
-        self.infer_wav_zero = torch.zeros_like(self.input_wav[extra_frame :], 
+        begin = -sola_buffer_frame - sola_search_frame - block_frame - extra_frame_right
+        end = -extra_frame_right
+        self.infer_wav_zero = torch.zeros_like(self.input_wav[begin:end], 
                                                device=device)  # vc时若未检测出人声，用于填补的 zero
         
         # noise gate
@@ -129,7 +131,7 @@ class Session:
         Args:
             chunk: 输入音频数据
         """
-        self.input_data.append(chunk)
+        self.input_wav_record.append(chunk)
         
     def add_chunk_output(self, chunk:np.ndarray):
         """添加chunk到输出音频
@@ -137,7 +139,7 @@ class Session:
         Args:
             chunk: 输入音频数据
         """
-        self.output_data.append(chunk)
+        self.output_wav_record.append(chunk.copy())  # out_data是同一片段内存，不能直接append，必须copy
 
     def save(self, save_dir:str):
         """保存音频数据到指定目录
@@ -149,15 +151,15 @@ class Session:
             os.makedirs(save_dir)
         
         # 保存输入音频
-        if self.input_path is not None:
+        if self.input_wav_record is not None:
             input_path = os.path.join(save_dir, f"{self.unique_id}_input.wav")
-            sf.write(input_path, np.concatenate(self.input_data), self.sampelrate)
+            sf.write(input_path, np.concatenate(self.input_wav_record), self.sampelrate)
             logger.info(f"{self.unique_id} | input data 已存储: {input_path}")
         
         # 保存输出音频
-        if self.output_data is not None:
+        if self.output_wav_record is not None:
             output_path = os.path.join(save_dir, f"{self.unique_id}_output.wav")
-            sf.write(output_path, np.concatenate(self.output_data), self.sampelrate)
+            sf.write(output_path, np.concatenate(self.output_wav_record), self.sampelrate)
             logger.info(f"{self.unique_id} | output data 已存储: {output_path}")
             
     def cleanup(self):
@@ -178,8 +180,8 @@ class Session:
         self.rms_buffer = None
         
         # Clear stored audio data
-        self.input_data.clear()
-        self.output_data.clear()
+        self.input_wav_record.clear()
+        self.output_wav_record.clear()
         
         # Force GPU memory cleanup
         torch.cuda.empty_cache()
@@ -233,7 +235,7 @@ class RealtimeVoiceConversion:
             "Semantic Extraction": self.senmantic_time,
             "Diffusion Model": self.dit_time,
             "Vocoder": self.vocoder_time,
-            "Voice Conversion Overall": self.vc_time,
+            "VC Models Overall": self.vc_time,
             "RMS Mixing": self.rms_mix_time,
             "SOLA Algorithm": self.sola_time,
             "Chunk Overall": self.chunk_time
@@ -284,7 +286,7 @@ class RealtimeVoiceConversion:
         
         # sola
         self.sola_buffer_frame = min( self.crossfade_frame, 4 * self.zc ) # 80ms帧 和 crossfade帧(默认40ms)中的小数
-        self.sola_search_frame = self.zc  # sola_search 20ms帧
+        self.sola_search_frame = self.zc  # sola_search 
         self.fade_in_window: torch.Tensor = (
             torch.sin(
                 0.5
@@ -641,6 +643,7 @@ class RealtimeVoiceConversion:
             + 1e-8
         )   # 这里是求分母，input**2 是能量，在 sola_buffer上卷积，最终也得到 sola_search_frame + 1 的长度
         sola_offset = torch.argmax(cor_nom[0, 0] / cor_den[0, 0])  # 这里就是相似度了，找到最相似的 arg
+        logger.debug(f"sola_offset: {sola_offset}, infer_wav.shape: {infer_wav.shape[0]}")
 
         infer_wav = infer_wav[sola_offset:]  # 这里从最相似的部分索引出来
         infer_wav[: self.sola_buffer_frame] *= self.fade_in_window  # sola_buffer 的长度进行 fade_in
@@ -649,8 +652,13 @@ class RealtimeVoiceConversion:
         )  # 之前的 sola_buffer 进行 fade_out
         
         # set new sola_buffer
+        # 基于某些未知原因，infer_wav进入的长度只有8781,理论应该是640+160+8000=8800
+        # 产生了 infer_wav - sola_offset < block_frame + sola_buffer_frame 的情况，引发报错
+        # 于是先改成 负向索引，后续再继续研究
+        # ori: self.block_frame : self.block_frame + self.sola_buffer_frame
+        # fix: -self.sola_buffer_frame - self.sola_search_frame : -self.sola_search_frame
         session.sola_buffer[:] = infer_wav[
-            self.block_frame : self.block_frame + self.sola_buffer_frame
+            -self.sola_buffer_frame - self.sola_search_frame : -self.sola_search_frame
         ]
         # Index(block_frame + sola_buffer_frame) = Index(- sola_search)
         # this chunk: new_sola_buffer + sola_search + extra_right
@@ -755,6 +763,7 @@ class RealtimeVoiceConversion:
         """
         t0 = time.perf_counter()
         
+        logger.debug(f"in_data.max: {in_data.max()}, in_data.min: {in_data.min()}")
         if self.cfg.save_input:  # save input chunk
             session.add_chunk_input(in_data)
         
@@ -788,6 +797,7 @@ class RealtimeVoiceConversion:
             .numpy()
         )  # return the beginning of the output
            # add more latency include [sola_buffer + sola_search]
+        logger.debug(f"session.out_data.max: {session.out_data.max()}, session.out_data.min: {session.out_data.min()}")
         
         # system latency:
         # new chunk append to the end of input_wav
