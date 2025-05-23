@@ -1,36 +1,19 @@
 from dotenv import load_dotenv
-import os
-import sys
 load_dotenv()
 
-import shutil
-import yaml
 import librosa
-import argparse
 import time
 import torch
 import torch.nn.functional as F
 import torchaudio
 import torchaudio.transforms as tat
-import soundfile as sf
-import gradio as gr
 import numpy as np
-import io
 from pathlib import Path
-import io  # 为了高效率转换出二进制数据
-from scipy.io.wavfile import write  # 为了高效率转换出二进制数据
 import json
-from pydantic import BaseModel, Field
-from rich import print
+from pydantic import BaseModel
 from collections import deque
 from loguru import logger
-import traceback
-
 from pathlib import Path
-seedvc_path = (Path(__file__).parent / "seed-vc").resolve()  # 添加seed-vc路径
-sys.path.insert(0, str(seedvc_path))
-from modules.commons import *
-from hf_utils import load_custom_model_from_hf
 
 from models import models
 from session import Session
