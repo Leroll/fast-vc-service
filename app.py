@@ -1,26 +1,33 @@
 from fastapi import FastAPI
-from routers.base_router import base_router
-from routers.websocket_router import websocket_router
-from logging_config import LoggingSetup
 import uvicorn
+from loguru import logger
 
-LoggingSetup.setup()  # solve uviron loguru conflict
+from routers import base_router, websocket_router
+from logging_config import LoggingSetup
+from realtime_vc import RealtimeVoiceConversion, RealtimeVoiceConversionConfig
+
+# Initialize logging
+LoggingSetup.setup()  
+
+# Initialize the RealtimeVoiceConversion instance
+realtime_vc_cfg = RealtimeVoiceConversionConfig()
+realtime_vc = RealtimeVoiceConversion(realtime_vc_cfg)
+logger.info(f"RealtimeVoiceConversion initialized, instance_id: {realtime_vc.instance_id}")
 
 # Create FastAPI application
 app = FastAPI(
     title="Fast Voice Conversion Service",
     description="Voice Conversion Service API"
 )
-
-# Include routers
-app.include_router(base_router)
+app.state.realtime_vc = realtime_vc  # Store the instance in the app state
+app.include_router(base_router)  # Include routers
 app.include_router(websocket_router)
     
-# 启动服务 
 if __name__ == "__main__":
+    # Run the application with Uvicorn
     uvicorn.run(
         app,
         host="0.0.0.0",
         port=8042,
-        log_config=None  # 禁用 Uvicorn 自有日志配置
+        log_config=None  # Forbid default logging config
     )
