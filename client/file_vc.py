@@ -12,42 +12,42 @@ from realtime_vc import RealtimeVoiceConversion, RealtimeVoiceConversionConfig
 def parse_args():
     parser = argparse.ArgumentParser(description="批量语音转换脚本")
     
-    parser.add_argument('--wav_files', type=str, 
+    parser.add_argument('--wav-files', type=str, 
                         default=None, 
                         help="要处理的文件列表 (空格分隔的字符串), 没传默认为 None")
     
-    parser.add_argument('--reference_audio_path', type=str, 
+    parser.add_argument('--reference-audio-path', type=str, 
                         default="wavs/references/csmsc042-s0.2.wav",
                         # default="wavs/references/csmsc042.wav", 
                         # default="wavs/references/csmsc042-s0.5.wav",
                         # default="wavs/references/csmsc042-s1.0.wav",
                         help="参考音频文件路径")
     
-    parser.add_argument('--save_dir', type=str, 
+    parser.add_argument('--save-dir', type=str, 
                         default='wavs/outputs', 
                         help="保存目录路径")
     
-    parser.add_argument('--block_time', type=float, 
+    parser.add_argument('--block-time', type=float, 
                         default=0.5, 
                         help="块大小，单位秒，默认值为 0.5 秒")
     
-    parser.add_argument('--crossfade_time', type=float, 
+    parser.add_argument('--crossfade-time', type=float, 
                         default=0.04, 
                         help="交叉渐变长度，单位秒，默认值为 0.04 秒")
     
-    parser.add_argument('--diffusion_steps', type=int, 
+    parser.add_argument('--diffusion-steps', type=int, 
                         default=10, 
                         help="扩散步骤，默认值为 3")
     
-    parser.add_argument('--max_prompt_length', type=float, 
+    parser.add_argument('--max-prompt-length', type=float, 
                         default=3, 
                         help="参考截断长度，单位秒，默认值为 3 秒")
     
-    parser.add_argument('--rms_mix_rate', type=float,
+    parser.add_argument('--rms-mix-rate', type=float,
                         default=0,
                         help="输入输出 rmx_mix 比例，0.0 代表只使用输入音频，1.0 代表只使用输出音频")
     
-    parser.add_argument("--zc_framerate", type=int,
+    parser.add_argument("--zc-framerate", type=int,
                         default=50,
                         help="精度因子zc的帧率控制，zc_duration =  1s//zc_framerate,  rvc=100, seed-vc=50")
 
