@@ -58,7 +58,9 @@ python file_vc.py --reference_audio_path "wavs/references/your_ref.wav" \
     - [x] Complete session replacement improvements
     - [ ] Add configuration information
     - [x] Improve log system
-    - [ ] Complete WS service code
+    - [ ] Complete WS service code + PCM
+    - [ ] Complete WS + Opus
+    - [ ] Add WebSocket support description to the README, then draw a process flowchart.
     - [ ] Support webRTC
     - [ ] Crop cover image
     - [ ] Fix file_vc for the last block issue
@@ -74,6 +76,8 @@ python file_vc.py --reference_audio_path "wavs/references/your_ref.wav" \
     - [ ] Configure startup of different model instances as different microservices
     - [ ] Create AutoDL image for one-click deployment
     - [ ] Add encrypted wav return for GET requests
+    - [ ] add support for wss
+    - [ ] Implement JWT token-based authentication
 
 # 🙏 Acknowledgements
 - [Seed-VC](https://github.com/Plachtaa/seed-vc) - Provides powerful underlying voice conversion model

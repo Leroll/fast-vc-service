@@ -59,7 +59,9 @@ python file_vc.py --reference_audio_path "wavs/references/your_ref.wav" \
     - [x] session 部分的替换完善
     - [ ] 添加配置信息
     - [x] 完善log系统
-    - [ ] 完成ws服务代码
+    - [ ] 完成ws服务代码 + PCM
+    - [ ] 完成ws + opus 服务代码
+    - [ ] Readme中添加websocket支持的描述，然后画出流程图
     - [ ] 支持webRTC
     - [ ] 裁剪封面图
     - [ ] file_vc，针对最后一个block的问题
@@ -75,6 +77,8 @@ python file_vc.py --reference_audio_path "wavs/references/your_ref.wav" \
     - [ ] 配置化启动不同的模型实例，配置为不同的微服务？
     - [ ] 制作AutoDL镜像，方便一键部署
     - [ ] 新增get请求返回加密wav
+    - [ ] 新增wss支持
+    - [ ] 鉴权部分更新为令牌（JWT）方式
 
 # 🙏 致谢
 - [Seed-VC](https://github.com/Plachtaa/seed-vc) - 提供了强大的底层变声模型
