@@ -12,11 +12,11 @@ from realtime_vc import RealtimeVoiceConversion, RealtimeVoiceConversionConfig
 def parse_args():
     parser = argparse.ArgumentParser(description="批量语音转换脚本")
     
-    parser.add_argument('--wav-files', type=str, 
+    parser.add_argument('--source-wav-path', type=str, 
                         default=None, 
                         help="要处理的文件列表 (空格分隔的字符串), 没传默认为 None")
     
-    parser.add_argument('--reference-audio-path', type=str, 
+    parser.add_argument('--reference-wav-path', type=str, 
                         default="wavs/references/csmsc042-s0.2.wav",
                         # default="wavs/references/csmsc042.wav", 
                         # default="wavs/references/csmsc042-s0.5.wav",
@@ -58,21 +58,21 @@ if __name__ == "__main__":
     # 1. parse args
     args = parse_args()
 
-    wav_files = args.wav_files.split() if args.wav_files else None  
-    if wav_files is None:  
+    source_wav_path = args.source_wav_path.split() if args.source_wav_path else None  
+    if source_wav_path is None:  
         # wav files
-        wav_files = ["wavs/cases/低沉男性-YL-2025-03-14.wav"]  
+        source_wav_path = ["wavs/cases/低沉男性-YL-2025-03-14.wav"]  
         
         # wav directory
         # src_path = Path("wavs/cases")
-        # wav_files = [file for file in src_path.iterdir() if file.is_file() and file.name.split('.')[-1] in ['wav']]
+        # source_wav_path = [file for file in src_path.iterdir() if file.is_file() and file.name.split('.')[-1] in ['wav']]
 
     # 2. create stream vc decoder
     Path(args.save_dir).mkdir(parents=True, exist_ok=True)
     cfg = RealtimeVoiceConversionConfig(block_time=args.block_time,
                                 crossfade_time=args.crossfade_time,
                                 diffusion_steps=args.diffusion_steps, 
-                                reference_audio_path=args.reference_audio_path, 
+                                reference_wav_path=args.reference_wav_path, 
                                 save_dir=args.save_dir,
                                 max_prompt_length=args.max_prompt_length,
                                 rms_mix_rate=args.rms_mix_rate,
@@ -90,7 +90,7 @@ if __name__ == "__main__":
     except EOFError:
         pass  # 忽略 EOFError，直接继续
 
-    for file in wav_files:
+    for file in source_wav_path:
         realtime_vc.file_vc(file)
                 
     realtime_vc._performance_report()

@@ -28,7 +28,7 @@ class RealtimeVoiceConversionConfig(BaseModel):
     device: str = str(torch.device("cuda" if torch.cuda.is_available() else "cpu"))
     
     # wav 相关
-    reference_audio_path: str = "wavs/references/csmsc042-s0.2.wav"
+    reference_wav_path: str = "wavs/references/csmsc042-s0.2.wav"
     save_dir: str = "wavs/output/"  # 存储
     save_input: bool = True  # is to save input wav
     save_output: bool = True  # is to save output wav
@@ -228,7 +228,7 @@ class RealtimeVoiceConversion:
         sample rate of reference wav should be 22050, to cal prompt_mel
         """
         reference_wav, _ = librosa.load(
-                self.cfg.reference_audio_path, sr=self.models["mel_fn_args"]["sampling_rate"]  # 22050
+                self.cfg.reference_wav_path, sr=self.models["mel_fn_args"]["sampling_rate"]  # 22050
         )
         return reference_wav
     

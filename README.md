@@ -36,11 +36,12 @@ cp .env.example .env
 # 🔧 Usage
 **1. Batch audio file streaming voice conversion, used for streaming effect testing**
 ```
-python file_vc.py --reference_audio_path "wavs/references/your_ref.wav" \
-                 --wav_files "input1.wav input2.wav" \
-                 --block_time 0.5 \
-                 --diffusion_steps 10 \
-                 --rms_mix_rate 0.8
+python client/file_vc.py \
+    --source-wav-path "path/to/input1.wav path/to/input2.wav" \
+    --reference-wav-path "wavs/references/your_ref.wav" \
+    --block-time 0.5 \
+    --diffusion-steps 10 \
+    --rms-mix-rate 0.7
 ```
 
 # 🚧 Under Construction...TODO
