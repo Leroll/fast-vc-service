@@ -38,6 +38,7 @@ class RealtimeVoiceConversionConfig(BaseModel):
                                 # 音频流在vc过程中基础采样率
                                 # 不可修改，需要保证为 16k，vad，senmantic 都是 16k 模型
                                 # 某些环节采样率会改变，比如dit model会更改为22050，需要再次转换回来
+    BIT_DEPTH: int = 16  # 音频流的位深度，16位
     
     zc_framerate: int = 50  # zc = samplerate // zc_framerate, rvc:100, seed-vc: 50
     block_time: float = 0.5  # 0.5 ；这里的 block time 是 0.5s                    

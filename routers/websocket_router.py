@@ -1,8 +1,10 @@
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from loguru import logger
 import time
+import numpy as np
 
 from session import Session
+from buffer import AudioStreamBuffer
 
 websocket_router = APIRouter()
 
@@ -40,7 +42,7 @@ async def handle_initial_configuration(websocket: WebSocket, realtime_vc):
     if config_data.get("type") != "config":
         await send_error(websocket, "INVALID_CONFIG", 
                          "Expected config message type", None)
-        return None, None
+        return None, None, None
         
     # extract session ID and API key
     session_id = config_data.get("session_id")
@@ -50,7 +52,7 @@ async def handle_initial_configuration(websocket: WebSocket, realtime_vc):
     if not validate_api_key(api_key):
         await send_error(websocket, "AUTH_FAILED", 
                          "Invalid API key or authentication failed", session_id)
-        return None, None
+        return None, None, None
         
     # extract audio format settings
     audio_format = config_data.get("audio_format", {})
@@ -63,10 +65,21 @@ async def handle_initial_configuration(websocket: WebSocket, realtime_vc):
     if channels != 1:
         await send_error(websocket, "INVALID_CONFIG", 
                          "Only mono audio (1 channel) is supported", session_id)
-        return None, None
+        return None, None, None
         
     # create a new session
     session = realtime_vc.create_session(session_id=session_id)
+    
+    # create audio buffer
+    audio_buffer = AudioStreamBuffer(
+        session_id=session_id,
+        input_sample_rate=sample_rate,
+        input_bit_depth=bit_depth,
+        output_sample_rate=realtime_vc.cfg.SAMPLERATE,
+        output_bit_depth=realtime_vc.cfg.BIT_DEPTH,
+        block_time=realtime_vc.cfg.block_time * 1000,  # Convert to milliseconds
+        prefill_time=100  # Default prefill time of 100ms
+    )
     
     # send ready signal to the client
     ready_signal = {
@@ -77,7 +90,7 @@ async def handle_initial_configuration(websocket: WebSocket, realtime_vc):
     await websocket.send_json(ready_signal)
     logger.info(f"Session {session_id} is ready with audio format: {audio_format}")
     
-    return session_id, session
+    return session_id, session, audio_buffer
 
 
 @websocket_router.websocket("/ws")
@@ -92,7 +105,7 @@ async def websocket_endpoint(websocket: WebSocket):
 
     try:
         # 处理初始配置
-        session_id, session = await handle_initial_configuration(websocket, realtime_vc)
+        session_id, session, audio_buffer = await handle_initial_configuration(websocket, realtime_vc)
         if not session:
             return
         
@@ -105,40 +118,76 @@ async def websocket_endpoint(websocket: WebSocket):
                 # Process audio bytes
                 audio_chunk = data["bytes"]
                 if len(audio_chunk) > 0:
-                    chunk_start = time.time()
+                    # Add audio data to buffer
+                    audio_buffer.add_chunk(audio_chunk)
                     
-                    # Process the audio chunk and get the converted audio
-                    try:
-                        converted_audio = await session.process_audio_chunk(audio_chunk)
-                        if converted_audio:
-                            await websocket.send_bytes(converted_audio)
-                            
-                        # Track processing metrics
-                        chunks_processed += 1
-                        chunk_time = (time.time() - chunk_start) * 1000  # in ms
-                        processing_times.append(chunk_time)
+                    # Check if there's enough data to form a complete processing block
+                    while audio_buffer.has_complete_chunk():
+                        chunk_start = time.time()
                         
-                    except Exception as e:
-                        logger.error(f"Error processing audio chunk: {e}")
-                        await send_error(websocket, "INVALID_AUDIO", 
-                                        f"Error processing audio: {str(e)}", session_id)
-                        break
+                        # Get next complete audio chunk as numpy array
+                        # New buffer directly returns numpy array
+                        numpy_chunk = audio_buffer.get_next_chunk()
+                        
+                        # Process audio chunk
+                        try:
+                            # Process the audio with voice conversion
+                            result = await realtime_vc.chunk_vc(numpy_chunk, session)
+                            
+                            # Only send when there's a result
+                            if result is not None and len(result) > 0:
+                                # Convert numpy result to bytes for sending to client
+                                int_data = (result * 32768.0).astype(np.int16)
+                                converted_bytes = int_data.tobytes()
+                                
+                                await websocket.send_bytes(converted_bytes)
+                                
+                                # Record processing metrics
+                                chunks_processed += 1
+                                chunk_time = (time.time() - chunk_start) * 1000  # in ms
+                                processing_times.append(chunk_time)
+                                
+                        except Exception as e:
+                            logger.error(f"Error processing audio chunk: {e}")
+                            await send_error(websocket, "INVALID_AUDIO", 
+                                           f"Error processing audio: {str(e)}", session_id)
+                            break
             
             elif "text" in data:
                 # Check if it's a JSON signal
                 try:
                     json_data = await websocket.receive_json()
                     if json_data.get("type") == "end":
-                        # Process any remaining audio in the session
+                        # 处理缓冲区中剩余的音频数据
+                        if audio_buffer.get_buffer_duration_ms() > 0:
+                            chunk_start = time.time()
+                            
+                            # 获取最后一块（可能需要填充）
+                            numpy_chunk = audio_buffer.get_next_chunk()
+                            
+                            # 处理最后一块
+                            result = await realtime_vc.chunk_vc(numpy_chunk, session)
+                            if result is not None and len(result) > 0:
+                                # Convert numpy result to bytes
+                                int_data = (result * 32768.0).astype(np.int16)
+                                converted_bytes = int_data.tobytes()
+                                
+                                await websocket.send_bytes(converted_bytes)
+                                
+                                chunks_processed += 1
+                                chunk_time = (time.time() - chunk_start) * 1000
+                                processing_times.append(chunk_time)
+                        
+                        # 处理会话中的任何剩余音频
                         remaining_audio = await session.finalize()
                         if remaining_audio:
                             await websocket.send_bytes(remaining_audio)
                         
-                        # Calculate statistics
+                        # 计算统计信息
                         total_time = (time.time() - start_time) * 1000  # in ms
                         avg_latency = sum(processing_times) / len(processing_times) if processing_times else 0
                         
-                        # Send completion signal
+                        # 发送完成信号
                         await websocket.send_json({
                             "type": "complete",
                             "stats": {
@@ -163,6 +212,8 @@ async def websocket_endpoint(websocket: WebSocket):
         await send_error(websocket, "INTERNAL_ERROR", f"Server error: {str(e)}", session_id)
     
     finally:
+        if audio_buffer:
+            audio_buffer.clear()
         if session:
             await session.cleanup()
         logger.info(f"WebSocket connection closed for session {session_id}")
