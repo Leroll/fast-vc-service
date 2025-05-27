@@ -3,6 +3,10 @@ For testing the Performance of realtime_vc
 """
 from pathlib import Path
 import argparse
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))  # add parent directory to path
+
 from realtime_vc import RealtimeVoiceConversion, RealtimeVoiceConversionConfig
 
 def parse_args():
