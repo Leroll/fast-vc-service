@@ -8,13 +8,13 @@ from loguru import logger
 class Session:
     """针对单通音频，流式vc过程中, 存储上下文状态类"""
     
-    def __init__(self,unique_id, extra_frame, crossfade_frame, sola_search_frame, 
+    def __init__(self,session_id, extra_frame, crossfade_frame, sola_search_frame, 
                  block_frame, extra_frame_right, zc, 
                  sola_buffer_frame, samplerate,
                  device):
         torch.cuda.empty_cache()  
         self.sampelrate = samplerate  # 后续存储输入、输出音频用，对应common_sr
-        self.unique_id = unique_id  # 唯一标识符
+        self.session_id = session_id  # 唯一标识符
         self.input_wav_record = []
         self.output_wav_record = []
         
@@ -78,15 +78,15 @@ class Session:
         
         # 保存输入音频
         if self.input_wav_record is not None:
-            input_path = os.path.join(save_dir, f"{self.unique_id}_input.wav")
+            input_path = os.path.join(save_dir, f"{self.session_id}_input.wav")
             sf.write(input_path, np.concatenate(self.input_wav_record), self.sampelrate)
-            logger.info(f"{self.unique_id} | input data 已存储: {input_path}")
+            logger.info(f"{self.session_id} | input data 已存储: {input_path}")
         
         # 保存输出音频
         if self.output_wav_record is not None:
-            output_path = os.path.join(save_dir, f"{self.unique_id}_output.wav")
+            output_path = os.path.join(save_dir, f"{self.session_id}_output.wav")
             sf.write(output_path, np.concatenate(self.output_wav_record), self.sampelrate)
-            logger.info(f"{self.unique_id} | output data 已存储: {output_path}")
+            logger.info(f"{self.session_id} | output data 已存储: {output_path}")
             
     def cleanup(self):
         """主动释放资源

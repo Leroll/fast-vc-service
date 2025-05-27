@@ -203,7 +203,7 @@ class RealtimeVoiceConversion:
         
     def create_session(self, unique_id):
         """创建一个新的会话"""
-        return Session(unique_id=unique_id,
+        return Session(session_id=unique_id,
                        extra_frame=self.extra_frame, 
                        crossfade_frame=self.crossfade_frame, 
                        sola_search_frame=self.sola_search_frame, 
