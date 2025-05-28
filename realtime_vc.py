@@ -29,7 +29,7 @@ class RealtimeVoiceConversionConfig(BaseModel):
     
     # wav 相关
     reference_wav_path: str = "wavs/references/csmsc042-s0.2.wav"
-    save_dir: str = "wavs/output/"  # 存储
+    save_dir: str = "wavs/outputs/"  # save
     save_input: bool = True  # is to save input wav
     save_output: bool = True  # is to save output wav
     
@@ -202,9 +202,9 @@ class RealtimeVoiceConversion:
         self.region_end = - ( self.skip_tail * self.zc )
         
         
-    def create_session(self, unique_id):
+    def create_session(self, session_id):
         """创建一个新的会话"""
-        return Session(session_id=unique_id,
+        return Session(session_id=session_id,
                        extra_frame=self.extra_frame, 
                        crossfade_frame=self.crossfade_frame, 
                        sola_search_frame=self.sola_search_frame, 
@@ -381,7 +381,7 @@ class RealtimeVoiceConversion:
         """
         wav_data, _ = librosa.load(wav_path, sr=self.cfg.SAMPLERATE, mono=True) 
         unique_id = Path(wav_path).name  # 针对文件使用文件名作为 unique_id 
-        session = self.create_session(unique_id=unique_id) 
+        session = self.create_session(session_id=unique_id) 
         
         num_blocks = len(wav_data) // self.block_frame  # TODO 后续把结尾的block补上，padding 防止丢失
         for i in range(num_blocks):           
