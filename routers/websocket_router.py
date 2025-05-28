@@ -5,7 +5,7 @@ import numpy as np
 import traceback
 import json
 
-from buffer import AudioStreamBuffer
+from buffer import AudioStreamBuffer, OpusAudioStreamBuffer
 
 websocket_router = APIRouter()
 
@@ -58,27 +58,41 @@ async def handle_initial_configuration(websocket: WebSocket, realtime_vc):
     sample_rate = audio_format.get("sample_rate", 16000)
     bit_depth = audio_format.get("bit_depth", 16)
     channels = audio_format.get("channels", 1)
-    encoding = audio_format.get("encoding", "PCM")
+    encoding = audio_format.get("encoding", "PCM")  # supports "PCM" or "OPUS"
     
     # validate audio format settings
     if channels != 1:
         await send_error(websocket, "INVALID_CONFIG", 
                          "Only mono audio (1 channel) is supported", session_id)
         return None, None, None
-        
+    
     # create a new session
     session = realtime_vc.create_session(session_id=session_id)
     
-    # create audio buffer
-    audio_buffer = AudioStreamBuffer(
-        session_id=session_id,
-        input_sample_rate=sample_rate,
-        input_bit_depth=bit_depth,
-        output_sample_rate=realtime_vc.cfg.SAMPLERATE,
-        output_bit_depth=realtime_vc.cfg.BIT_DEPTH,
-        block_time=realtime_vc.cfg.block_time * 1000,  # Convert to milliseconds
-        prefill_time=100  # Default prefill time of 100ms
-    )
+    # create appropriate audio buffer based on encoding
+    if encoding.upper() == "OPUS":
+        frame_duration = audio_format.get("frame_duration", 20)  # Default to 20ms if not specified
+        logger.info(f"Using Opus audio buffer for session {session_id}")
+        audio_buffer = OpusAudioStreamBuffer(
+            session_id=session_id,
+            input_sample_rate=sample_rate,
+            output_sample_rate=realtime_vc.cfg.SAMPLERATE,
+            output_bit_depth=realtime_vc.cfg.BIT_DEPTH,
+            block_time=realtime_vc.cfg.block_time * 1000,  # Convert to milliseconds
+            prefill_time=100,  # Default prefill time of 100ms
+            frame_duration=frame_duration  # Opus frame duration in milliseconds
+        )
+    else:  # Default to PCM
+        logger.info(f"Using PCM audio buffer for session {session_id}")
+        audio_buffer = AudioStreamBuffer(
+            session_id=session_id,
+            input_sample_rate=sample_rate,
+            input_bit_depth=bit_depth,
+            output_sample_rate=realtime_vc.cfg.SAMPLERATE,
+            output_bit_depth=realtime_vc.cfg.BIT_DEPTH,
+            block_time=realtime_vc.cfg.block_time * 1000,  # Convert to milliseconds
+            prefill_time=100  # Default prefill time of 100ms
+        )
     
     # send ready signal to the client
     ready_signal = {

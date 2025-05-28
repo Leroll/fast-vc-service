@@ -2,6 +2,8 @@ import numpy as np
 from loguru import logger
 import struct
 import resampy  # For high-quality resampling
+import opuslib  # For opus encoding/decoding
+import traceback
 
 
 class AudioStreamBuffer:
@@ -174,3 +176,121 @@ class AudioStreamBuffer:
     def clear(self):
         """Clear the buffer"""
         self.buffer = bytearray()
+
+
+class OpusAudioStreamBuffer(AudioStreamBuffer):
+    """Real-time Opus audio stream buffer for voice conversion
+    
+    Extends AudioStreamBuffer to handle Opus-encoded audio,
+    decodes Opus packets to PCM for voice conversion processing.
+    """
+    
+    def __init__(self, session_id, 
+                 # Input audio format
+                 input_sample_rate=16000,
+                 # Output audio format (for voice conversion)
+                 output_sample_rate=16000, output_bit_depth=16, 
+                 block_time=500, prefill_time=100,
+                 # opus specific parameters
+                 frame_duration=20,
+                 ):
+        """Initialize the Opus audio stream buffer
+        
+        Args:
+            session_id: Unique identifier for the session
+            
+            input_sample_rate: Input audio sample rate in Hz (must be 8000, 12000, 16000, 24000, or 48000 for Opus)
+            
+            output_sample_rate: Output audio sample rate for VC processing
+            output_bit_depth: Output audio bit depth for VC processing
+            
+            block_time: Standard processing block time in ms
+            prefill_time: Time for first chunk processing in ms
+            
+            frame_duration: Opus frame duration in ms (default: 20ms)
+        """
+        # Validate Opus-specific sample rates
+        if input_sample_rate not in (8000, 12000, 16000, 24000, 48000):
+            raise ValueError(f"{session_id} | Unsupported Opus sample rate: {input_sample_rate}. "
+                           "Must be one of: 8000, 12000, 16000, 24000, or 48000 Hz.")
+        
+        # Initialize parent class with standard PCM settings
+        # For Opus, we'll always decode to 16-bit PCM internally
+        super().__init__(
+            session_id=session_id,
+            input_sample_rate=input_sample_rate,
+            input_bit_depth=16,  # Opus decoder outputs 16-bit PCM
+            output_sample_rate=output_sample_rate,
+            output_bit_depth=output_bit_depth,
+            block_time=block_time,
+            prefill_time=prefill_time
+        )
+        
+        # Store Opus-specific parameters
+        self.opus_channels = 1
+        self.frame_duration = frame_duration
+        
+        # Initialize Opus decoder using high-level API
+        try:
+            self.decoder = opuslib.Decoder(
+                fs=self.input_sample_rate,
+                channels=self.opus_channels
+            )
+            logger.info(f"{session_id} | Opus decoder initialized with sample rate {input_sample_rate}Hz, channels: {self.opus_channels}")
+        except Exception as e:
+            logger.error(f"{session_id} | Failed to initialize Opus decoder: \n{traceback.format_exc()}")
+            raise
+        
+        # Calculate expected frame size for Opus (typically 20ms)
+        self.opus_frame_size = int(frame_duration / 1000 * self.input_sample_rate)
+        
+        logger.info(f"{session_id} | Opus buffer initialized with sample rate {input_sample_rate}Hz, frame size: {self.opus_frame_size}")
+    
+    def add_chunk(self, opus_packet: bytes):
+        """Override add_chunk to decode Opus packets before adding to buffer
+        
+        Args:
+            opus_packet: Raw opus encoded packet from WebSocket
+        """
+        try:
+            if not opus_packet:
+                logger.warning(f"{self.session_id} | Received empty Opus packet")
+                return
+            
+            # Decode opus packet to PCM using high-level API
+            # The decoder returns bytes of int16 PCM samples
+            pcm_bytes = self.decoder.decode(opus_packet, frame_size=self.opus_frame_size)
+            
+            # Add the decoded PCM to buffer using the parent's method
+            super().add_chunk(pcm_bytes)
+            
+            logger.debug(f"{self.session_id} | Decoded Opus packet: {len(opus_packet)} bytes -> {len(pcm_bytes)} bytes PCM")
+            
+        except Exception as e:
+            logger.error(f"{self.session_id} | Error decoding Opus packet: \n{traceback.format_exc()}")
+            # In case of error, we could add silence instead of crashing
+            silence_samples = self.opus_frame_size
+            silence_bytes = b'\x00' * (silence_samples * 2)  # 2 bytes per int16 sample
+            super().add_chunk(silence_bytes)
+    
+    def get_decoder_info(self):
+        """Get information about the Opus decoder
+        
+        Returns:
+            dict: Decoder information
+        """
+        return {
+            "sample_rate": self.input_sample_rate,
+            "channels": self.opus_channels,
+            "frame_duration_ms": self.frame_duration,
+            "frame_size": self.opus_frame_size,
+        }
+    
+    def __del__(self):
+        """Destructor to ensure proper cleanup"""
+        try:
+            if hasattr(self, 'decoder'):
+                self.decoder = None
+                logger.debug(f"{self.session_id} | Opus decoder cleaned up in destructor")
+        except Exception as e:
+            logger.error(f"{self.session_id} | Error in Opus buffer destructor: {e}")

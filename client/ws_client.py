@@ -8,9 +8,12 @@ import time
 import json
 from pathlib import Path
 from tqdm import tqdm
+import resampy
+import opuslib  # For opus encoding
 
 async def send_audio_file(websocket_url, audio_path, output_path, api_key, 
-                         chunk_time_ms=500, real_time_simulation=False):
+                         chunk_time_ms=500, real_time_simulation=False,
+                         audio_format="pcm"):
     """
     Send an audio file to the voice conversion service in chunks,
     simulating real-time streaming.
@@ -22,6 +25,7 @@ async def send_audio_file(websocket_url, audio_path, output_path, api_key,
         api_key: API key for authentication
         chunk_time_ms: Time in ms for each audio chunk (default: 500ms)
         real_time_simulation: If True, simulate real-time sending of audio chunks
+        audio_format: Format to send audio in ('pcm' or 'opus')
     """
     try:
         # Read audio file
@@ -46,8 +50,30 @@ async def send_audio_file(websocket_url, audio_path, output_path, api_key,
         session_id = str(uuid.uuid4())
         print(f"Generated session ID: {session_id}")
         
-        # Calculate chunk size based on chunk time
-        chunk_samples = int(sample_rate * chunk_time_ms / 1000)
+        # Initialize Opus encoder if needed
+        opus_encoder = None
+        encoding = audio_format.upper()
+        if encoding == "OPUS":
+            # Ensure sample rate is compatible with Opus
+            opus_sample_rates = [8000, 12000, 16000, 24000, 48000]
+            if sample_rate not in opus_sample_rates:
+                closest_rate = min(opus_sample_rates, key=lambda x: abs(x - sample_rate))
+                print(f"Warning: Sample rate {sample_rate} Hz not supported by Opus. Resampling to {closest_rate} Hz")
+                audio = resampy.resample(audio, sample_rate, closest_rate)
+                sample_rate = closest_rate
+                
+            # Create Opus encoder using high-level API
+            opus_encoder = opuslib.Encoder(sample_rate, 1, opuslib.APPLICATION_AUDIO)
+            
+            # For Opus, we use 20ms frame size (standard)
+            opus_frame_samples = int(0.02 * sample_rate)  # 20ms frames
+            chunk_samples = opus_frame_samples
+            print(f"Using Opus encoding with {opus_frame_samples} samples per frame ({chunk_samples/sample_rate*1000:.1f}ms)")
+        else:
+            # For PCM, use the specified chunk time
+            chunk_samples = int(sample_rate * chunk_time_ms / 1000)
+            print(f"Using PCM encoding with {chunk_samples} samples per chunk ({chunk_time_ms}ms)")
+        
         total_chunks = len(audio) // chunk_samples + (1 if len(audio) % chunk_samples else 0)
         print(f"Audio will be split into {total_chunks} chunks of {chunk_samples} samples each")
         
@@ -64,11 +90,11 @@ async def send_audio_file(websocket_url, audio_path, output_path, api_key,
                     "sample_rate": sample_rate,
                     "bit_depth": 16,
                     "channels": 1,
-                    "encoding": "PCM"
+                    "encoding": encoding
                 }
             }
             await websocket.send(json.dumps(config))
-            print("Sent configuration to server")
+            print(f"Sent configuration to server: {json.dumps(config)}")
             
             # Wait for ready signal
             try:
@@ -145,12 +171,20 @@ async def send_audio_file(websocket_url, audio_path, output_path, api_key,
                     if len(chunk) < chunk_samples:
                         chunk = np.pad(chunk, (0, chunk_samples - len(chunk)))
                     
-                    # Convert to int16 and then to bytes
-                    chunk_int16 = (chunk * 32768).astype(np.int16)
-                    chunk_bytes = chunk_int16.tobytes()
+                    # Process according to format
+                    if encoding == "OPUS":
+                        # Convert to int16 for Opus encoding
+                        chunk_int16 = (chunk * 32768).astype(np.int16)
+                        
+                        # Encode with Opus using high-level API
+                        chunk_to_send = opus_encoder.encode(chunk_int16.tobytes(), chunk_samples)
+                    else:
+                        # Standard PCM conversion
+                        chunk_int16 = (chunk * 32768).astype(np.int16)
+                        chunk_to_send = chunk_int16.tobytes()
                     
                     chunk_start_time = time.time()
-                    await websocket.send(chunk_bytes)
+                    await websocket.send(chunk_to_send)
                     
                     # If simulating real-time, wait appropriate amount of time
                     if real_time_simulation:
@@ -228,6 +262,11 @@ if __name__ == "__main__":
                         action="store_true", 
                         help="Simulate real-time audio sending")
     
+    parser.add_argument("--format",
+                       choices=["pcm", "opus"],
+                       default="pcm",
+                       help="Audio format to send (pcm or opus)")
+    
     args = parser.parse_args()
     
     # Generate output path based on input filename
@@ -242,5 +281,6 @@ if __name__ == "__main__":
         str(output_path),
         args.api_key,
         args.chunk_time,
-        args.real_time
+        args.real_time,
+        args.format,
     ))
