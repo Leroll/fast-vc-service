@@ -296,7 +296,7 @@ if __name__ == "__main__":
                         help="Path to source audio file")
     
     parser.add_argument("--output-wav-dir", 
-                        default="wavs/outputs", 
+                        default="wavs/outputs/clients", 
                         help="Directory to save output audio files")
     
     parser.add_argument("--url", 

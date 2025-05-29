@@ -144,7 +144,8 @@ async def websocket_endpoint(websocket: WebSocket):
                         # Process audio chunk
                         try:
                             # Process the audio with voice conversion
-                            result = realtime_vc.chunk_vc(numpy_chunk, session)
+                            realtime_vc.chunk_vc(numpy_chunk, session)
+                            result = session.out_data  # Get the processed output data
                             
                             # Only send when there's a result
                             if result is not None and len(result) > 0:
