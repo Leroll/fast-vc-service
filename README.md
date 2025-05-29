@@ -59,8 +59,9 @@ python client/file_vc.py \
     - [x] Complete session replacement improvements
     - [ ] Add configuration information
     - [x] Improve log system
-    - [ ] Complete WS service code + PCM
-    - [ ] Complete WS + Opus
+    - [x] Complete WS service code + PCM
+    - [x] Complete WS + Opus
+    - [ ] Add a setting for the audio sample rate in the WebSocket client.
     - [ ] Add WebSocket support description to the README, then draw a process flowchart.
     - [ ] Support webRTC
     - [ ] Crop cover image

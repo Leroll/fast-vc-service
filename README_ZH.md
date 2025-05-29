@@ -60,8 +60,9 @@ python client/file_vc.py \
     - [x] session 部分的替换完善
     - [ ] 添加配置信息
     - [x] 完善log系统
-    - [ ] 完成ws服务代码 + PCM
-    - [ ] 完成ws + opus 服务代码
+    - [x] 完成ws服务代码 + PCM
+    - [x] 完成ws + opus 服务代码
+    - [ ] ws_client 增加发送音频samplerate的设置
     - [ ] Readme中添加websocket支持的描述，然后画出流程图
     - [ ] 支持webRTC
     - [ ] 裁剪封面图
