@@ -4,10 +4,10 @@ import sys
 import os   
 
 class InterceptHandler(logging.Handler):
-    """将标准 logging 日志转发到 Loguru"""
+    """send standard logging messages to Loguru logger"""
     
     def emit(self, record: logging.LogRecord) -> None:
-        """将日志记录转发到 Loguru
+        """send a log record to Loguru logger
         """
     
         try:
@@ -38,7 +38,7 @@ class LoggingSetup:
         
         # 如果已经初始化过，直接返回
         if cls._initialized:
-            logger.debug("日志系统已经初始化，跳过重复初始化")
+            logger.debug("logging system already initialized, skipping setup")
             return
             
         # 移除默认的 loguru 处理器
@@ -96,4 +96,4 @@ class LoggingSetup:
         
         # 标记为已初始化
         cls._initialized = True
-        logger.info("日志系统初始化完成")
+        logger.info("logging system initialized successfully")
