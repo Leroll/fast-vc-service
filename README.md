@@ -19,30 +19,62 @@
 
 > Features are continuously being updated. Stay tuned for our latest developments... ✨
 
-# 🛠️ Installation
-```
-# Clone the repository
+# 🚀 Quick Start
+
+## Environment Setup
+```bash
 git clone https://github.com/Leroll/fast-vc-service.git
 cd fast-vc-service
-
-# Install dependencies
 pip install -r requirements.txt
-
-# Configure environment variables (optional)
-cp .env.example .env
-# Edit the .env file to configure relevant parameters
+cp .env.example .env  # Optional: Edit configuration parameters
 ```
 
-# 🔧 Usage
-**1. Batch audio file streaming voice conversion, used for streaming effect testing**
+## Start Service
+```bash
+./scripts/start.sh     # 🟢 Start service
+./scripts/shutdown.sh  # 🔴 Stop service
 ```
+
+# 📡 Real-time Streaming Voice Conversion
+
+## WebSocket Connection Flow
+```mermaid
+sequenceDiagram
+    participant C as Client
+    participant S as Server
+    
+    C->>S: Configuration request
+    S->>C: Ready confirmation ✅
+    
+    loop Real-time audio stream
+        C->>S: 🎤 Audio chunk
+        S->>C: 🔊 Converted audio
+    end
+    
+    C->>S: End signal
+    S->>C: Completion status ✨
+```
+
+**Supported Formats**: PCM | OPUS
+
+## 🔥 Quick Test
+
+### WebSocket Real-time Conversion
+```bash
+python client/ws_client.py \
+    --source-wav-path "input.wav" \
+    --encoding OPUS
+```
+
+### Batch File Testing
+```bash
 python client/file_vc.py \
-    --source-wav-path "path/to/input1.wav path/to/input2.wav" \
-    --reference-wav-path "wavs/references/your_ref.wav" \
+    --source-wav-path "input1.wav input2.wav" \
+    --reference-wav-path ""wavs/references/ref.wav"" \
     --block-time 0.5 \
-    --diffusion-steps 10 \
-    --rms-mix-rate 0.7
+    --diffusion-steps 10
 ```
+
 
 # 🚧 Under Construction...TODO
 - [ ] tag - v0.1 - Basic Service - v2025-xx
@@ -62,7 +94,7 @@ python client/file_vc.py \
     - [x] Complete WS service code + PCM
     - [x] Complete WS + Opus
     - [ ] Add a setting for the audio sample rate in the WebSocket client.
-    - [ ] ✨Add WebSocket support description to the README, then draw a process flowchart.
+    - [x] Add WebSocket support description to the README, then draw a process flowchart.
     - [ ] Support webRTC
     - [ ] Crop cover image
     - [ ] Fix file_vc for the last block issue

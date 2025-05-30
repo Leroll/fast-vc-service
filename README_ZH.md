@@ -19,29 +19,60 @@
 
 > 功能持续迭代更新中。欢迎关注我们的最新进展... ✨
 
-# 🛠️ 安装
-```
-# 克隆仓库
+# 🚀 快速开始
+
+## 环境配置
+```bash
 git clone https://github.com/Leroll/fast-vc-service.git
 cd fast-vc-service
-
-# 安装依赖
 pip install -r requirements.txt
-
-# 配置环境变量（可选）
-cp .env.example .env
-# 编辑.env配置相关参数
+cp .env.example .env  # 可选：编辑配置参数
 ```
 
-# 🔧 使用
-**1. 批量音频文件流式换声, 用于流式效果测试**
+## 启动服务
+```bash
+./scripts/start.sh     # 🟢 启动服务
+./scripts/shutdown.sh  # 🔴 停止服务
 ```
+
+# 📡 实时流式换声
+
+## WebSocket 连接流程
+```mermaid
+sequenceDiagram
+    participant C as 客户端
+    participant S as 服务器
+    
+    C->>S: 配置连接请求
+    S->>C: 就绪确认 ✅
+    
+    loop 实时音频流
+        C->>S: 🎤 音频块
+        S->>C: 🔊 转换音频
+    end
+    
+    C->>S: 结束信号
+    S->>C: 完成状态 ✨
+```
+
+**支持格式**: PCM | OPUS
+
+## 🔥 快速测试
+
+### WebSocket 实时换声
+```bash
+python client/ws_client.py \
+    --source-wav-path "input.wav" \
+    --encoding OPUS
+```
+
+### 批量文件测试, 用于验证换声效果
+```bash
 python client/file_vc.py \
-    --source-wav-path "path/to/input1.wav path/to/input2.wav" \
-    --reference-wav-path "wavs/references/your_ref.wav" \
+    --source-wav-path "input1.wav input2.wav" \
+    --reference-wav-path "wavs/references/ref.wav" \
     --block-time 0.5 \
-    --diffusion-steps 10 \
-    --rms-mix-rate 0.7
+    --diffusion-steps 10
 ```
 
 
@@ -63,7 +94,7 @@ python client/file_vc.py \
     - [x] 完成ws服务代码 + PCM
     - [x] 完成ws + opus 服务代码
     - [ ] ws_client 增加发送音频samplerate的设置
-    - [ ] ✨Readme中添加websocket支持的描述，然后画出流程图
+    - [x] Readme中添加websocket支持的描述，然后画出流程图
     - [ ] 支持webRTC
     - [ ] 裁剪封面图
     - [ ] file_vc，针对最后一个block的问题
