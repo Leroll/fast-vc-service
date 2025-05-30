@@ -9,12 +9,12 @@ from pathlib import Path
 from tqdm import tqdm
 import resampy
 import opuslib  # For opus encoding
-from bson import ObjectId
+import uuid
 from loguru import logger
 
 
 def read_audio_file(audio_path, encoding,
-                    output_wav_dir):
+                    session_id, output_wav_dir):
     # Read audio file
     print(f"Reading audio file: {audio_path}")
     audio, sample_rate = sf.read(audio_path)
@@ -45,8 +45,7 @@ def read_audio_file(audio_path, encoding,
     # Generate output path based on input filename
     output_dir = Path(output_wav_dir)
     output_dir.mkdir(parents=True, exist_ok=True)  # Ensure output directory exists
-    input_path = Path(audio_path)
-    output_filename = f"{input_path.stem}_ws-client-vc{input_path.suffix}"
+    output_filename = f"{session_id}_ws-client-output.wav"
     output_path = output_dir / output_filename
     
     return audio, sample_rate, output_path
@@ -77,7 +76,7 @@ def cal_chunk_frame_size(sample_rate, encoding,
 async def send_audio_file(websocket_url, api_key, 
                           real_time_simulation,
                           # wav params
-                          audio_path, output_wav_dir="wavs/outputs/clients",
+                          audio_path, output_wav_dir="wavs/outputs",
                           encoding="PCM",
                           # pcm params 
                           chunk_time_ms=500,
@@ -107,12 +106,12 @@ async def send_audio_file(websocket_url, api_key,
         assert encoding in ["PCM", "OPUS"], "Encoding must be either 'PCM' or 'OPUS'"
         
         # Generate session ID
-        session_id = str(ObjectId())
+        session_id = uuid.uuid4().hex
         logger.info(f"Generated session ID: {session_id}")
         
         # read audio file
         audio, sample_rate, output_path = read_audio_file(audio_path, encoding,  
-                                                          output_wav_dir)
+                                                          session_id, output_wav_dir)
         logger.info(f"Audio loaded: {len(audio)} samples at {sample_rate} Hz")
         
         # cal chunk frame size
@@ -296,7 +295,7 @@ if __name__ == "__main__":
                         help="Path to source audio file")
     
     parser.add_argument("--output-wav-dir", 
-                        default="wavs/outputs/clients", 
+                        default="wavs/outputs", 
                         help="Directory to save output audio files")
     
     parser.add_argument("--url", 
@@ -315,6 +314,10 @@ if __name__ == "__main__":
     parser.add_argument("--real-time", 
                         action="store_true", 
                         help="Simulate real-time audio sending")
+    
+    parser.add_argument("--no-real-time", 
+                        action="store_true", 
+                        help="Disable real-time simulation (send audio as fast as possible)")
     
     parser.add_argument("--encoding",
                        choices=["PCM", "OPUS"],
@@ -336,7 +339,7 @@ if __name__ == "__main__":
     asyncio.run(send_audio_file(
         websocket_url=args.url,
         api_key=args.api_key,
-        real_time_simulation=args.real_time,
+        real_time_simulation=not args.no_real_time,
         audio_path=args.source_wav_path,
         output_wav_dir=args.output_wav_dir,
         encoding=args.encoding,

@@ -14,7 +14,7 @@ from pydantic import BaseModel
 from collections import deque
 from loguru import logger
 from pathlib import Path
-from bson import ObjectId
+import uuid
 
 from models import models
 from session import Session
@@ -75,7 +75,7 @@ class RealtimeVoiceConversion:
         self._init_performance_tracking()  # 初始化耗时记录
         self._init_realtime_parameters()  # 初始化实时推理相关参数
         self.reference = self._update_reference()
-        self.instance_id = str(ObjectId())  # 随机生成一个id，用于标识当前实例
+        self.instance_id = uuid.uuid4().hex  # 随机生成一个id，用于标识当前实例
     
     def _init_performance_tracking(self):
         """init performance tracking
