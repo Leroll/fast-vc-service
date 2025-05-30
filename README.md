@@ -55,7 +55,8 @@ sequenceDiagram
     S->>C: Completion status ✨
 ```
 
-**Supported Formats**: PCM | OPUS
+**For detailed WebSocket API specification, please refer to**: [WebSocket API Specification](docs/%E6%8E%A5%E5%8F%A3%E6%96%87%E6%A1%A3/WebSocket%20API%E8%A7%84%E8%8C%83.md)  
+**Supported Formats**: PCM | OPUS  
 
 ## 🔥 Quick Test
 
