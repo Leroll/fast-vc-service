@@ -48,7 +48,8 @@ class LoggingSetup:
         logger.add(
             sys.stdout,
             level="INFO",
-            format="<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>",
+            format="<bold><green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green></bold> | <bold><level>{level}</level></bold> | <bold><magenta>{name}</magenta></bold> | <bold><white>{message}</white></bold>",
+            colorize=True,
         )
         
         # 添加 Uvicorn 日志文件
@@ -60,18 +61,8 @@ class LoggingSetup:
             backtrace=True,
             encoding="utf-8",
             filter=lambda record: "uvicorn" in record["name"],
-            format="{time:YYYY-MM-DD HH:mm:ss.SSS} | {level} | {name} | {function}:{line} | {message}",
+            format="{time:YYYY-MM-DD HH:mm:ss.SSS} | {level} | {name} | {message}",
         )
-        
-        # 添加 app 日志文件 
-        def log_filter(record):
-            """过滤器函数，只记录bind了app的日志
-            
-            暂时还未启用
-            app_logger = logger.bind(name="app")
-            """
-            flag = record['extra'].get("name", None) == "app"
-            return flag
         
         logger.add(
             "logs/app.log",
@@ -81,7 +72,7 @@ class LoggingSetup:
             backtrace=True,
             encoding="utf-8",
             filter=lambda record: "uvicorn" not in record["name"],
-            format="{time:YYYY-MM-DD HH:mm:ss.SSS} | {level} | {name} | {function}:{line} | {message}",
+            format="{time:YYYY-MM-DD HH:mm:ss.SSS} | {level} | {name} | {message}",
         )
         
         # 配置标准日志库将日志发送到我们的拦截器

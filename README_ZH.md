@@ -26,7 +26,13 @@
 git clone https://github.com/Leroll/fast-vc-service.git
 cd fast-vc-service
 pip install -r requirements.txt
-cp .env.example .env  # 可选：编辑配置参数
+cp .env.example .env  # 配置模型下载路径
+```
+
+当第一次运行时，模型会自动下载到checkpoint文件夹下。  
+如果有网络问题，可以配置HF镜像  
+```bash
+export HF_ENDPOINT=https://hf-mirror.com
 ```
 
 ## 启动服务

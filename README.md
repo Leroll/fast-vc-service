@@ -29,6 +29,12 @@ pip install -r requirements.txt
 cp .env.example .env  # Optional: Edit configuration parameters
 ```
 
+When running for the first time, the model will be automatically downloaded to the `checkpoint` folder.  
+If you encounter network issues, you can configure the HF mirror:  
+```bash
+export HF_ENDPOINT=https://hf-mirror.com
+```
+
 ## Start Service
 ```bash
 ./scripts/start.sh     # 🟢 Start service

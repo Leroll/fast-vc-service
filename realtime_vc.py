@@ -16,7 +16,7 @@ from loguru import logger
 from pathlib import Path
 import uuid
 
-from models import models
+from models import ModelFactory
 from session import Session
 from utils import Singleton
 
@@ -71,32 +71,33 @@ class RealtimeVoiceConversion:
 
     def __init__(self, cfg:RealtimeVoiceConversionConfig) -> None:
         self.cfg = cfg
-        self.models = models
-        self._init_performance_tracking()  # 初始化耗时记录
-        self._init_realtime_parameters()  # 初始化实时推理相关参数
+        self.models = ModelFactory().get_models()  # initialize models
+        self._init_performance_tracking() 
+        self._init_realtime_parameters()  # init realtime parameters
         self.reference = self._update_reference()
-        self.instance_id = uuid.uuid4().hex  # 随机生成一个id，用于标识当前实例
+        self.instance_id = uuid.uuid4().hex
+        logger.info(f"RealtimeVoiceConversion instance created with ID: {self.instance_id}")
     
     def _init_performance_tracking(self):
         """init performance tracking
         
         1. time cost in every module        
         """
-        self.vad_time = deque(maxlen=self.cfg.max_tracking_counter)  # 用于记录每次VAD的耗时
-        self.noise_gate_time = deque(maxlen=self.cfg.max_tracking_counter)  # 用于记录每次噪声门的耗时
-        self.preprocessing_time = deque(maxlen=self.cfg.max_tracking_counter)  # 用于记录每次预处理的耗时
+        self.vad_time = deque(maxlen=self.cfg.max_tracking_counter)  
+        self.noise_gate_time = deque(maxlen=self.cfg.max_tracking_counter)  
+        self.preprocessing_time = deque(maxlen=self.cfg.max_tracking_counter)  
         
-        self.senmantic_time = deque(maxlen=self.cfg.max_tracking_counter)  # 用于记录每次senmantic推理的耗时
-        self.dit_time = deque(maxlen=self.cfg.max_tracking_counter)  # 用于记录每次dit推理的耗时
-        self.vocoder_time = deque(maxlen=self.cfg.max_tracking_counter)  # 用于记录每次vocoder推理的耗时
-        self.vc_time = deque(maxlen=self.cfg.max_tracking_counter)  # 用于记录每次换声模型整体推理的耗时
+        self.senmantic_time = deque(maxlen=self.cfg.max_tracking_counter)  
+        self.dit_time = deque(maxlen=self.cfg.max_tracking_counter)  
+        self.vocoder_time = deque(maxlen=self.cfg.max_tracking_counter)  
+        self.vc_time = deque(maxlen=self.cfg.max_tracking_counter)  
         
-        self.rms_mix_time = deque(maxlen=self.cfg.max_tracking_counter)  # 用于记录每次RMS混合的耗时
-        self.sola_time = deque(maxlen=self.cfg.max_tracking_counter)  # 用于记录每次SOLA算法的耗时
+        self.rms_mix_time = deque(maxlen=self.cfg.max_tracking_counter)  
+        self.sola_time = deque(maxlen=self.cfg.max_tracking_counter) 
         
-        self.chunk_time = deque(maxlen=self.cfg.max_tracking_counter)  # 用于记录每次chunk整体推理的耗时
+        self.chunk_time = deque(maxlen=self.cfg.max_tracking_counter)  # time cost of one chunk
         
-        self.tracking_counter = 0  # 用于记录时间的计数器
+        self.tracking_counter = 0  # counter which triggers performance report
         
     def _performance_report(self):
         """Report module timing statistics"""
@@ -136,7 +137,7 @@ class RealtimeVoiceConversion:
         logger.info(msg)
     
     def _init_realtime_parameters(self):
-        """初始化实时推理服务相关参数"""
+        """Initialize parameters related to real-time processing"""
         
         self.zc = self.cfg.SAMPLERATE // self.cfg.zc_framerate  # precision factor
                                                                 # seed-vc is // 50

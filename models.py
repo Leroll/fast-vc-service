@@ -10,7 +10,7 @@ from loguru import logger
 from pydantic import BaseModel
 
 from pathlib import Path
-seedvc_path = (Path(__file__).parent / "seed-vc").resolve()  # 添加seed-vc路径
+seedvc_path = (Path(__file__).parent / "seed-vc").resolve()  # add path to seed-vc
 sys.path.insert(0, str(seedvc_path))
 from modules.commons import *
 from hf_utils import load_custom_model_from_hf
@@ -40,14 +40,14 @@ class ModelConfig(BaseModel):
 
 class ModelFactory:
     
-    def __init__(self,model_config:ModelConfig):
+    def __init__(self,model_config:ModelConfig=ModelConfig()):
         """model factory, all models are loaded here"""
-        
+        self.logger = logger.bind(name="app")
         self.cfg = model_config
         self.device = self.cfg.device
         self.is_torch_compile = self.cfg.is_torch_compile
-        logger.info(f"Using device: {self.device}")
-        logger.info(f"Using torch compile: {self.is_torch_compile}")
+        self.logger.info(f"Using device: {self.device}")
+        self.logger.info(f"Using torch compile: {self.is_torch_compile}")
         
         self.models = self._load_models()
 
@@ -61,11 +61,11 @@ class ModelFactory:
         self.to_mel, self.mel_fn_args = self._load_mel()
         self.vad_model = self._load_vad_model()
         
-        if self.is_torch_compile:  # 是否使用torch.compile加速
+        if self.is_torch_compile:  # if using torch compile to accelerate
             self._torch_compile()
         
         models = {
-            # 主模型
+            # main models
             "campplus_model": self.campplus_model,
             "dit_model": self.dit_model,
             
@@ -75,7 +75,7 @@ class ModelFactory:
             "to_mel": self.to_mel,
             "mel_fn_args": self.mel_fn_args,
             
-            # 其他辅助模型
+            # additional models
             "vad_model": self.vad_model,
         }
         return models
@@ -91,9 +91,9 @@ class ModelFactory:
     
     @timer_decorator
     def _load_dit_model(self):
-        """加载Dit模型"""
+        """dit model"""
         
-        logger.info("Loading DiT model...")
+        self.logger.info("Loading DiT model...")
         
         dit_checkpoint_path, dit_config_path = load_custom_model_from_hf(self.cfg.dit_repo_id,
                                                                          self.cfg.dit_model_filename,
@@ -106,8 +106,8 @@ class ModelFactory:
         # dit_checkpoint_path = "/root/autodl-tmp/seed-vc-cus/runs/csmsc_fintune_10_bigvgan/ft_model.pth"
         # dit_config_path = "/root/autodl-tmp/seed-vc-cus/runs/csmsc_fintune_10_bigvgan/config_dit_mel_seed_uvit_xlsr_tiny_bigvgan.yml"
         
-        logger.info(f"Dit_checkpoint_path: {dit_checkpoint_path}")
-        logger.info(f"Dit_config_path: {dit_config_path}")
+        self.logger.info(f"Dit_checkpoint_path: {dit_checkpoint_path}")
+        self.logger.info(f"Dit_config_path: {dit_config_path}")
         
         # load
         config = yaml.safe_load(open(dit_config_path, "r"))
@@ -135,7 +135,7 @@ class ModelFactory:
         for key in dit_model:
            temp_model = dit_model[key]
            total_params = self.cal_model_params(temp_model)
-           logger.info(f"DiT model | {key} | parameters: {total_params / 1_000_000:.2f}M")         
+           self.logger.info(f"DiT model -> {key} -> parameters: {total_params / 1_000_000:.2f}M")         
         
         return dit_model, dit_fn, config, model_params, sr
     
@@ -143,7 +143,7 @@ class ModelFactory:
     def _load_campplus_model(self):
         """加载campplus模型"""
         
-        logger.info("Loading CampPlus model...")
+        self.logger.info("Loading CampPlus model...")
         from modules.campplus.DTDNN import CAMPPlus
 
         campplus_ckpt_path = load_custom_model_from_hf(
@@ -156,7 +156,7 @@ class ModelFactory:
         
         # 计算campplus_model的参数量
         total_params = self.cal_model_params(campplus_model)
-        logger.info(f"CampPlus model | parameters: {total_params / 1_000_000:.2f}M")
+        self.logger.info(f"CampPlus model has parameters: {total_params / 1_000_000:.2f}M")
         
         return campplus_model
     
@@ -164,7 +164,7 @@ class ModelFactory:
     def _load_vocoder_fn(self):
         """加载vocoder模型"""
         
-        logger.info("Loading vocoder model...")
+        self.logger.info("Loading vocoder model...")
         vocoder_type = self.model_params.vocoder.type
 
         if vocoder_type == 'bigvgan':  # bigvgan
@@ -196,14 +196,14 @@ class ModelFactory:
             _ = [vocos[key].eval().to(self.device) for key in vocos]
             _ = [vocos[key].to(self.device) for key in vocos]
             total_params = sum(sum(p.numel() for p in vocos[key].parameters() if p.requires_grad) for key in vocos.keys())
-            print(f"Vocoder model total parameters: {total_params / 1_000_000:.2f}M")
+            self.logger.info(f"Vocoder model total parameters: {total_params / 1_000_000:.2f}M")
             vocoder_fn = vocos.decoder
         else:
             raise ValueError(f"Unknown vocoder type: {vocoder_type}")
         
         # 计算vocoder_fn的参数量
         total_params = self.cal_model_params(vocoder_fn)
-        logger.info(f"vocoder_fn | parameters: {total_params / 1_000_000:.2f}M")
+        self.logger.info(f"vocoder_fn has parameters: {total_params / 1_000_000:.2f}M")
         
         return vocoder_fn
     
@@ -211,7 +211,7 @@ class ModelFactory:
     def _load_semantic_fn(self):
         """加载语义模型"""
         
-        logger.info("Loading semantic model...")
+        self.logger.info("Loading semantic model...")
         speech_tokenizer_type = self.model_params.speech_tokenizer.type
         if speech_tokenizer_type == 'whisper':
             # whisper
@@ -223,7 +223,7 @@ class ModelFactory:
             
             # 计算whisper_model的参数量
             total_params = self.cal_model_params(whisper_model)
-            logger.info(f"Semantic | Whisper model | parameters: {total_params / 1_000_000:.2f}M")
+            self.logger.info(f"Semantic -> Whisper model -> parameters: {total_params / 1_000_000:.2f}M")
 
             def semantic_fn(waves_16k):
                 ori_inputs = whisper_feature_extractor([waves_16k.squeeze(0).cpu().numpy()],
@@ -258,7 +258,7 @@ class ModelFactory:
             
             # 计算hubert_model的参数量
             total_params = self.cal_model_params(hubert_model)
-            logger.info(f"Semantic | HuBERT model | parameters: {total_params / 1_000_000:.2f}M")
+            self.logger.info(f"Semantic -> HuBERT model -> parameters: {total_params / 1_000_000:.2f}M")
 
             def semantic_fn(waves_16k):
                 ori_waves_16k_input_list = [
@@ -292,7 +292,7 @@ class ModelFactory:
             
             # 计算wav2vec_model的参数量
             total_params = self.cal_model_params(wav2vec_model)
-            logger.info(f"Semantic | Wav2Vec model | parameters: {total_params / 1_000_000:.2f}M")
+            self.logger.info(f"Semantic -> Wav2Vec model -> parameters: {total_params / 1_000_000:.2f}M")
             
 
             def semantic_fn(waves_16k):
@@ -346,22 +346,22 @@ class ModelFactory:
     def _load_vad_model(self):
         """加载vad模型"""
         
-        logger.info("Loading VAD model...")
+        self.logger.info("Loading VAD model...")
         from funasr import AutoModel  # 这是新版本增加的vad模块
         vad_model = AutoModel(model="checkpoints/modelscope_cache/hub/iic/speech_fsmn_vad_zh-cn-16k-common-pytorch") 
         
         # 计算vad_model的参数量
         total_params = self.cal_model_params(vad_model.model)
-        logger.info(f"VAD model | parameters: {total_params / 1_000_000:.2f}M")
+        self.logger.info(f"VAD model has parameters: {total_params / 1_000_000:.2f}M")
         
         return vad_model
-
-
-model_config = ModelConfig()
-model_factory = ModelFactory(model_config)
-models = model_factory.get_models()
+    
       
 if __name__ == "__main__":
+    print('starting model factory...')
+    model_config = ModelConfig()
+    model_factory = ModelFactory(model_config)
+    models = model_factory.get_models()
     print('-' * 42)
     print(f"Models loaded successfully.")
     print(models.keys())
