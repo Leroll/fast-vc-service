@@ -83,6 +83,8 @@ async def send_audio_file(websocket_url, api_key,
                           # opus params
                           bitrate=128_000,
                           frame_duration_ms=20,  # 帧大小
+                          session_id=None,  # 新增：允许外部传入session_id
+                          save_output=True,  # 新增：控制是否保存输出文件
                          ):
     """
     Send an audio file to the voice conversion service in chunks,
@@ -95,23 +97,48 @@ async def send_audio_file(websocket_url, api_key,
         
         audio_path: Path to the input audio file
         output_wav_dir: Directory to save output audio files
+        save_output: If True, save the output audio file after conversion
+        
         encoding: Format to send audio in ("PCM" or "OPUS")
-        
         chunk_time_ms: Time in ms for each audio chunk (default: 500ms)
-        
         bitrate: Bitrate for Opus encoding (default: 128k bps)
         frame_duration_ms: Duration of each Opus frame in ms (default: 20ms)
+        
+        session_id: Optional session ID for tracking the conversion session
+    
+    Returns:
+        dict: {
+            'success': bool,
+            'session_id': str,
+            'duration': float,
+            'output_path': str or None,
+            'error': str or None
+        }
     """
+    start_time = time.perf_counter()
+    result = {
+        'success': False,
+        'session_id': None,
+        'duration': 0.0,
+        'output_path': None,
+        'error': None
+    }
+    
     try:
         assert encoding in ["PCM", "OPUS"], "Encoding must be either 'PCM' or 'OPUS'"
         
-        # Generate session ID
-        session_id = uuid.uuid4().hex
+        # Generate session ID if not provided
+        if session_id is None:
+            session_id = uuid.uuid4().hex
+        result['session_id'] = session_id
+        
         logger.info(f"Generated session ID: {session_id}")
         
         # read audio file
         audio, sample_rate, output_path = read_audio_file(audio_path, encoding,  
                                                           session_id, output_wav_dir)
+        result['output_path'] = str(output_path) if save_output else None
+        
         logger.info(f"Audio loaded: {len(audio)} samples at {sample_rate} Hz")
         
         # cal chunk frame size
@@ -270,21 +297,25 @@ async def send_audio_file(websocket_url, api_key,
             except asyncio.CancelledError:
                 pass
             
-            # Save the output audio
-            if output_audio:
+            # Save the output audio only if requested
+            if output_audio and save_output:
                 output_audio_array = np.concatenate(output_audio)
-                sf.write(output_path, output_audio_array, 16000)  # server expects 16kHz output
+                sf.write(output_path, output_audio_array, 16000)
                 logger.info(f"Saved converted audio to {output_path} ({len(output_audio_array)} samples)")
-                
-                # Calculate audio length
-                audio_length_seconds = len(output_audio_array) / 16000 
-                logger.info(f"Output audio duration: {audio_length_seconds:.2f} seconds")
-            else:
-                logger.info("No output audio received")
+        
+        # At the end of successful processing:
+        result['success'] = True
+        result['duration'] = time.perf_counter() - start_time
+        
+        return result
                 
     except Exception as e:
         import traceback
-        logger.info(f"Error during processing: {traceback.format_exc()}")
+        error_msg = f"Error during processing: {traceback.format_exc()}"
+        logger.error(error_msg)
+        result['error'] = error_msg
+        result['duration'] = time.perf_counter() - start_time
+        return result
 
 
 if __name__ == "__main__":
@@ -334,6 +365,10 @@ if __name__ == "__main__":
                        default=20,
                        help="Frame duration in ms for OPUS encoding (default: 20)")
     
+    parser.add_argument("--no-save-output",
+                        action="store_true",
+                        help="Disable Save the output audio file after conversion")
+    
     args = parser.parse_args()
     
     asyncio.run(send_audio_file(
@@ -346,4 +381,5 @@ if __name__ == "__main__":
         chunk_time_ms=args.chunk_time,
         bitrate=args.bitrate,
         frame_duration_ms=args.frame_duration,
+        save_output=not args.no_save_output,
     ))
