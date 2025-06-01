@@ -4,6 +4,9 @@
 
 <div align="center">
   <img alt="GitHub stars" src="https://img.shields.io/github/stars/Leroll/fast-vc-service?style=social">
+  <a href="https://github.com/Leroll/fast-vc-service/commits/main">
+    <img alt="GitHub last commit" src="https://img.shields.io/github/last-commit/Leroll/fast-vc-service">
+  </a>
   <img alt="License" src="https://img.shields.io/badge/License-MIT-blue.svg">
   <img alt="Python 3.8+" src="https://img.shields.io/badge/python-3.8+-blue.svg">
 </div>
@@ -108,7 +111,7 @@ python client/file_vc.py \
     - [ ] 裁剪封面图
     - [ ] file_vc，针对最后一个block的问题
     - [ ] 针对 异常情况，比如某个chunk转换rta>1的时候，有没有什么处理方案？
-    
+    - [ ] 换个名字
 - [ ] tag - v0.2 - 音频质量相关 -  v2025-xx
     - [ ] infer_wav 每个chunk大小问题排查，在经过vcmodel之后，为8781，不经过的话为9120【sola模块记录】
     - [ ] 声音貌似有些抖动，待排查

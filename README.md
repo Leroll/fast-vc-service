@@ -4,6 +4,9 @@
 
 <div align="center">
   <img alt="GitHub stars" src="https://img.shields.io/github/stars/Leroll/fast-vc-service?style=social">
+  <a href="https://github.com/Leroll/fast-vc-service/commits/main">
+    <img alt="GitHub last commit" src="https://img.shields.io/github/last-commit/Leroll/fast-vc-service">
+  </a>
   <img alt="License" src="https://img.shields.io/badge/License-MIT-blue.svg">
   <img alt="Python 3.8+" src="https://img.shields.io/badge/python-3.8+-blue.svg">
 </div>
@@ -108,7 +111,7 @@ python client/file_vc.py \
     - [ ] Crop cover image
     - [ ] Fix file_vc for the last block issue
     - [ ] Handle exceptional cases, e.g., when a chunk converts with rta>1, what processing solutions exist?
-    
+    - [ ] change the name 
 - [ ] tag - v0.2 - Audio Quality - v2025-xx
     - [ ] Investigate chunk size issue in infer_wav, 8781 after vcmodel, 9120 without it [sola module record]
     - [ ] Investigate potential sound jitter issues
