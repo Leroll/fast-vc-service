@@ -18,23 +18,22 @@ def create_app() -> FastAPI:
     
     # Initialize logging
     LoggingSetup.setup()
-    logger.info("-" * 42)
-    logger.info("initializing Fast Voice Conversion Service...")
+    logger.info("-" * 21 + "initilizing service" + "-" * 21)
     
     # Create FastAPI application
     app = FastAPI(
-        title="Fast Voice Conversion Service",
+        title="Realtime Voice Conversion Service",
         description="Voice Conversion Service API"
     )
     
     # Initialize realtime voice conversion service
-    logger.info("loading Realtime Voice Conversion...")
+    logger.info("initializing class: RealtimeVoiceConversion ...")
     try:
         app.state.realtime_vc = RealtimeVoiceConversion(
             RealtimeVoiceConversionConfig()
         )
     except Exception as e:
-        logger.error(f"faild to initialize Realtime Voice Conversion: {traceback.format_exc()}")
+        logger.error(f"faild to initialize RealtimeVoiceConversion: {traceback.format_exc()}")
         raise
     
     # Include routers
@@ -42,8 +41,7 @@ def create_app() -> FastAPI:
     app.include_router(base_router)
     app.include_router(websocket_router)
     
-    logger.success("Successfully initialized Fast Voice Conversion Service")
-    logger.info("-" * 42)
+    logger.info("-" * 21 + "service initialized" + "-" * 21)
     return app
     
 if __name__ == "__main__":
