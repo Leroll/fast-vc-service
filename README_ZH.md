@@ -12,7 +12,7 @@
 </div>
 
 <div align="center">
-  <h3>专为云端部署设计的工业级流式换声服务，从Git仓库到私有API平台</h3>
+  <h3>基于 Seed-VC 的实时换声服务，提供 WebSocket 接口，支持 PCM 和 Opus 音频格式</h3>
 </div> 
 
 <div align="center">

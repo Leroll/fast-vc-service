@@ -12,7 +12,7 @@
 </div>
 
 <div align="center">
-  <h3>Industrial-grade streaming voice conversion service designed for cloud deployment, from Git repository to private API platform</h3>
+  <h3>Real-time voice conversion service based on Seed-VC, providing WebSocket voice conversion with PCM and Opus audio format support</h3>
 </div> 
 
 <div align="center">
