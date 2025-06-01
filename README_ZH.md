@@ -96,17 +96,19 @@ python client/file_vc.py \
     - [x] 冗余代码清理，删去不必要的逻辑
     - [x] 完成各模块流水线重构
     - [x] session 部分的替换完善
-    - [ ] 添加配置信息
     - [x] 完善log系统
     - [x] 完成ws服务代码 + PCM
     - [x] 完成ws + opus 服务代码
-    - [ ] ws_client 增加发送音频samplerate的设置
     - [x] Readme中添加websocket支持的描述，然后画出流程图
+    - [ ] ✨优化requirement包管理方式，更易用与稳定
+    - [ ] 添加配置信息
+    - [ ] 增加性能测试模块
+    - [ ] ws_client 增加发送音频samplerate的设置
     - [ ] 支持webRTC
     - [ ] 裁剪封面图
     - [ ] file_vc，针对最后一个block的问题
     - [ ] 针对 异常情况，比如某个chunk转换rta>1的时候，有没有什么处理方案？
-    - [ ] ✨优化requirement包管理方式，更易用与稳定
+    
 - [ ] tag - v0.2 - 音频质量相关 -  v2025-xx
     - [ ] infer_wav 每个chunk大小问题排查，在经过vcmodel之后，为8781，不经过的话为9120【sola模块记录】
     - [ ] 声音貌似有些抖动，待排查

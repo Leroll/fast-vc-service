@@ -96,17 +96,19 @@ python client/file_vc.py \
     - [x] Clean up redundant code, remove unnecessary logic
     - [x] Complete pipeline reconstruction of each module
     - [x] Complete session replacement improvements
-    - [ ] Add configuration information
     - [x] Improve log system
     - [x] Complete WS service code + PCM
     - [x] Complete WS + Opus
-    - [ ] Add a setting for the audio sample rate in the WebSocket client.
     - [x] Add WebSocket support description to the README, then draw a process flowchart.
+    - [ ] ✨Optimizing Package Management for Better Usability and Stability
+    - [ ] Add configuration information
+    - [ ] add performance testing module
+    - [ ] Add a setting for the audio sample rate in the WebSocket client.
     - [ ] Support webRTC
     - [ ] Crop cover image
     - [ ] Fix file_vc for the last block issue
     - [ ] Handle exceptional cases, e.g., when a chunk converts with rta>1, what processing solutions exist?
-    - [ ] ✨Optimizing Package Management for Better Usability and Stability
+    
 - [ ] tag - v0.2 - Audio Quality - v2025-xx
     - [ ] Investigate chunk size issue in infer_wav, 8781 after vcmodel, 9120 without it [sola module record]
     - [ ] Investigate potential sound jitter issues
