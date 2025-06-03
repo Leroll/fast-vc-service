@@ -7,7 +7,7 @@
   <a href="https://github.com/Leroll/fast-vc-service/commits/main">
     <img alt="GitHub last commit" src="https://img.shields.io/github/last-commit/Leroll/fast-vc-service">
   </a>
-  <img alt="License" src="https://img.shields.io/badge/License-MIT-blue.svg">
+  <img alt="License" src="https://img.shields.io/badge/License-GPL%20v3-blue.svg">
   <img alt="Python 3.10+" src="https://img.shields.io/badge/python-3.10+-blue.svg">
 </div>
 
