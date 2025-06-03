@@ -1,19 +1,13 @@
 from dotenv import load_dotenv
-import os
-import sys
 load_dotenv()
 
 import yaml
 import torch
-import time
 from loguru import logger
 from pydantic import BaseModel
 
-from pathlib import Path
-seedvc_path = (Path(__file__).parent / "seed-vc").resolve()  # add path to seed-vc
-sys.path.insert(0, str(seedvc_path))
-from modules.commons import *
-from hf_utils import load_custom_model_from_hf
+from externals.seed_vc.modules.commons import *
+from externals.seed_vc.hf_utils import load_custom_model_from_hf
 
 from utils import timer_decorator
 
@@ -144,7 +138,7 @@ class ModelFactory:
         """加载campplus模型"""
         
         self.logger.info("Loading CampPlus model...")
-        from modules.campplus.DTDNN import CAMPPlus
+        from externals.seed_vc.modules.campplus.DTDNN import CAMPPlus
 
         campplus_ckpt_path = load_custom_model_from_hf(
             "funasr/campplus", "campplus_cn_common.bin", config_filename=None
@@ -168,7 +162,7 @@ class ModelFactory:
         vocoder_type = self.model_params.vocoder.type
 
         if vocoder_type == 'bigvgan':  # bigvgan
-            from modules.bigvgan import bigvgan
+            from externals.seed_vc.modules.bigvgan import bigvgan
             bigvgan_name = self.model_params.vocoder.name  #  # bigvgan_name = "nvidia/bigvgan_v2_22khz_80band_256x"
             bigvgan_model = bigvgan.BigVGAN.from_pretrained(bigvgan_name, use_cuda_kernel=False)
             # remove weight norm in the model and set to eval mode
@@ -176,8 +170,8 @@ class ModelFactory:
             bigvgan_model = bigvgan_model.eval().to(self.device)
             vocoder_fn = bigvgan_model
         elif vocoder_type == 'hifigan':
-            from modules.hifigan.generator import HiFTGenerator
-            from modules.hifigan.f0_predictor import ConvRNNF0Predictor
+            from externals.seed_vc.modules.hifigan.generator import HiFTGenerator
+            from externals.seed_vc.modules.hifigan.f0_predictor import ConvRNNF0Predictor
             hift_config = yaml.safe_load(open('seed-vc/configs/hifigan.yml', 'r'))
             hift_gen = HiFTGenerator(**hift_config['hift'], f0_predictor=ConvRNNF0Predictor(**hift_config['f0_predictor']))
             hift_path = load_custom_model_from_hf("FunAudioLLM/CosyVoice-300M", 'hift.pt', None)
@@ -330,7 +324,7 @@ class ModelFactory:
             "fmax": None if self.config['preprocess_params']['spect_params'].get('fmax', "None") == "None" else 8000,  # tiny=8000, small="None", base="None"
             "center": False
         }
-        from modules.audio import mel_spectrogram
+        from externals.seed_vc.modules.audio import mel_spectrogram
         to_mel = lambda x: mel_spectrogram(x, **mel_fn_args)
         
         return to_mel, mel_fn_args

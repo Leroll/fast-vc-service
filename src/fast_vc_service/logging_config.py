@@ -1,7 +1,6 @@
 from loguru import logger
 import logging
-import sys
-import os   
+import sys 
 
 class InterceptHandler(logging.Handler):
     """send standard logging messages to Loguru logger"""

@@ -1,6 +1,5 @@
 import numpy as np
 from loguru import logger
-import struct
 import resampy  # For high-quality resampling
 import opuslib  # For opus encoding/decoding
 import traceback

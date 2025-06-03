@@ -16,9 +16,9 @@ from loguru import logger
 from pathlib import Path
 import uuid
 
-from models import ModelFactory
-from session import Session
-from utils import Singleton
+from fast_vc_service.models import ModelFactory
+from fast_vc_service.session import Session
+from fast_vc_service.utils import Singleton
 
 
 class RealtimeVoiceConversionConfig(BaseModel):

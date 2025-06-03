@@ -5,7 +5,7 @@ import numpy as np
 import traceback
 import json
 
-from buffer import AudioStreamBuffer, OpusAudioStreamBuffer
+from fast_vc_service.buffer import AudioStreamBuffer, OpusAudioStreamBuffer
 
 websocket_router = APIRouter()
 

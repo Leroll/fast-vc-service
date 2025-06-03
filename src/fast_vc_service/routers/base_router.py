@@ -1,6 +1,5 @@
 from fastapi import APIRouter, Response
 from loguru import logger
-import platform
 from typing import Dict
 
 base_router = APIRouter(tags=["System"])

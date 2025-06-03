@@ -4,9 +4,9 @@ from loguru import logger
 from pydantic import BaseModel
 import traceback
 
-from routers import base_router, websocket_router
-from logging_config import LoggingSetup
-from realtime_vc import RealtimeVoiceConversion, RealtimeVoiceConversionConfig
+from fast_vc_service.routers import base_router, websocket_router
+from fast_vc_service.logging_config import LoggingSetup
+from fast_vc_service.realtime_vc import RealtimeVoiceConversion, RealtimeVoiceConversionConfig
 
 
 class AppConfig(BaseModel):

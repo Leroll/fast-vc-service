@@ -3,10 +3,10 @@ import os
 from pydantic import BaseModel
 from enum import Enum
 
-from utils import Singleton  
-from app import AppConfig
-from realtime_vc import RealtimeVoiceConversionConfig
-from models import ModelConfig
+from fast_vc_service.utils import Singleton  
+from fast_vc_service.app import AppConfig
+from fast_vc_service.realtime_vc import RealtimeVoiceConversionConfig
+from fast_vc_service.models import ModelConfig
 
 class ConfigData(BaseModel):
     version: str = "0.0.0.1"
