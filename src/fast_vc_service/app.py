@@ -43,9 +43,9 @@ def create_app() -> FastAPI:
     
     logger.info("-" * 21 + "service initialized" + "-" * 21)
     return app
-    
-if __name__ == "__main__":
-    # Run the application with Uvicorn
+
+def main():
+    """Main function to run the FastAPI application."""
     app_config = AppConfig()
     app = create_app()
     uvicorn.run(
@@ -54,3 +54,6 @@ if __name__ == "__main__":
         port=app_config.port,
         log_config=None  # Forbid default logging config
     )
+    
+if __name__ == "__main__":
+    main()
