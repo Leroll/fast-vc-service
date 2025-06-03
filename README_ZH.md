@@ -104,6 +104,7 @@ python client/file_vc.py \
     - [x] 完成ws + opus 服务代码
     - [x] Readme中添加websocket支持的描述，然后画出流程图
     - [ ] ✨优化requirement包管理方式，更易用与稳定
+    - [ ] 新增ws超时关闭链接机制，触发回收
     - [ ] 添加配置信息
     - [ ] 增加性能测试模块
     - [ ] ws_client 增加发送音频samplerate的设置

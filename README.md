@@ -104,6 +104,7 @@ python client/file_vc.py \
     - [x] Complete WS + Opus
     - [x] Add WebSocket support description to the README, then draw a process flowchart.
     - [ ] ✨Optimizing Package Management for Better Usability and Stability
+    - [ ] add support for closing idle connections after timeout
     - [ ] Add configuration information
     - [ ] add performance testing module
     - [ ] Add a setting for the audio sample rate in the WebSocket client.
