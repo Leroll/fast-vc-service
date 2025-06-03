@@ -44,9 +44,9 @@ def create_app() -> FastAPI:
     logger.info("-" * 21 + "service initialized" + "-" * 21)
     return app
 
-def main():
+def main(host: str = "0.0.0.0", port: int = 8042) -> None:
     """Main function to run the FastAPI application."""
-    app_config = AppConfig()
+    app_config = AppConfig(host=host, port=port)
     app = create_app()
     uvicorn.run(
         app,
