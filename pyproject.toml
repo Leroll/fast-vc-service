@@ -7,10 +7,32 @@ authors = [
 ]
 license = {text = "GPL 3.0"}
 readme = "README.md"
-requires-python = ">=3.10"
-dependencies = [
-]
 
+[tool.poetry.dependencies]
+python = ">=3.10,<4.0"
+fastapi = "^0.115.12"
+uvicorn = "^0.34.3"
+loguru = "^0.7.3"
+pydantic = "^2.11.5"
+numpy = "^2.2.6"
+resampy = "^0.4.3"
+opuslib = "^3.0.1"
+pyyaml = "^6.0.2"
+torch = {version = "2.4.0", source = "pytorch"}
+torchvision = {version = "0.19.0", source = "pytorch"}
+torchaudio = {version = "2.4.0", source = "pytorch"}
+
+
+[[tool.poetry.source]]
+name = "aliyun"
+url = "https://mirrors.aliyun.com/pypi/simple/"
+priority = "primary"
+
+
+[[tool.poetry.source]]
+name = "pytorch"
+url = "https://download.pytorch.org/whl/cu121"
+priority = "explicit"
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
