@@ -322,7 +322,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="WebSocket client for voice conversion")
     
     parser.add_argument("--source-wav-path", 
-                        default="wavs/sources/low-pitched-male.wav", 
+                        default="wavs/sources/low-pitched-male-24k.wav", 
                         help="Path to source audio file")
     
     parser.add_argument("--output-wav-dir", 

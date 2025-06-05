@@ -28,7 +28,7 @@ class RealtimeVoiceConversionConfig(BaseModel):
     device: str = str(torch.device("cuda" if torch.cuda.is_available() else "cpu"))
     
     # wav 相关
-    reference_wav_path: str = "wavs/references/csmsc042-s0.2.wav"
+    reference_wav_path: str = "wavs/references/ref-24k.wav"
     save_dir: str = "wavs/outputs/"  # save
     save_input: bool = True  # is to save input wav
     save_output: bool = True  # is to save output wav

@@ -17,10 +17,7 @@ def parse_args():
                         help="要处理的文件列表 (空格分隔的字符串), 没传默认为 None")
     
     parser.add_argument('--reference-wav-path', type=str, 
-                        default="wavs/references/csmsc042-s0.2.wav",
-                        # default="wavs/references/csmsc042.wav", 
-                        # default="wavs/references/csmsc042-s0.5.wav",
-                        # default="wavs/references/csmsc042-s1.0.wav",
+                        default="wavs/references/ref-24k.wav",
                         help="参考音频文件路径")
     
     parser.add_argument('--save-dir', type=str, 
@@ -61,10 +58,10 @@ if __name__ == "__main__":
     source_wav_path = args.source_wav_path.split() if args.source_wav_path else None  
     if source_wav_path is None:  
         # wav files
-        source_wav_path = ["wavs/sources/low-pitched-male.wav"]  
+        source_wav_path = ["wavs/sources/low-pitched-male-24k.wav"]  
         
         # wav directory
-        # src_path = Path("wavs/cases")
+        # src_path = Path("wavs/sources/")
         # source_wav_path = [file for file in src_path.iterdir() if file.is_file() and file.name.split('.')[-1] in ['wav']]
 
     # 2. create stream vc decoder
