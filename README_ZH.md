@@ -108,15 +108,15 @@ sequenceDiagram
 ### WebSocket 实时换声
 ```bash
 python examples/ws_client.py \
-    --source-wav-path "input.wav" \
+    --source-wav-path "wavs/sources/low-pitched-male-24k.wav" \
     --encoding OPUS
 ```
 
 ### 批量文件测试, 用于验证换声效果
 ```bash
 python examples/file_vc.py \
-    --source-wav-path "input1.wav input2.wav" \
-    --reference-wav-path "wavs/references/ref.wav" \
+    --source-wav-path "wavs/sources/low-pitched-male-24k.wav" \
+    --reference-wav-path "wavs/references/ref-24k.wav" \
     --block-time 0.5 \
     --diffusion-steps 10
 ```
