@@ -47,10 +47,37 @@ If you experience network issues, uncomment the `HF_ENDPOINT` variable in the `.
 
 ## Start Service
 ```bash
-fast-vc serve  # Traditional way
-poetry run fast_vc serve  # If using Poetry
+# Start the service
+fast-vc serve  # Default: 0.0.0.0:8042
+fast-vc serve --host 127.0.0.1 --port 8080  # Custom host and port
+
+# Using Poetry
+poetry run fast-vc serve
 ```
 
+## Service Management
+```bash
+# Check service status
+fast-vc status
+
+# Stop service (graceful shutdown)
+fast-vc stop
+
+# Force stop service
+fast-vc stop --force
+
+# Show version information
+fast-vc version
+```
+
+### Service Management Commands
+- `serve`: Start the FastAPI server
+- `status`: Check service running status and process information
+- `stop`: Gracefully shutdown service (sends SIGINT signal)
+- `stop --force`: Forcefully shutdown service (sends SIGTERM signal)
+- `version`: Display service version information
+
+Service information is automatically saved to the project's `temp/` directory, supporting process status checking and automatic cleanup.
 
 # 📡 Real-time Streaming Voice Conversion
 
@@ -111,7 +138,7 @@ python examples/file_vc.py \
     - [x] Complete WS service code + PCM
     - [x] Complete WS + Opus
     - [x] Add WebSocket support description to the README, then draw a process flowchart.
-    - [ ] ✨Optimizing Package Management for Better Usability and Stability
+    - [x] Optimizing Package Management for Better Usability and Stability
     - [ ] add support for closing idle connections after timeout
     - [ ] Add configuration information
     - [ ] add performance testing module

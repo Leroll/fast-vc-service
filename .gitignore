@@ -60,3 +60,6 @@ wavs/outputs/clients/*
 *ipynb
 
 .env
+
+# temp
+temp/*

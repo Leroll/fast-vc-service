@@ -48,9 +48,37 @@ pip install -e .  # 以可编辑模式安装项目及其依赖
 
 ## 启动服务
 ```bash
-fast-vc serve  # 传统方式
-poetry run fast_vc serve  # 如果使用 Poetry
+# 启动服务
+fast-vc serve  # 默认启动在 0.0.0.0:8042
+fast-vc serve --host 127.0.0.1 --port 8080  # 自定义地址和端口
+
+# 使用 Poetry
+poetry run fast-vc serve
 ```
+
+## 服务管理
+```bash
+# 查看服务状态
+fast-vc status
+
+# 停止服务（优雅关闭）
+fast-vc stop
+
+# 强制停止服务
+fast-vc stop --force
+
+# 查看版本信息
+fast-vc version
+```
+
+### 服务管理说明
+- `serve`: 启动 FastAPI 服务器
+- `status`: 检查服务运行状态和进程信息
+- `stop`: 优雅关闭服务（发送 SIGINT 信号）
+- `stop --force`: 强制关闭服务（发送 SIGTERM 信号）
+- `version`: 显示服务版本信息
+
+服务信息会自动保存到项目的 `temp/` 目录下，支持进程状态检查和自动清理。
 
 # 📡 实时流式换声
 
@@ -111,7 +139,7 @@ python examples/file_vc.py \
     - [x] 完成ws服务代码 + PCM
     - [x] 完成ws + opus 服务代码
     - [x] Readme中添加websocket支持的描述，然后画出流程图
-    - [ ] ✨优化requirement包管理方式，更易用与稳定
+    - [x] 优化requirement包管理方式，更易用与稳定
     - [ ] 新增ws超时关闭链接机制，触发回收
     - [ ] 添加配置信息
     - [ ] 增加性能测试模块

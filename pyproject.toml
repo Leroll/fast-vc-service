@@ -38,6 +38,7 @@ jiwer = "3.0.3"
 gradio = "4.44.0"
 modelscope = "1.18.1"
 python-dotenv = "^1.1.0"
+psutil = "^7.0.0"
 
 [[tool.poetry.source]]
 name = "aliyun"
