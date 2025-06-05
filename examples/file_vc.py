@@ -61,7 +61,7 @@ if __name__ == "__main__":
     source_wav_path = args.source_wav_path.split() if args.source_wav_path else None  
     if source_wav_path is None:  
         # wav files
-        source_wav_path = ["wavs/cases/低沉男性-YL-2025-03-14.wav"]  
+        source_wav_path = ["wavs/sources/low-pitched-male.wav"]  
         
         # wav directory
         # src_path = Path("wavs/cases")

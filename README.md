@@ -49,6 +49,8 @@ If you experience network issues, uncomment the `HF_ENDPOINT` variable in the `.
 ```bash
 fast-vc serve  # Traditional way
 poetry run fast_vc serve  # If using Poetry
+```
+
 
 # 📡 Real-time Streaming Voice Conversion
 
@@ -77,14 +79,14 @@ sequenceDiagram
 
 ### WebSocket Real-time Conversion
 ```bash
-python client/ws_client.py \
+python examples/ws_client.py \
     --source-wav-path "input.wav" \
     --encoding OPUS
 ```
 
 ### Batch File Testing
 ```bash
-python client/file_vc.py \
+python examples/file_vc.py \
     --source-wav-path "input1.wav input2.wav" \
     --reference-wav-path ""wavs/references/ref.wav"" \
     --block-time 0.5 \
