@@ -56,6 +56,13 @@ fast-vc serve --host 127.0.0.1 --port 8080  # 自定义地址和端口
 poetry run fast-vc serve
 ```
 
+<!-- 添加服务启动演示 -->
+<p align="center">
+    <img src="https://github.com/Leroll/fast-vc-service/releases/download/v0.0.1/fast-vc-serve.gif" alt="服务启动演示" width="800">
+    <br>
+    <em>🚀 服务启动过程</em>
+</p>
+
 ## 服务管理
 ```bash
 # 查看服务状态
@@ -79,6 +86,13 @@ fast-vc version
 - `version`: 显示服务版本信息
 
 服务信息会自动保存到项目的 `temp/` 目录下，支持进程状态检查和自动清理。
+
+
+<p align="center">
+    <img src="https://github.com/Leroll/fast-vc-service/releases/download/v0.0.1/fast-vc-command.gif" alt="支持命令演示" width="800">
+    <br>
+    <em>🚀 命令演示</em>
+</p>
 
 # 📡 实时流式换声
 

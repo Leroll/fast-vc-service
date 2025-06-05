@@ -55,6 +55,13 @@ fast-vc serve --host 127.0.0.1 --port 8080  # Custom host and port
 poetry run fast-vc serve
 ```
 
+<!-- Add service startup demo -->
+<p align="center">
+    <img src="https://github.com/Leroll/fast-vc-service/releases/download/v0.0.1/fast-vc-serve.gif" alt="Service Startup Demo" width="800">
+    <br>
+    <em>🚀 Service Startup Process</em>
+</p>
+
 ## Service Management
 ```bash
 # Check service status
@@ -78,6 +85,12 @@ fast-vc version
 - `version`: Display service version information
 
 Service information is automatically saved to the project's `temp/` directory, supporting process status checking and automatic cleanup.
+
+<p align="center">
+    <img src="https://github.com/Leroll/fast-vc-service/releases/download/v0.0.1/fast-vc-command.gif" alt="Command Demo" width="800">
+    <br>
+    <em>🚀 Command Demonstration</em>
+</p>
 
 # 📡 Real-time Streaming Voice Conversion
 
