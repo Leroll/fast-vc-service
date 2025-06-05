@@ -7,7 +7,7 @@ import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))  # add parent directory to path
 
-from realtime_vc import RealtimeVoiceConversion, RealtimeVoiceConversionConfig
+from fast_vc_service.realtime_vc import RealtimeVoiceConversion, RealtimeVoiceConversionConfig
 
 def parse_args():
     parser = argparse.ArgumentParser(description="批量语音转换脚本")
