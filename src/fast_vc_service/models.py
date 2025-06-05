@@ -5,11 +5,20 @@ import yaml
 import torch
 from loguru import logger
 from pydantic import BaseModel
+import sys
+from pathlib import Path
+import os
 
-from externals.seed_vc.modules.commons import *
+# add seed-vc path to sys.path
+SEED_VC_PATH = Path(__file__).resolve().parent.parent.parent / "externals" / "seed_vc"
+if str(SEED_VC_PATH) not in sys.path:
+    sys.path.append(str(SEED_VC_PATH))
+from externals.seed_vc.modules.commons import (
+    recursive_munch, load_checkpoint, build_model
+)
 from externals.seed_vc.hf_utils import load_custom_model_from_hf
 
-from utils import timer_decorator
+from fast_vc_service.utils import timer_decorator
 
 class ModelConfig(BaseModel):
     """model config"""
@@ -37,9 +46,11 @@ class ModelFactory:
     def __init__(self,model_config:ModelConfig=ModelConfig()):
         """model factory, all models are loaded here"""
         self.logger = logger.bind(name="app")
+        self.logger.info("initializing ModelFactory...")
         self.cfg = model_config
         self.device = self.cfg.device
         self.is_torch_compile = self.cfg.is_torch_compile
+        self.logger.info(f"HF_ENDPOINT: {os.environ.get('HF_ENDPOINT', 'default')}")
         self.logger.info(f"Using device: {self.device}")
         self.logger.info(f"Using torch compile: {self.is_torch_compile}")
         
@@ -48,7 +59,7 @@ class ModelFactory:
     @timer_decorator
     def _load_models(self):
         """加载各种模型"""
-        self.dit_model, self.dit_fn, self.config, self.model_params, self.sr  = self._load_dit_model()
+        self.dit_model, self.dit_fn, self.dit_config, self.model_params, self.sr  = self._load_dit_model()
         self.campplus_model = self._load_campplus_model()
         self.vocoder_fn = self._load_vocoder_fn()
         self.semantic_fn = self._load_semantic_fn() 
@@ -87,7 +98,7 @@ class ModelFactory:
     def _load_dit_model(self):
         """dit model"""
         
-        self.logger.info("Loading DiT model...")
+        self.logger.info("===> Loading DiT model")
         
         dit_checkpoint_path, dit_config_path = load_custom_model_from_hf(self.cfg.dit_repo_id,
                                                                          self.cfg.dit_model_filename,
@@ -137,7 +148,8 @@ class ModelFactory:
     def _load_campplus_model(self):
         """加载campplus模型"""
         
-        self.logger.info("Loading CampPlus model...")
+        self.logger.info("===> Loading CampPlus model")
+
         from externals.seed_vc.modules.campplus.DTDNN import CAMPPlus
 
         campplus_ckpt_path = load_custom_model_from_hf(
@@ -158,7 +170,7 @@ class ModelFactory:
     def _load_vocoder_fn(self):
         """加载vocoder模型"""
         
-        self.logger.info("Loading vocoder model...")
+        self.logger.info("===> Loading vocoder model")
         vocoder_type = self.model_params.vocoder.type
 
         if vocoder_type == 'bigvgan':  # bigvgan
@@ -172,7 +184,7 @@ class ModelFactory:
         elif vocoder_type == 'hifigan':
             from externals.seed_vc.modules.hifigan.generator import HiFTGenerator
             from externals.seed_vc.modules.hifigan.f0_predictor import ConvRNNF0Predictor
-            hift_config = yaml.safe_load(open('seed-vc/configs/hifigan.yml', 'r'))
+            hift_config = yaml.safe_load(open(SEED_VC_PATH / 'configs/hifigan.yml', 'r'))
             hift_gen = HiFTGenerator(**hift_config['hift'], f0_predictor=ConvRNNF0Predictor(**hift_config['f0_predictor']))
             hift_path = load_custom_model_from_hf("FunAudioLLM/CosyVoice-300M", 'hift.pt', None)
             hift_gen.load_state_dict(torch.load(hift_path, map_location='cpu'))
@@ -205,7 +217,7 @@ class ModelFactory:
     def _load_semantic_fn(self):
         """加载语义模型"""
         
-        self.logger.info("Loading semantic model...")
+        self.logger.info("===> Loading semantic model")
         speech_tokenizer_type = self.model_params.speech_tokenizer.type
         if speech_tokenizer_type == 'whisper':
             # whisper
@@ -243,7 +255,7 @@ class ModelFactory:
                 Wav2Vec2FeatureExtractor,
                 HubertModel,
             )
-            hubert_model_name = self.config['model_params']['speech_tokenizer']['name']
+            hubert_model_name = self.dit_config['model_params']['speech_tokenizer']['name']
             hubert_feature_extractor = Wav2Vec2FeatureExtractor.from_pretrained(hubert_model_name)
             hubert_model = HubertModel.from_pretrained(hubert_model_name)
             hubert_model = hubert_model.to(self.device)
@@ -275,10 +287,10 @@ class ModelFactory:
                 Wav2Vec2FeatureExtractor,
                 Wav2Vec2Model,
             )
-            model_name = self.config['model_params']['speech_tokenizer']['name']
-            output_layer = self.config['model_params']['speech_tokenizer']['output_layer']
-            wav2vec_feature_extractor = Wav2Vec2FeatureExtractor.from_pretrained(model_name, local_files_only=True)
-            wav2vec_model = Wav2Vec2Model.from_pretrained(model_name, local_files_only=True)
+            model_name = self.dit_config['model_params']['speech_tokenizer']['name']
+            output_layer = self.dit_config['model_params']['speech_tokenizer']['output_layer']
+            wav2vec_feature_extractor = Wav2Vec2FeatureExtractor.from_pretrained(model_name)
+            wav2vec_model = Wav2Vec2Model.from_pretrained(model_name)
             wav2vec_model.encoder.layers = wav2vec_model.encoder.layers[:output_layer]
             wav2vec_model = wav2vec_model.to(self.device)
             wav2vec_model = wav2vec_model.eval()
@@ -315,13 +327,13 @@ class ModelFactory:
         
         # Generate mel spectrograms
         mel_fn_args = {
-            "n_fft": self.config['preprocess_params']['spect_params']['n_fft'],  # tiny=1024, small=1024, base=2048
-            "win_size": self.config['preprocess_params']['spect_params']['win_length'],  # tiny=1024, small=1024, base=2048
-            "hop_size": self.config['preprocess_params']['spect_params']['hop_length'],  # tiny=256, small=256, base=512
-            "num_mels": self.config['preprocess_params']['spect_params']['n_mels'],  # tiny=80, small=80, base=128
+            "n_fft": self.dit_config['preprocess_params']['spect_params']['n_fft'],  # tiny=1024, small=1024, base=2048
+            "win_size": self.dit_config['preprocess_params']['spect_params']['win_length'],  # tiny=1024, small=1024, base=2048
+            "hop_size": self.dit_config['preprocess_params']['spect_params']['hop_length'],  # tiny=256, small=256, base=512
+            "num_mels": self.dit_config['preprocess_params']['spect_params']['n_mels'],  # tiny=80, small=80, base=128
             "sampling_rate": self.sr,  # tiny=22050, small=22050, base=44100
-            "fmin": self.config['preprocess_params']['spect_params'].get('fmin', 0),  # tiny=0, small=0, base=0
-            "fmax": None if self.config['preprocess_params']['spect_params'].get('fmax', "None") == "None" else 8000,  # tiny=8000, small="None", base="None"
+            "fmin": self.dit_config['preprocess_params']['spect_params'].get('fmin', 0),  # tiny=0, small=0, base=0
+            "fmax": None if self.dit_config['preprocess_params']['spect_params'].get('fmax', "None") == "None" else 8000,  # tiny=8000, small="None", base="None"
             "center": False
         }
         from externals.seed_vc.modules.audio import mel_spectrogram
@@ -340,9 +352,9 @@ class ModelFactory:
     def _load_vad_model(self):
         """加载vad模型"""
         
-        self.logger.info("Loading VAD model...")
+        self.logger.info("===> Loading VAD model")
         from funasr import AutoModel  # 这是新版本增加的vad模块
-        vad_model = AutoModel(model="checkpoints/modelscope_cache/hub/iic/speech_fsmn_vad_zh-cn-16k-common-pytorch") 
+        vad_model = AutoModel(model="fsmn-vad", model_revision="v2.0.4")
         
         # 计算vad_model的参数量
         total_params = self.cal_model_params(vad_model.model)
@@ -359,4 +371,3 @@ if __name__ == "__main__":
     print('-' * 42)
     print(f"Models loaded successfully.")
     print(models.keys())
-    

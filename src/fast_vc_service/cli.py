@@ -1,6 +1,12 @@
 """Command line interface."""
 import click
+import sys
+from pathlib import Path
 
+# add project root to sys.path
+project_root = Path(__file__).resolve().parent.parent.parent
+sys.path.append(str(project_root))
+    
 @click.group()
 def cli():
     """Fast Voice Conversion Service CLI."""
