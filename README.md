@@ -25,24 +25,30 @@
 # 🚀 Quick Start
 
 ## Environment Setup
+
+### Method 1: Using Poetry (Recommended)
 ```bash
-git clone https://github.com/Leroll/fast-vc-service.git
+git clone --recursive https://github.com/Leroll/fast-vc-service.git
 cd fast-vc-service
-pip install -r requirements.txt
-cp .env.example .env  # Optional: Edit configuration parameters
+cp .env.example .env  # Configure model download path and source
+poetry install  # Install dependencies
 ```
 
-When running for the first time, the model will be automatically downloaded to the `checkpoint` folder.  
-If you encounter network issues, you can configure the HF mirror:  
+### Method 2: Using pip
 ```bash
-export HF_ENDPOINT=https://hf-mirror.com
+git clone --recursive https://github.com/Leroll/fast-vc-service.git
+cd fast-vc-service
+cp .env.example .env  # Configure model download path and source
+pip install -e .  # Install project and its dependencies in editable mode
 ```
+
+When running for the first time, models will be automatically downloaded to the checkpoint folder.  
+If you experience network issues, uncomment the `HF_ENDPOINT` variable in the `.env` file to use domestic mirror sources for accelerated model downloading.
 
 ## Start Service
 ```bash
-./scripts/start.sh     # 🟢 Start service
-./scripts/shutdown.sh  # 🔴 Stop service
-```
+fast-vc serve  # Traditional way
+poetry run fast_vc serve  # If using Poetry
 
 # 📡 Real-time Streaming Voice Conversion
 

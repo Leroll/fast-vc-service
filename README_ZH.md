@@ -25,23 +25,31 @@
 # 🚀 快速开始
 
 ## 环境配置
+
+### 方式一：使用 Poetry（推荐）
 ```bash
-git clone https://github.com/Leroll/fast-vc-service.git
+git clone --recursive https://github.com/Leroll/fast-vc-service.git
 cd fast-vc-service
-pip install -r requirements.txt
-cp .env.example .env  # 配置模型下载路径
+cp .env.example .env  # 配置模型下载路径与下载源
+poetry install  # 安装依赖
+```
+
+### 方式二：使用 pip
+```bash
+git clone --recursive https://github.com/Leroll/fast-vc-service.git
+cd fast-vc-service
+cp .env.example .env  # 配置模型下载路径与下载源
+pip install -e .  # 以可编辑模式安装项目及其依赖
 ```
 
 当第一次运行时，模型会自动下载到checkpoint文件夹下。  
-如果有网络问题，可以配置HF镜像  
-```bash
-export HF_ENDPOINT=https://hf-mirror.com
-```
+如果有网络问题，可取消注 `.env` 文件中的 `HF_ENDPOINT` 变量，使用国内镜像源加速模型下载。
+
 
 ## 启动服务
 ```bash
-./scripts/start.sh     # 🟢 启动服务
-./scripts/shutdown.sh  # 🔴 停止服务
+fast-vc serve  # 传统方式
+poetry run fast_vc serve  # 如果使用 Poetry
 ```
 
 # 📡 实时流式换声
