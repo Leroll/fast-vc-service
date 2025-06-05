@@ -1,12 +1,13 @@
-[project]
+[tool.poetry]
 name = "fast-vc-service"
 version = "0.0.1"
 description = "Real-time voice conversion service based on Seed-VC, providing WebSocket voice conversion with PCM and Opus audio format support"
-authors = [
-    {name = "Leroll",email = "senjaer1919@gmail.com"}
-]
-license = {text = "GPL 3.0"}
+authors = ["Leroll <senjaer1919@gmail.com>"]
+license = "GPL-3.0"
 readme = "README.md"
+
+[tool.poetry.scripts]
+fast-vc = "fast_vc_service.cli:cli"
 
 [tool.poetry.dependencies]
 python = ">=3.10,<4.0"
@@ -38,12 +39,10 @@ gradio = "4.44.0"
 modelscope = "1.18.1"
 python-dotenv = "^1.1.0"
 
-
 [[tool.poetry.source]]
 name = "aliyun"
 url = "https://mirrors.aliyun.com/pypi/simple/"
 priority = "primary"
-
 
 [[tool.poetry.source]]
 name = "pytorch"

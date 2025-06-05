@@ -1,10 +1,7 @@
 """Command line interface."""
 import click
 
-from .app import main
-
 @click.group()
-@click.version_option()
 def cli():
     """Fast Voice Conversion Service CLI."""
     pass
@@ -14,13 +11,15 @@ def cli():
 @click.option("--port", default=8042, type=int, help="Port to bind to")
 def serve(host: str, port: int):
     """Start the FastAPI server."""
+    from .app import main
     main(host=host, port=port)
 
 @cli.command()
 def version():
     """Show version information."""
     from . import __version__
-    click.echo(f"Fast VC Service version {__version__}")
+    click.echo(click.style(f"🎤 Fast VC Service ", fg="cyan", bold=True) + 
+               click.style(f"v{__version__}", fg="green", bold=True))
  
 if __name__ == "__main__":
     cli()
