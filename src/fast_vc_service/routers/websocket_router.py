@@ -106,7 +106,7 @@ async def handle_initial_configuration(websocket: WebSocket):
     
     return session, buffer
 
-async def process_new_bytes_and_vc(audio_bytes: bytes, websocket: WebSocket, buffer, session) -> int:
+async def process_new_bytes_and_vc(audio_bytes: bytes, websocket: WebSocket, buffer, session) -> list:
     """Process incoming audio bytes and return updated chunks_processed count."""
     buffer.add_chunk(audio_bytes)
     
@@ -119,7 +119,6 @@ async def process_new_bytes_and_vc(audio_bytes: bytes, websocket: WebSocket, buf
             # Get next complete audio chunk as numpy array
             # New buffer directly returns numpy array
             numpy_chunk = buffer.get_next_chunk()
-            
             realtime_vc.chunk_vc(numpy_chunk, session)
             result = session.out_data
             
@@ -137,6 +136,39 @@ async def process_new_bytes_and_vc(audio_bytes: bytes, websocket: WebSocket, buf
             chunk_time = (time.perf_counter() - chunk_start) * 1000  # in ms
             temp_processing_times.append(chunk_time)
                 
+        except Exception as e:
+            logger.error(f"Error processing audio chunk: \n{traceback.format_exc()}")
+    
+    return temp_processing_times
+
+async def process_tail_bytes_and_vc(websocket: WebSocket, buffer, session) -> list:
+    """Process remaining audio data in the buffer."""
+    
+    temp_processing_times = []
+    realtime_vc = websocket.app.state.realtime_vc
+    while buffer.get_buffer_duration_ms() > 0:
+        logger.info(f"{session.session_id} | Processing remaining audio data: {buffer.get_buffer_duration_ms()} ms")
+        chunk_start = time.perf_counter()
+        
+        try:
+            numpy_chunk = buffer.get_next_chunk()  # it will pad the chunk if needed
+            realtime_vc.chunk_vc(numpy_chunk, session)
+            result = session.out_data
+            
+            if result is None or len(result) == 0:
+                logger.warning(f"{session.session_id} | No output data after voice conversion.")
+                continue
+            
+            # Convert numpy result to bytes for sending to client
+            int_data = (result * 32768.0).astype(np.int16)
+            converted_bytes = int_data.tobytes()
+            
+            await websocket.send_bytes(converted_bytes)
+            
+            # Record processing metrics
+            chunk_time = (time.perf_counter() - chunk_start) * 1000  # in ms
+            temp_processing_times.append(chunk_time)
+
         except Exception as e:
             logger.error(f"Error processing audio chunk: \n{traceback.format_exc()}")
     
@@ -177,39 +209,25 @@ async def websocket_endpoint(websocket: WebSocket):
                 
         
             elif "text" in data:
-                # The JSON is already in data["text"], no need to receive again
                 try:
                     json_data = json.loads(data["text"])
                     if json_data.get("type") == "end":
                         logger.info(f"{session.session_id} | Received end signal. ")
-                        # 处理缓冲区中剩余的音频数据
-                        while buffer.get_buffer_duration_ms() > 0:
-                            logger.info(f"{session.session_id} | Processing remaining audio data. ")
-                            chunk_start = time.perf_counter()
-                            
-                            # 获取下一个完整的音频块
-                            numpy_chunk = buffer.get_next_chunk()
-                            
-                            result = realtime_vc.chunk_vc(numpy_chunk, session)
-                            if result is not None and len(result) > 0:
-                                # Convert numpy result to bytes
-                                int_data = (result * 32768.0).astype(np.int16)
-                                converted_bytes = int_data.tobytes()
-                                
-                                await websocket.send_bytes(converted_bytes)
-                                
-                                chunks_processed += 1
-                                chunk_time = (time.perf_counter() - chunk_start) * 1000
-                                processing_times.append(chunk_time)
+                        # Process remaining audio data in the buffer
+                        temp_processing_times = await process_tail_bytes_and_vc(
+                            websocket, buffer, session
+                        )
+                        chunks_processed += len(temp_processing_times)
+                        processing_times.extend(temp_processing_times)
                         
                         # save audio
                         session.save(realtime_vc.cfg.save_dir)
                         
-                        # 计算统计信息
+                        # stats
                         total_time = (time.time() - start_time) * 1000  # in ms
                         avg_latency = sum(processing_times) / len(processing_times) if processing_times else 0
                         
-                        # 发送完成信号
+                        # send completion message
                         await websocket.send_json({
                             "type": "complete",
                             "stats": {
@@ -227,21 +245,27 @@ async def websocket_endpoint(websocket: WebSocket):
                     break
     
     except WebSocketDisconnect:
-        if session:
-            logger.info(f"{session.session_id} | Client disconnected. ")
-        else:
-            logger.warning("Client disconnected before session was established")
+        session_log_id = session.session_id if session else "None-ID"
+        logger.info(f"{session_log_id} | Client disconnected. ")
     
     except Exception as e:
-            logger.error(f"WebSocket error: \n{traceback.format_exc()}")
+        logger.error(f"WebSocket error: \n{traceback.format_exc()}")
     
     finally:
+        session_log_id = session.session_id if session else "None-ID"
         try:
-            buffer.clear()
-            session.cleanup()
-            logger.info(f"{session.session_id} | WebSocket connection closed. ")
+            if websocket.client_state.name != "DISCONNECTED":
+                await websocket.close()
+                logger.info(f"{session_log_id} | WebSocket connection closed in finally. ")
+            
+            if buffer:
+                buffer.clear()
+            if session:
+                session.cleanup()
+            logger.info(f"{session_log_id} | Cleanup buffer and session completed. ")
+                                    
         except Exception as e:
-            logger.error(f"Error during cleanup: \n{traceback.format_exc()}")
+            logger.error(f"{session_log_id} | Error during cleanup: \n{traceback.format_exc()}")
 
 
 

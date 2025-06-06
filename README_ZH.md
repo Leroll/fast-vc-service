@@ -161,11 +161,13 @@ python examples/file_vc.py \
     - [x] 新增clean命令，用于清理日志文件
     - [x] 新增多worker支持
     - [x] 抽取ws-server中音频处理逻辑至独立函数中
+    - [x] 抽取ws-server中结尾残留音频处理逻辑至独立函数中
     - [ ] 新增ws超时关闭链接机制，触发回收
     - [ ] 添加配置信息
     - [ ] 增加性能测试模块
     - [ ] 在session中增加，单通录音的各种耗时统计，删去realtime-vc的相关代码
-    - [ ] 解决 ws_client 收到的音频缺少尾部片段的问题
+    - [x] 解决 ws_client 收到的音频缺少尾部片段的问题
+    - [ ] 音频按天存储
     - [ ] ws_client 增加发送音频samplerate的设置
     - [ ] 支持webRTC
     - [ ] 裁剪封面图

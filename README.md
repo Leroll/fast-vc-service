@@ -159,11 +159,13 @@ python examples/file_vc.py \
     - [x] add new command `clean` to clear log files    
     - [x] add support for multi workers
     - [x] extract audio processing logic into separate function
+    - [x] extract tail audio processing logic into separate function
     - [ ] add support for closing idle connections after timeout
     - [ ] Add configuration information
     - [ ] add performance testing module
     - [ ] Add various timing statistics for single-pass recording in session, remove related code from realtime-vc
-    - [ ] Fix the issue where ws_client receives audio missing the ending segments
+    - [x] Fix the issue where ws_client receives audio missing the ending segments
+    - [ ] save audio files to datetime-based directories
     - [ ] Add a setting for the audio sample rate in the WebSocket client.
     - [ ] Support webRTC
     - [ ] Crop cover image
