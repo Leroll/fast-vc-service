@@ -140,16 +140,16 @@ def status():
             # 检查所有相关进程
             try:
                 master_process = psutil.Process(master_pid)
-                children = master_process.children(recursive=True)
+                all_processes = [master_process] + master_process.children(recursive=True)
                 
                 click.echo(click.style(f"✅ Service running on {host}:{port}", fg="green"))
                 click.echo(click.style(f"📊 Master PID: {master_pid}, Workers: {workers}", fg="cyan"))
-                click.echo(click.style(f"🔧 Active processes: {len(children) + 1}", fg="cyan"))
+                click.echo(click.style(f"🔧 Active processes: {len(all_processes)}", fg="cyan"))
                 
                 # 显示进程详情
-                for i, child in enumerate(children, 1):
+                for i, process in enumerate(all_processes, 1):
                     try:
-                        click.echo(click.style(f"   Worker {i}: PID {child.pid}", fg="white"))
+                        click.echo(click.style(f"   Worker {i}: PID {process.pid}", fg="white"))
                     except psutil.NoSuchProcess:
                         click.echo(click.style(f"   Worker {i}: Process ended", fg="yellow"))
                         
