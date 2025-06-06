@@ -70,9 +70,11 @@ fast-vc status
 
 # 停止服务（优雅关闭）
 fast-vc stop
+fast-vc stop --force   # 强制
 
-# 强制停止服务
-fast-vc stop --force
+# 清理日志文件
+fast-vc clean
+fast-vc clean -y  # 跳过确认
 
 # 查看版本信息
 fast-vc version
@@ -83,6 +85,8 @@ fast-vc version
 - `status`: 检查服务运行状态和进程信息
 - `stop`: 优雅关闭服务（发送 SIGINT 信号）
 - `stop --force`: 强制关闭服务（发送 SIGTERM 信号）
+- `clean`: 清理 logs/ 目录下的日志文件
+- `clean -y`: 清理日志文件，跳过确认提示
 - `version`: 显示服务版本信息
 
 服务信息会自动保存到项目的 `temp/` 目录下，支持进程状态检查和自动清理。
@@ -154,6 +158,7 @@ python examples/file_vc.py \
     - [x] 完成ws + opus 服务代码
     - [x] Readme中添加websocket支持的描述，然后画出流程图
     - [x] 优化requirement包管理方式，更易用与稳定
+    - [x] 新增clean命令，用于清理日志文件
     - [ ] 新增ws超时关闭链接机制，触发回收
     - [ ] 添加配置信息
     - [ ] 增加性能测试模块

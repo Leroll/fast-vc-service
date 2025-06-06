@@ -69,19 +69,23 @@ fast-vc status
 
 # Stop service (graceful shutdown)
 fast-vc stop
+fast-vc stop --force   # Force stop
 
-# Force stop service
-fast-vc stop --force
+# Clean log files
+fast-vc clean
+fast-vc clean -y  # Skip confirmation
 
 # Show version information
 fast-vc version
 ```
 
 ### Service Management Commands
-- `serve`: Start the FastAPI server
+- `serve`: Start FastAPI server
 - `status`: Check service running status and process information
-- `stop`: Gracefully shutdown service (sends SIGINT signal)
-- `stop --force`: Forcefully shutdown service (sends SIGTERM signal)
+- `stop`: Graceful shutdown (send SIGINT signal)
+- `stop --force`: Force shutdown (send SIGTERM signal)
+- `clean`: Clean log files in logs/ directory
+- `clean -y`: Clean log files without confirmation prompt
 - `version`: Display service version information
 
 Service information is automatically saved to the project's `temp/` directory, supporting process status checking and automatic cleanup.
@@ -152,6 +156,7 @@ python examples/file_vc.py \
     - [x] Complete WS + Opus
     - [x] Add WebSocket support description to the README, then draw a process flowchart.
     - [x] Optimizing Package Management for Better Usability and Stability
+    - [x] add new command `clean` to clear log files    
     - [ ] add support for closing idle connections after timeout
     - [ ] Add configuration information
     - [ ] add performance testing module

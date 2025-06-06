@@ -139,6 +139,47 @@ def status():
     except (json.JSONDecodeError, KeyError) as e:
         click.echo(click.style(f"❌ Invalid service info: {e}", fg="red"))
 
+@cli.command("clean")
+@click.option("--confirm", "-y", is_flag=True, help="Skip confirmation prompt")
+def clean_logs(confirm: bool):
+    """Clean log files in the logs/ directory."""
+    log_dir = PROJECT_ROOT / "logs"
+    
+    # 检查logs目录是否存在
+    if not log_dir.exists():
+        click.echo(click.style(f"❌ Log directory does not exist: {log_dir}", fg="red"))
+        return
+    
+    # 查找所有.log文件
+    log_files = list(log_dir.glob("*.log*"))
+    
+    if not log_files:
+        click.echo(click.style("✅ No log files found to delete", fg="green"))
+        return
+    
+    # 显示要删除的文件
+    click.echo(click.style(f"📁 Found {len(log_files)} log file(s) to delete:", fg="cyan"))
+    for log_file in log_files:
+        click.echo(f"  - {log_file.relative_to(PROJECT_ROOT)}")
+    
+    # 确认删除
+    if not confirm:
+        if not click.confirm(click.style("❓ Do you want to delete these files?", fg="yellow")):
+            click.echo(click.style("❌ Operation cancelled", fg="red"))
+            return
+    
+    # 删除文件
+    deleted_count = 0
+    for log_file in log_files:
+        try:
+            log_file.unlink()
+            click.echo(click.style(f"🗑️  Deleted: {log_file.relative_to(PROJECT_ROOT)}", fg="green"))
+            deleted_count += 1
+        except Exception as e:
+            click.echo(click.style(f"❌ Failed to delete {log_file.name}: {e}", fg="red"))
+    
+    click.echo(click.style(f"✅ Successfully deleted {deleted_count} log file(s)", fg="green"))
+
 @cli.command()
 def version():
     """Show version information."""
