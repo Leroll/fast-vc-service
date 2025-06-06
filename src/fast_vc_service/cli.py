@@ -141,7 +141,7 @@ def status():
 
 @cli.command("clean")
 @click.option("--confirm", "-y", is_flag=True, help="Skip confirmation prompt")
-def clean_logs(confirm: bool):
+def clean(confirm: bool):
     """Clean log files in the logs/ directory."""
     log_dir = PROJECT_ROOT / "logs"
     
