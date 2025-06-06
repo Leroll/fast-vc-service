@@ -12,7 +12,7 @@ from fast_vc_service.realtime_vc import RealtimeVoiceConversion, RealtimeVoiceCo
 class AppConfig(BaseModel):
     host: str = "0.0.0.0"
     port: int = 8042
-    worker: int = 2  # Number of workers for uvicorn
+    workers: int = 2  # Number of workers for uvicorn
 
 def create_app() -> FastAPI:
     """Create and configure the FastAPI application."""
@@ -45,15 +45,15 @@ def create_app() -> FastAPI:
     logger.info("-" * 21 + "service initialized" + "-" * 21)
     return app
 
-def main(host: str = "0.0.0.0", port: int = 8042) -> None:
+def main(host: str = "0.0.0.0", port: int = 8042, workers: int = 2) -> None:
     """Main function to run the FastAPI application."""
-    app_config = AppConfig(host=host, port=port)
+    app_config = AppConfig(host=host, port=port, workers=workers)
     app = create_app()
     uvicorn.run(
         app,
         host=app_config.host,
         port=app_config.port,
-        workers=app_config.worker,
+        workers=app_config.workers,
         log_config=None  # Forbid default logging config
     )
     

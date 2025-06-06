@@ -48,8 +48,8 @@ If you experience network issues, uncomment the `HF_ENDPOINT` variable in the `.
 ## Start Service
 ```bash
 # Start the service
-fast-vc serve  # Default: 0.0.0.0:8042
-fast-vc serve --host 127.0.0.1 --port 8080  # Custom host and port
+fast-vc serve  # Default: 0.0.0.0:8042， 2 workers
+fast-vc serve --host 127.0.0.1 --port 8080 --workers 4 # Custom 
 
 # Using Poetry
 poetry run fast-vc serve
@@ -157,6 +157,7 @@ python examples/file_vc.py \
     - [x] Add WebSocket support description to the README, then draw a process flowchart.
     - [x] Optimizing Package Management for Better Usability and Stability
     - [x] add new command `clean` to clear log files    
+    - [x] add support for multi workers
     - [ ] add support for closing idle connections after timeout
     - [ ] Add configuration information
     - [ ] add performance testing module

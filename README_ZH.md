@@ -49,8 +49,8 @@ pip install -e .  # 以可编辑模式安装项目及其依赖
 ## 启动服务
 ```bash
 # 启动服务
-fast-vc serve  # 默认启动在 0.0.0.0:8042
-fast-vc serve --host 127.0.0.1 --port 8080  # 自定义地址和端口
+fast-vc serve  # 默认启动在 0.0.0.0:8042, 使用 2 workers
+fast-vc serve --host 127.0.0.1 --port 8080 --workers 4 # 自定义
 
 # 使用 Poetry
 poetry run fast-vc serve
@@ -159,6 +159,7 @@ python examples/file_vc.py \
     - [x] Readme中添加websocket支持的描述，然后画出流程图
     - [x] 优化requirement包管理方式，更易用与稳定
     - [x] 新增clean命令，用于清理日志文件
+    - [x] 新增多worker支持
     - [ ] 新增ws超时关闭链接机制，触发回收
     - [ ] 添加配置信息
     - [ ] 增加性能测试模块
