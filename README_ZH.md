@@ -160,15 +160,18 @@ python examples/file_vc.py \
     - [x] 优化requirement包管理方式，更易用与稳定
     - [x] 新增clean命令，用于清理日志文件
     - [x] 新增多worker支持
+    - [x] 抽取ws-server中音频处理逻辑至独立函数中
     - [ ] 新增ws超时关闭链接机制，触发回收
     - [ ] 添加配置信息
     - [ ] 增加性能测试模块
+    - [ ] 在session中增加，单通录音的各种耗时统计，删去realtime-vc的相关代码
+    - [ ] 解决 ws_client 收到的音频缺少尾部片段的问题
     - [ ] ws_client 增加发送音频samplerate的设置
     - [ ] 支持webRTC
     - [ ] 裁剪封面图
     - [ ] file_vc，针对最后一个block的问题
     - [ ] 针对 异常情况，比如某个chunk转换rta>1的时候，有没有什么处理方案？
-    - [ ] 换个名字
+    - [ ] 解决 semaphore leak 的问题
 - [ ] tag - v0.2 - 音频质量相关 -  v2025-xx
     - [ ] infer_wav 每个chunk大小问题排查，在经过vcmodel之后，为8781，不经过的话为9120【sola模块记录】
     - [ ] 声音貌似有些抖动，待排查

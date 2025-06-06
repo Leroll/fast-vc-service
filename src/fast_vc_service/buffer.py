@@ -108,7 +108,7 @@ class AudioStreamBuffer:
         """
         return len(self.buffer) >= self.input_bytes_per_block
     
-    def get_next_chunk(self):
+    def get_next_chunk(self) -> np.ndarray:
         """Extract next complete chunk from buffer
         if not enough data, padding with silence
         

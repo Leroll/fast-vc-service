@@ -158,15 +158,18 @@ python examples/file_vc.py \
     - [x] Optimizing Package Management for Better Usability and Stability
     - [x] add new command `clean` to clear log files    
     - [x] add support for multi workers
+    - [x] extract audio processing logic into separate function
     - [ ] add support for closing idle connections after timeout
     - [ ] Add configuration information
     - [ ] add performance testing module
+    - [ ] Add various timing statistics for single-pass recording in session, remove related code from realtime-vc
+    - [ ] Fix the issue where ws_client receives audio missing the ending segments
     - [ ] Add a setting for the audio sample rate in the WebSocket client.
     - [ ] Support webRTC
     - [ ] Crop cover image
     - [ ] Fix file_vc for the last block issue
     - [ ] Handle exceptional cases, e.g., when a chunk converts with rta>1, what processing solutions exist?
-    - [ ] change the name 
+    - [ ] resolve the issue of semaphore leak
 - [ ] tag - v0.2 - Audio Quality - v2025-xx
     - [ ] Investigate chunk size issue in infer_wav, 8781 after vcmodel, 9120 without it [sola module record]
     - [ ] Investigate potential sound jitter issues
