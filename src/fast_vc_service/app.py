@@ -48,7 +48,9 @@ def create_app() -> FastAPI:
 def main(host: str = "0.0.0.0", port: int = 8042, workers: int = 2) -> None:
     """Main function to run the FastAPI application."""
     app_config = AppConfig(host=host, port=port, workers=workers)
-    logger.info(f"{app_config.host}:{app_config.port} with {app_config.workers} workers")
+    logger.info(f"Starting fast vc service on {app_config.host}:{app_config.port}")
+    logger.info(f"Number of workers: {app_config.workers}")
+    
     uvicorn.run(
         "fast_vc_service.app:create_app",
         host=app_config.host,
