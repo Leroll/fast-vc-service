@@ -6,6 +6,7 @@ import traceback
 import json
 
 from fast_vc_service.buffer import AudioStreamBuffer, OpusAudioStreamBuffer
+from fast_vc_service.session import Session
 
 websocket_router = APIRouter()
 
@@ -14,6 +15,7 @@ def validate_api_key(api_key: str) -> bool:
     # TODO: Implement proper API key validation
     # This is a placeholder - replace with actual authentication logic
     return api_key is not None and len(api_key) > 0
+
 
 async def send_error(websocket: WebSocket, error_code: str, message: str, session_id: str = None):
     """Send an error message to the client."""
@@ -30,6 +32,7 @@ async def send_error(websocket: WebSocket, error_code: str, message: str, sessio
         await websocket.send_json(error_response)
     except Exception as e:
         logger.error(f"Failed to send error message: \n{traceback.format_exc()}")
+
 
 async def handle_initial_configuration(websocket: WebSocket):
     """handle the initial configuration message from the client."""
@@ -106,73 +109,72 @@ async def handle_initial_configuration(websocket: WebSocket):
     
     return session, buffer
 
-async def process_new_bytes_and_vc(audio_bytes: bytes, websocket: WebSocket, buffer, session) -> list:
+
+async def process_chunk(websocket: WebSocket, 
+                        buffer: AudioStreamBuffer, 
+                        session: Session ) -> float | None:
+    """Process a single audio chunk.
+    
+    get the next chunk, vc, and send the result back to the client.
+    """
+    realtime_vc = websocket.app.state.realtime_vc
+    try:
+        chunk_start = time.perf_counter()
+        # Get next complete audio chunk as numpy array
+        # New buffer directly returns numpy array
+        # it will pad the chunk if needed
+        numpy_chunk = buffer.get_next_chunk()  
+        realtime_vc.chunk_vc(numpy_chunk, session)
+        result = session.out_data
+        
+        if result is None or len(result) == 0:
+            logger.warning(f"{session.session_id} | No output data after voice conversion.")
+            return None
+        
+        # Convert numpy result to bytes for sending to client
+        int_data = (result * 32768.0).astype(np.int16)
+        converted_bytes = int_data.tobytes()
+        
+        await websocket.send_bytes(converted_bytes)
+        
+        # Record processing metrics
+        chunk_time = (time.perf_counter() - chunk_start) * 1000  # in ms
+            
+    except Exception as e:
+        logger.error(f"Error processing audio chunk: \n{traceback.format_exc()}")
+        return None
+    
+    return chunk_time
+
+
+async def process_new_bytes_and_vc(audio_bytes: bytes, 
+                                   websocket: WebSocket, 
+                                   buffer: AudioStreamBuffer, session: Session) -> list:
     """Process incoming audio bytes and return updated chunks_processed count."""
     buffer.add_chunk(audio_bytes)
     
     temp_processing_times = []
-    realtime_vc = websocket.app.state.realtime_vc
     while buffer.has_complete_chunk():
-        chunk_start = time.perf_counter()
-    
-        try:
-            # Get next complete audio chunk as numpy array
-            # New buffer directly returns numpy array
-            numpy_chunk = buffer.get_next_chunk()
-            realtime_vc.chunk_vc(numpy_chunk, session)
-            result = session.out_data
-            
-            if result is None or len(result) == 0:
-                logger.warning(f"{session.session_id} | No output data after voice conversion.")
-                continue
-            
-            # Convert numpy result to bytes for sending to client
-            int_data = (result * 32768.0).astype(np.int16)
-            converted_bytes = int_data.tobytes()
-            
-            await websocket.send_bytes(converted_bytes)
-            
-            # Record processing metrics
-            chunk_time = (time.perf_counter() - chunk_start) * 1000  # in ms
+        chunk_time = await process_chunk(websocket, buffer, session)
+        if chunk_time is not None:
             temp_processing_times.append(chunk_time)
-                
-        except Exception as e:
-            logger.error(f"Error processing audio chunk: \n{traceback.format_exc()}")
-    
+            
     return temp_processing_times
 
-async def process_tail_bytes_and_vc(websocket: WebSocket, buffer, session) -> list:
+
+async def process_tail_bytes_and_vc(websocket: WebSocket, 
+                                    buffer: AudioStreamBuffer, session: Session) -> list:
     """Process remaining audio data in the buffer."""
     
     temp_processing_times = []
-    realtime_vc = websocket.app.state.realtime_vc
     while buffer.get_buffer_duration_ms() > 0:
         logger.info(f"{session.session_id} | Processing remaining audio data: {buffer.get_buffer_duration_ms()} ms")
-        chunk_start = time.perf_counter()
-        
-        try:
-            numpy_chunk = buffer.get_next_chunk()  # it will pad the chunk if needed
-            realtime_vc.chunk_vc(numpy_chunk, session)
-            result = session.out_data
-            
-            if result is None or len(result) == 0:
-                logger.warning(f"{session.session_id} | No output data after voice conversion.")
-                continue
-            
-            # Convert numpy result to bytes for sending to client
-            int_data = (result * 32768.0).astype(np.int16)
-            converted_bytes = int_data.tobytes()
-            
-            await websocket.send_bytes(converted_bytes)
-            
-            # Record processing metrics
-            chunk_time = (time.perf_counter() - chunk_start) * 1000  # in ms
+        chunk_time = await process_chunk(websocket, buffer, session)
+        if chunk_time is not None:
             temp_processing_times.append(chunk_time)
-
-        except Exception as e:
-            logger.error(f"Error processing audio chunk: \n{traceback.format_exc()}")
-    
+            
     return temp_processing_times
+
 
 @websocket_router.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
