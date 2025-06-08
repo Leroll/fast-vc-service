@@ -1,1 +1,62 @@
 app:
+  host: "0.0.0.0"
+  port: 8042
+  workers: 2  # Number of workers for uvicorn
+  receive_timeout: 480  # Timeout for receiving audio bytes in seconds
+
+
+realtime_vc:
+  # 设备
+  device: "cuda"
+  
+  # wav 相关
+  reference_wav_path: "wavs/references/ref-24k.wav"
+  save_dir: "wavs/outputs/"  # save
+  save_input: True  # is to save input wav
+  save_output: True  # is to save output wav
+  
+  # realtime 
+  SAMPLERATE: 16000  # also called common_sr
+                              # 音频流在vc过程中基础采样率
+                              # 不可修改，需要保证为 16k，vad，senmantic 都是 16k 模型
+                              # 某些环节采样率会改变，比如dit model会更改为22050，需要再次转换回来
+  BIT_DEPTH: 16  # 音频流的位深度，16位
+  
+  zc_framerate: 50  # zc = samplerate // zc_framerate, rvc:100, seed-vc: 50
+  block_time: 0.5  # 0.5 ；这里的 block time 是 0.5s                    
+  crossfade_time: 0.04  # 0.04 ；用于平滑过渡的交叉渐变长度，这里设定为 0.04 秒。交叉渐变通常用于避免声音中断或“断层”现象。
+  extra_time: 2.5  # 2.5；  附加时间，设置为 0.5秒。可能用于在处理音频时延长或平滑过渡的时间。
+                            # 原本默认0.5，后面更新成2.5了，放在音频的前面
+  extra_time_right: 0.02  # 0.02；
+
+  # noise_gata
+  noise_gate: True  # 是否使用噪声门
+  noise_gate_threshold: -60  # 噪声门的阈值，单位是分贝，-60dB
+  
+  # vc models
+  diffusion_steps: 10  # 10；                    
+  inference_cfg_rate: 0.7  # 0.7
+  max_prompt_length: 3.0 # 3； 
+  ce_dit_difference: 2  # 2 seconds， content encoder ?
+  
+  # rms_mix
+  rms_mix_rate: 0    # 0.25； 这个参数是用来控制 RMS 混合的比例，
+                              # 范围是 0 到 1。
+                              # 0 表示完全使用 Input 的包络，1 表示完全使用 Infer 包络。
+                              
+  # 辅助参数
+  max_tracking_counter: 10000  # 用于记录单chunk推理时间损耗的最大记录数量
+
+
+models:
+  device: "cuda"
+  is_torch_compile: False  # use torch.compile to accelerate
+  
+  # dit model
+  dit_repo_id: "Plachta/Seed-VC"
+  
+  # tiny version
+  dit_model_filename: "DiT_uvit_tat_xlsr_ema.pth"  
+  dit_config_filename: "config_dit_mel_seed_uvit_xlsr_tiny.yml"  
+
+

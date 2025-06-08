@@ -13,6 +13,7 @@ class AppConfig(BaseModel):
     host: str = "0.0.0.0"
     port: int = 8042
     workers: int = 2  # Number of workers for uvicorn
+    receive_timeout: int = 60*8  # Timeout for receiving audio bytes in seconds
 
 def create_app() -> FastAPI:
     """Create and configure the FastAPI application."""

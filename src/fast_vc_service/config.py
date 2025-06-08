@@ -2,6 +2,12 @@ import yaml
 import os
 from pydantic import BaseModel
 from enum import Enum
+import uuid
+from loguru import logger
+from pathlib import Path
+import traceback
+from dotenv import load_dotenv
+load_dotenv()
 
 from fast_vc_service.utils import Singleton  
 from fast_vc_service.app import AppConfig
@@ -9,7 +15,6 @@ from fast_vc_service.realtime_vc import RealtimeVoiceConversionConfig
 from fast_vc_service.models import ModelConfig
 
 class ConfigData(BaseModel):
-    version: str = "0.0.0.1"
     app: AppConfig = AppConfig()
     realtime_vc: RealtimeVoiceConversionConfig = RealtimeVoiceConversionConfig()
     models: ModelConfig = ModelConfig()
@@ -17,20 +22,21 @@ class ConfigData(BaseModel):
 
 @Singleton
 class Config(object):
-    def __init__(self, conf_path='config'):
-        self.env = self.__init_env()
-        self.config = self.__init_config(conf_path)
+    def __init__(self, conf_dir : Path = 'configs'):
+        self.env_profile = self.__get_env_profile()
+        self.config = self.__init_config(conf_dir)
+        self.config_id = str(uuid.uuid4().hex)
 
     def yaml_load(self, path):
         with open(path, "r", encoding="utf-8") as fin:
-            return yaml.load(fin, Loader=yaml.FullLoader)
+            return yaml.safe_load(fin)
 
-    def __init_env(self) -> str:
-        env = os.getenv("env_profile", "prod")
-        print(f"Env is {env}")
-        return env
+    def __get_env_profile(self) -> str:
+        env_profile = os.getenv("env_profile", "prod")
+        logger.info(f"Environment profile: {env_profile}")
+        return env_profile
 
-    def __init_config(self, conf_path: str) -> ConfigData:
+    def __init_config(self, conf_dir: Path) -> ConfigData:
         """从环境变量 env_profile 中获取环境名称并加载配置
 
         Args:
@@ -39,25 +45,33 @@ class Config(object):
         Returns:
             ConfigData: Pydantic 验证后的配置对象
         """
-        config_path = f'{conf_path}/{self.env}.yaml'
+        config_path = Path(conf_dir) / f"{self.env_profile}.yaml"
         try:
             config_dict = self.yaml_load(config_path)
             config = ConfigData(**config_dict)
         except FileNotFoundError:
-            print(f"Config file {config_path} not found, using default values")
+            logger.error(f"Config file {config_path} not found, using default values")
+            config = ConfigData()
+        except yaml.YAMLError as e:
+            logger.error(f"YAML parsing error: {e}, using default values")
+            config = ConfigData()
+        except Exception as e:
+            logger.error(f"Unexpected error loading config, using default values:\n{traceback.format_exc()}")
             config = ConfigData()
         return config
 
     def get_config(self):
         return self.config
 
-
-# 初始化配置
-cfg = Config('./config').get_config()
-
 if __name__ == "__main__":
-    cfg = Config('./config')
-    print(cfg.env)
+    cfg = Config('./configs')
+    cfg_id, cfg = cfg.config_id, cfg.get_config()
+    logger.info(f"Config ID: {cfg_id} \n, Configuration: {cfg}")
+    logger.info('-'*42)
+    cfg_id_1 = Config('./configs').config_id
+    cfg_id_2 = Config('./configs').config_id
+    logger.info(f"Config ID 1: {cfg_id_1}")
+    logger.info(f"Config ID 2: {cfg_id_2}")
     
-    cfg = cfg.get_config()
-    print(cfg)
+    
+    
