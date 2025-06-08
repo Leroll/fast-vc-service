@@ -3,6 +3,8 @@ import numpy as np
 import torch
 import soundfile as sf
 from loguru import logger
+from pathlib import Path
+from datetime import datetime
 
 
 class Session:
@@ -71,24 +73,30 @@ class Session:
         self.output_wav_record.append(chunk.copy())  # out_data是同一片段内存，不能直接append，必须copy
 
     def save(self):
-        """保存音频数据到指定目录
+        """save the input and output audio to files with hierarchical date structure
         """
         if self.is_saved:
             return
-            
-        if not os.path.exists(self.save_dir):
-            os.makedirs(self.save_dir)
         
-        # 保存输入音频
-        if self.input_wav_record is not None:
-            input_path = os.path.join(self.save_dir, f"{self.session_id}_input.wav")
-            sf.write(input_path, np.concatenate(self.input_wav_record), self.sampelrate)
+        # create herarchical directory structure based on current date
+        now = datetime.now()
+        year = now.strftime("%Y")
+        month = now.strftime("%m")
+        day = now.strftime("%d")
+        
+        daily_save_dir = Path(self.save_dir) / year / month / day
+        daily_save_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Input audio
+        if self.input_wav_record:
+            input_path = daily_save_dir / f"{self.session_id}_input.wav"
+            sf.write(str(input_path), np.concatenate(self.input_wav_record), self.sampelrate)
             logger.info(f"{self.session_id} | Input audio saved to : {input_path}")
         
-        # 保存输出音频
-        if self.output_wav_record is not None:
-            output_path = os.path.join(self.save_dir, f"{self.session_id}_output.wav")
-            sf.write(output_path, np.concatenate(self.output_wav_record), self.sampelrate)
+        # Output audio
+        if self.output_wav_record:
+            output_path = daily_save_dir / f"{self.session_id}_output.wav"
+            sf.write(str(output_path), np.concatenate(self.output_wav_record), self.sampelrate)
             logger.info(f"{self.session_id} | Output audio saved to : {output_path}")
             
         self.is_saved = True
@@ -124,4 +132,4 @@ class Session:
             self.cleanup()
         except:
             pass  # Ignore errors during cleanup in destructor
-        
+
