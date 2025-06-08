@@ -30,7 +30,7 @@
 ```bash
 git clone --recursive https://github.com/Leroll/fast-vc-service.git
 cd fast-vc-service
-cp .env.example .env  # 配置模型下载路径与下载源
+cp .env.example .env  # 配置环境变量
 poetry install  # 安装依赖
 ```
 
@@ -49,8 +49,8 @@ pip install -e .  # 以可编辑模式安装项目及其依赖
 ## 启动服务
 ```bash
 # 启动服务
-fast-vc serve  # 默认启动在 0.0.0.0:8042, 使用 2 workers
-fast-vc serve --host 127.0.0.1 --port 8080 --workers 4 # 自定义
+fast-vc serve  # 默认启动使用 .env 中的 env_profile
+fast-vc serve --env prod  # 指定环境配置
 
 # 使用 Poetry
 poetry run fast-vc serve
@@ -130,13 +130,10 @@ python examples/ws_client.py \
     --encoding OPUS
 ```
 
-### 批量文件测试, 用于验证换声效果
+### 批量文件测试, 用于验证换声效果, 不需要启动服务
 ```bash
 python examples/file_vc.py \
     --source-wav-path "wavs/sources/low-pitched-male-24k.wav" \
-    --reference-wav-path "wavs/references/ref-24k.wav" \
-    --block-time 0.5 \
-    --diffusion-steps 10
 ```
 
 
@@ -163,7 +160,7 @@ python examples/file_vc.py \
     - [x] 抽取ws-server中音频处理逻辑至独立函数中
     - [x] 抽取ws-server中结尾残留音频处理逻辑至独立函数中
     - [ ] 新增ws超时关闭链接机制，触发回收
-    - [ ] 添加配置信息
+    - [x] 添加配置信息
     - [ ] 增加性能测试模块
     - [ ] 在session中增加，单通录音的各种耗时统计，删去realtime-vc的相关代码
     - [x] 解决 ws_client 收到的音频缺少尾部片段的问题

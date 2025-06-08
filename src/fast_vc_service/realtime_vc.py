@@ -19,59 +19,16 @@ import uuid
 from fast_vc_service.models import ModelFactory
 from fast_vc_service.session import Session
 from fast_vc_service.utils import Singleton
+from fast_vc_service.config import RealtimeVoiceConversionConfig, ModelConfig
 
-
-class RealtimeVoiceConversionConfig(BaseModel):
-    """换声服务配置类"""
-    
-    # 设备
-    device: str = str(torch.device("cuda" if torch.cuda.is_available() else "cpu"))
-    
-    # wav 相关
-    reference_wav_path: str = "wavs/references/ref-24k.wav"
-    save_dir: str = "wavs/outputs/"  # save
-    save_input: bool = True  # is to save input wav
-    save_output: bool = True  # is to save output wav
-    
-    # realtime 
-    SAMPLERATE: float = 16_000  # also called common_sr
-                                # 音频流在vc过程中基础采样率
-                                # 不可修改，需要保证为 16k，vad，senmantic 都是 16k 模型
-                                # 某些环节采样率会改变，比如dit model会更改为22050，需要再次转换回来
-    BIT_DEPTH: int = 16  # 音频流的位深度，16位
-    
-    zc_framerate: int = 50  # zc = samplerate // zc_framerate, rvc:100, seed-vc: 50
-    block_time: float = 0.5  # 0.5 ；这里的 block time 是 0.5s                    
-    crossfade_time: float = 0.04  # 0.04 ；用于平滑过渡的交叉渐变长度，这里设定为 0.04 秒。交叉渐变通常用于避免声音中断或“断层”现象。
-    extra_time: float = 2.5  # 2.5；  附加时间，设置为 0.5秒。可能用于在处理音频时延长或平滑过渡的时间。
-                             # 原本默认0.5，后面更新成2.5了，放在音频的前面
-    extra_time_right: float = 0.02  # 0.02；
-
-    # noise_gata
-    noise_gate: bool = True  # 是否使用噪声门
-    noise_gate_threshold: float = -60  # 噪声门的阈值，单位是分贝，-60dB
-    
-    # vc models
-    diffusion_steps: int = 10  # 10；                    
-    inference_cfg_rate: float = 0.7  # 0.7
-    max_prompt_length: float = 3.0 # 3； 
-    ce_dit_difference: float = 2  # 2 seconds， content encoder ?
-    
-    # rms_mix
-    rms_mix_rate: float = 0    # 0.25； 这个参数是用来控制 RMS 混合的比例，
-                               # 范围是 0 到 1。
-                               # 0 表示完全使用 Input 的包络，1 表示完全使用 Infer 包络。
-                               
-    # 辅助参数
-    max_tracking_counter: int = 10_000  # 用于记录单chunk推理时间损耗的最大记录数量
 
 @Singleton
 class RealtimeVoiceConversion:
     """流式换声服务核心类"""
 
-    def __init__(self, cfg:RealtimeVoiceConversionConfig) -> None:
-        self.cfg = cfg
-        self.models = ModelFactory().get_models()  # initialize models
+    def __init__(self, cfg:RealtimeVoiceConversionConfig, model_cfg: ModelConfig) -> None:
+        self.cfg = cfg 
+        self.models = ModelFactory(model_config=model_cfg).get_models()  # initialize models
         self._init_performance_tracking() 
         self._init_realtime_parameters()  # init realtime parameters
         self.reference = self._update_reference()
@@ -319,7 +276,7 @@ class RealtimeVoiceConversion:
         # get cat_condition
         t0 = time.perf_counter()
         S_alt = semantic_fn(input_wav.unsqueeze(0))
-        S_alt = S_alt[:, ce_dit_difference * 50:]  # 16k sr with 320x downsampling of senmantic(whisper, wav2vec, hubert)
+        S_alt = S_alt[:, int(ce_dit_difference * 50):]  # 16k sr with 320x downsampling of senmantic(whisper, wav2vec, hubert)
                                                    # 50 frames per second
                                                    
                                                    # The first portion of its output 
@@ -381,7 +338,7 @@ class RealtimeVoiceConversion:
             wav_path: 输入音频文件路径
         """
         wav_data, _ = librosa.load(wav_path, sr=self.cfg.SAMPLERATE, mono=True) 
-        unique_id = Path(wav_path).name  # 针对文件使用文件名作为 unique_id 
+        unique_id = Path(wav_path).name + "_file-vc" # 针对文件使用文件名作为 unique_id 
         session = self.create_session(session_id=unique_id) 
         
         num_blocks = len(wav_data) // self.block_frame  # TODO 后续把结尾的block补上，padding 防止丢失

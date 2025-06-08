@@ -19,26 +19,7 @@ from externals.seed_vc.modules.commons import (
 from externals.seed_vc.hf_utils import load_custom_model_from_hf
 
 from fast_vc_service.utils import timer_decorator
-
-class ModelConfig(BaseModel):
-    """model config"""
-    device: str = "cuda"
-    is_torch_compile: bool = False  # use torch.compile to accelerate
-    
-    # dit model
-    dit_repo_id: str = "Plachta/Seed-VC"
-    
-    # tiny version
-    dit_model_filename: str = "DiT_uvit_tat_xlsr_ema.pth"  
-    dit_config_filename: str = "config_dit_mel_seed_uvit_xlsr_tiny.yml"  
-    
-    # small version
-    # dit_model_filename: str = "DiT_seed_v2_uvit_whisper_small_wavenet_bigvgan_pruned.pth"  
-    # dit_config_filename: str = "config_dit_mel_seed_uvit_whisper_small_wavenet.yml"
-    
-    # base version
-    # dit_model_filename: str = "DiT_seed_v2_uvit_whisper_base_f0_44k_bigvgan_pruned.pth"  
-    # dit_config_filename: str = "config_dit_mel_seed_uvit_whisper_base_f0_44k.yml"
+from fast_vc_service.config import ModelConfig
 
 
 class ModelFactory:

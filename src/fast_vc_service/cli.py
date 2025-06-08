@@ -8,6 +8,8 @@ import json
 import time
 from pathlib import Path
 
+from fast_vc_service.config import Config
+
 # add project root to sys.path
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.append(str(PROJECT_ROOT))
@@ -15,7 +17,7 @@ sys.path.append(str(PROJECT_ROOT))
 def get_pid_file() -> Path:
     """Get the PID file path in project temp directory."""
     temp_dir = PROJECT_ROOT / "temp"
-    temp_dir.mkdir(exist_ok=True)  # 确保temp文件夹存在
+    temp_dir.mkdir(exist_ok=True)
     return temp_dir / "fast_vc_service.json"
     
 @click.group()
@@ -24,11 +26,18 @@ def cli():
     pass
 
 @cli.command()
-@click.option("--host", default="0.0.0.0", help="Host to bind to")
-@click.option("--port", default=8042, type=int, help="Port to bind to")
-@click.option("--workers", default=2, type=int, help="Number of worker processes")
-def serve(host: str, port: int, workers: int):
+@click.option('--env', '--env-profile', 'env_profile', 
+              help='Environment profile (dev, test, prod)')
+def serve(env_profile):
     """Start the FastAPI server."""
+    # 直接设置环境变量
+    if env_profile:
+        os.environ["env_profile"] = env_profile
+        click.echo(click.style(f"🌍 Environment set to: {env_profile}", fg="cyan"))
+    
+    cfg = Config()
+    env_profile = cfg.env_profile
+    app_config = cfg.get_config().app
     pid_file = get_pid_file()
     
     # check if service is already running
@@ -48,10 +57,11 @@ def serve(host: str, port: int, workers: int):
     # 保存服务信息
     service_info = {
         "master_pid": os.getpid(),
-        "host": host,
-        "port": port,
-        "workers": workers,
-        "start_time": time.time()
+        "host": app_config.host,
+        "port": app_config.port,
+        "workers": app_config.workers,
+        "start_time": time.time(),
+        "env_profile": env_profile  # 记录使用的环境
     }
     with open(pid_file, "w") as f:
         json.dump(service_info, f)
@@ -60,7 +70,7 @@ def serve(host: str, port: int, workers: int):
     # start server
     try:
         from .app import main
-        main(host=host, port=port, workers=workers)
+        main()
     finally:
         if pid_file.exists():
             pid_file.unlink()
@@ -135,6 +145,7 @@ def status():
         host = service_info["host"]
         port = service_info["port"]
         workers = service_info.get("workers", 1)
+        env_profile = service_info.get("env_profile", "default")  # 获取环境配置
         
         if psutil.pid_exists(master_pid):
             # 检查所有相关进程
@@ -143,6 +154,7 @@ def status():
                 all_processes = [master_process] + master_process.children(recursive=True)
                 
                 click.echo(click.style(f"✅ Service running on {host}:{port}", fg="green"))
+                click.echo(click.style(f"🌍 Environment: {env_profile}", fg="magenta"))  # 显示环境配置
                 click.echo(click.style(f"📊 Master PID: {master_pid}, Workers: {workers}", fg="cyan"))
                 click.echo(click.style(f"🔧 Active processes: {len(all_processes)}", fg="cyan"))
                 

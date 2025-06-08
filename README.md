@@ -30,7 +30,7 @@
 ```bash
 git clone --recursive https://github.com/Leroll/fast-vc-service.git
 cd fast-vc-service
-cp .env.example .env  # Configure model download path and source
+cp .env.example .env  # Configure environment variables
 poetry install  # Install dependencies
 ```
 
@@ -48,8 +48,8 @@ If you experience network issues, uncomment the `HF_ENDPOINT` variable in the `.
 ## Start Service
 ```bash
 # Start the service
-fast-vc serve  # Default: 0.0.0.0:8042， 2 workers
-fast-vc serve --host 127.0.0.1 --port 8080 --workers 4 # Custom 
+fast-vc serve  # Default startup using env_profile from .env
+fast-vc serve --env prod  # Specify environment configuration
 
 # Using Poetry
 poetry run fast-vc serve
@@ -128,13 +128,10 @@ python examples/ws_client.py \
     --encoding OPUS
 ```
 
-### Batch File Testing
+### Batch File Testing for voice conversion effect verification, no service startup required
 ```bash
 python examples/file_vc.py \
-    --source-wav-path "wavs/sources/low-pitched-male-24k.wav" \
-    --reference-wav-path "wavs/references/ref-24k.wav" \
-    --block-time 0.5 \
-    --diffusion-steps 10
+    --source-wav-path "wavs/sources/low-pitched-male-24k.wav"
 ```
 
 
@@ -161,7 +158,7 @@ python examples/file_vc.py \
     - [x] extract audio processing logic into separate function
     - [x] extract tail audio processing logic into separate function
     - [ ] add support for closing idle connections after timeout
-    - [ ] Add configuration information
+    - [x] Add configuration information
     - [ ] add performance testing module
     - [ ] Add various timing statistics for single-pass recording in session, remove related code from realtime-vc
     - [x] Fix the issue where ws_client receives audio missing the ending segments

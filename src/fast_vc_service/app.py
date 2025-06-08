@@ -4,16 +4,10 @@ from loguru import logger
 from pydantic import BaseModel
 import traceback
 
+from fast_vc_service.config import Config
 from fast_vc_service.routers import base_router, websocket_router
 from fast_vc_service.logging_config import LoggingSetup
-from fast_vc_service.realtime_vc import RealtimeVoiceConversion, RealtimeVoiceConversionConfig
-
-
-class AppConfig(BaseModel):
-    host: str = "0.0.0.0"
-    port: int = 8042
-    workers: int = 2  # Number of workers for uvicorn
-    receive_timeout: int = 60*8  # Timeout for receiving audio bytes in seconds
+from fast_vc_service.realtime_vc import RealtimeVoiceConversion
 
 def create_app() -> FastAPI:
     """Create and configure the FastAPI application."""
@@ -29,10 +23,12 @@ def create_app() -> FastAPI:
     )
     
     # Initialize realtime voice conversion service
+    cfg = Config().get_config()
     logger.info("initializing class: RealtimeVoiceConversion ...")
     try:
         app.state.realtime_vc = RealtimeVoiceConversion(
-            RealtimeVoiceConversionConfig()
+            cfg.realtime_vc,
+            cfg.models,
         )
     except Exception as e:
         logger.error(f"faild to initialize RealtimeVoiceConversion: {traceback.format_exc()}")
@@ -46,9 +42,9 @@ def create_app() -> FastAPI:
     logger.info("-" * 21 + "service initialized" + "-" * 21)
     return app
 
-def main(host: str = "0.0.0.0", port: int = 8042, workers: int = 2) -> None:
+def main() -> None:
     """Main function to run the FastAPI application."""
-    app_config = AppConfig(host=host, port=port, workers=workers)
+    app_config = Config().get_config().app
     logger.info(f"Starting fast vc service on {app_config.host}:{app_config.port}")
     logger.info(f"Number of workers: {app_config.workers}")
     
