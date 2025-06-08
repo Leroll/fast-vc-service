@@ -171,6 +171,7 @@ class RealtimeVoiceConversion:
                        zc=self.zc, 
                        sola_buffer_frame=self.sola_buffer_frame,
                        samplerate=self.cfg.SAMPLERATE,
+                       save_dir=self.cfg.save_dir,
                        device=self.cfg.device)
     
     def _update_reference(self):
@@ -346,7 +347,7 @@ class RealtimeVoiceConversion:
             block_data = wav_data[i * self.block_frame: (i + 1) * self.block_frame]
             self.chunk_vc(block_data, session)
 
-        session.save(self.cfg.save_dir)  # save wav
+        session.save()  # save wav
         session.cleanup()  # clear session data
                 
     def _vad(self, indata, session):

@@ -157,7 +157,7 @@ python examples/file_vc.py \
     - [x] add support for multi workers
     - [x] extract audio processing logic into separate function
     - [x] extract tail audio processing logic into separate function
-    - [ ] add support for closing idle connections after timeout
+    - [x] Add WebSocket timeout mechanism for connection closure and resource cleanup
     - [x] Add configuration information
     - [ ] add performance testing module
     - [ ] Add various timing statistics for single-pass recording in session, remove related code from realtime-vc

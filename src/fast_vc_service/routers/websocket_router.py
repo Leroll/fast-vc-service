@@ -4,6 +4,7 @@ import time
 import numpy as np
 import traceback
 import json
+import asyncio
 
 from fast_vc_service.buffer import AudioStreamBuffer, OpusAudioStreamBuffer
 from fast_vc_service.session import Session
@@ -185,6 +186,7 @@ async def websocket_endpoint(websocket: WebSocket):
     chunks_processed = 0
     processing_times = []
     session, buffer = None, None
+    receive_timeout = websocket.app.state.cfg.app.receive_timeout
 
     try:
         # handle initial configuration
@@ -194,7 +196,14 @@ async def websocket_endpoint(websocket: WebSocket):
         
         # handle audio processing
         while True:
-            data = await websocket.receive()
+            try:
+                data = await asyncio.wait_for(
+                    websocket.receive(),
+                    timeout = receive_timeout
+                )
+            except asyncio.TimeoutError:
+                logger.warning(f"{session.session_id} | WebSocket receive timeout after {receive_timeout} seconds")
+                break
             
             if "bytes" in data:
                 audio_bytes = data["bytes"]
@@ -223,7 +232,7 @@ async def websocket_endpoint(websocket: WebSocket):
                         processing_times.extend(temp_processing_times)
                         
                         # save audio
-                        session.save(realtime_vc.cfg.save_dir)
+                        session.save()
                         
                         # stats
                         total_time = (time.time() - start_time) * 1000  # in ms
@@ -263,6 +272,7 @@ async def websocket_endpoint(websocket: WebSocket):
             if buffer:
                 buffer.clear()
             if session:
+                session.save()
                 session.cleanup()
             logger.info(f"{session_log_id} | Cleanup buffer and session completed. ")
                                     

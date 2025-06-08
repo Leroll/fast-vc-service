@@ -24,6 +24,7 @@ def create_app() -> FastAPI:
     
     # Initialize realtime voice conversion service
     cfg = Config().get_config()
+    app.state.cfg = cfg
     logger.info("initializing class: RealtimeVoiceConversion ...")
     try:
         app.state.realtime_vc = RealtimeVoiceConversion(

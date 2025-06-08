@@ -11,12 +11,15 @@ class Session:
     def __init__(self,session_id, extra_frame, crossfade_frame, sola_search_frame, 
                  block_frame, extra_frame_right, zc, 
                  sola_buffer_frame, samplerate,
+                 save_dir,
                  device):
         torch.cuda.empty_cache()  
         self.sampelrate = samplerate  # 后续存储输入、输出音频用，对应common_sr
         self.session_id = session_id  # 唯一标识符
         self.input_wav_record = []
         self.output_wav_record = []
+        self.save_dir = save_dir
+        self.is_saved = False  # 是否已保存过音频数据
         
         # wav 相关
         self.input_wav: torch.Tensor = torch.zeros( 
@@ -67,26 +70,28 @@ class Session:
         """
         self.output_wav_record.append(chunk.copy())  # out_data是同一片段内存，不能直接append，必须copy
 
-    def save(self, save_dir:str):
+    def save(self):
         """保存音频数据到指定目录
-        
-        Args:
-            save_dir: 保存路径
         """
-        if not os.path.exists(save_dir):
-            os.makedirs(save_dir)
+        if self.is_saved:
+            return
+            
+        if not os.path.exists(self.save_dir):
+            os.makedirs(self.save_dir)
         
         # 保存输入音频
         if self.input_wav_record is not None:
-            input_path = os.path.join(save_dir, f"{self.session_id}_input.wav")
+            input_path = os.path.join(self.save_dir, f"{self.session_id}_input.wav")
             sf.write(input_path, np.concatenate(self.input_wav_record), self.sampelrate)
-            logger.info(f"{self.session_id} | input data 已存储: {input_path}")
+            logger.info(f"{self.session_id} | Input audio saved to : {input_path}")
         
         # 保存输出音频
         if self.output_wav_record is not None:
-            output_path = os.path.join(save_dir, f"{self.session_id}_output.wav")
+            output_path = os.path.join(self.save_dir, f"{self.session_id}_output.wav")
             sf.write(output_path, np.concatenate(self.output_wav_record), self.sampelrate)
-            logger.info(f"{self.session_id} | output data 已存储: {output_path}")
+            logger.info(f"{self.session_id} | Output audio saved to : {output_path}")
+            
+        self.is_saved = True
             
     def cleanup(self):
         """主动释放资源
