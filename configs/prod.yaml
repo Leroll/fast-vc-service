@@ -2,9 +2,11 @@ app:
   host: "0.0.0.0"
   port: 8042
   workers: 2  # Number of workers for uvicorn
-  receive_timeout: 480  # Timeout for receiving audio bytes in seconds
+  receive_timeout: 420  # Timeout for receiving audio bytes in seconds
 
-
+buffer:
+  prefill_time: 375  # 375ms, decrease first chunk latency
+  
 realtime_vc:
   # 设备
   device: "cuda"

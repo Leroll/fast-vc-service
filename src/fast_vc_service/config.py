@@ -18,8 +18,10 @@ class AppConfig(BaseModel):
     port: int = 8042
     workers: int = 2  # Number of workers for uvicorn
     receive_timeout: int = 60*8  # Timeout for receiving audio bytes in seconds
-
-
+    
+class BufferConfig(BaseModel):
+    prefill_time: int = 375  # Prefill time in milliseconds
+    
 class RealtimeVoiceConversionConfig(BaseModel):
     """换声服务配置类"""
     
@@ -88,6 +90,7 @@ class ModelConfig(BaseModel):
 
 class ConfigData(BaseModel):
     app: AppConfig = AppConfig()
+    buffer: BufferConfig = BufferConfig()
     realtime_vc: RealtimeVoiceConversionConfig = RealtimeVoiceConversionConfig()
     models: ModelConfig = ModelConfig()
 

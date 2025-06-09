@@ -75,6 +75,7 @@ async def handle_initial_configuration(websocket: WebSocket):
     session = realtime_vc.create_session(session_id=session_id)
     
     # create buffer
+    prefill_time = websocket.app.state.cfg.buffer.prefill_time
     if encoding.upper() == "OPUS":
         frame_duration = audio_format.get("frame_duration", 20)  # Default to 20ms if not specified
         logger.info(f"{session_id} | Using Opus audio buffer.")
@@ -84,7 +85,7 @@ async def handle_initial_configuration(websocket: WebSocket):
             output_sample_rate=realtime_vc.cfg.SAMPLERATE,
             output_bit_depth=realtime_vc.cfg.BIT_DEPTH,
             block_time=realtime_vc.cfg.block_time * 1000,  # Convert to milliseconds
-            prefill_time=100,  # Default prefill time of 100ms
+            prefill_time=prefill_time,
             frame_duration=frame_duration  # Opus frame duration in milliseconds
         )
     else:  # Default to PCM
@@ -96,7 +97,7 @@ async def handle_initial_configuration(websocket: WebSocket):
             output_sample_rate=realtime_vc.cfg.SAMPLERATE,
             output_bit_depth=realtime_vc.cfg.BIT_DEPTH,
             block_time=realtime_vc.cfg.block_time * 1000,  # Convert to milliseconds
-            prefill_time=100  # Default prefill time of 100ms
+            prefill_time=prefill_time
         )
     
     # send ready signal to the client
@@ -181,7 +182,6 @@ async def process_tail_bytes_and_vc(websocket: WebSocket,
 async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
     logger.info("WebSocket connection established")
-    realtime_vc = websocket.app.state.realtime_vc
     start_time = time.perf_counter()
     chunks_processed = 0
     processing_times = []
