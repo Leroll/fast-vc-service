@@ -164,7 +164,7 @@ python examples/file_vc.py \
     - [ ] 增加性能测试模块
     - [ ] 在session中增加，单通录音的各种耗时统计，删去realtime-vc的相关代码
     - [x] 解决 ws_client 收到的音频缺少尾部片段的问题
-    - [ ] 音频按天存储
+    - [x] 音频按天存储
     - [ ] ws_client 增加发送音频samplerate的设置
     - [ ] 支持webRTC
     - [ ] 裁剪封面图
