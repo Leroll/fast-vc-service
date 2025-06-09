@@ -83,7 +83,7 @@ async def send_audio_file(websocket_url,
                           real_time_simulation,
                           session_id=None,  # 允许外部传入session_id
                           save_output=True,  # 控制是否保存输出文件
-                          output_wav_dir="wavs/outputs",
+                          output_wav_dir="wavs/outputs/ws_client", 
                           # encoding params
                           encoding="PCM",
                           # pcm params 
@@ -355,7 +355,7 @@ if __name__ == "__main__":
                         help="Path to source audio file")
     
     parser.add_argument("--output-wav-dir", 
-                        default="wavs/outputs", 
+                        default="wavs/outputs/ws_client", 
                         help="Directory to save output audio files")
     
     parser.add_argument("--url", 

@@ -5,7 +5,9 @@ from pathlib import Path
 import argparse
 import sys
 from pathlib import Path
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))  # add parent directory to path
+PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.append(str(PROJECT_ROOT))  # add project root to path
 
 from fast_vc_service.realtime_vc import RealtimeVoiceConversion
 from fast_vc_service.config import Config
