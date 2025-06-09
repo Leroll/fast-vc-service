@@ -102,18 +102,73 @@ def stop(force: bool):
             master_process = psutil.Process(master_pid)
             all_processes = [master_process] + master_process.children(recursive=True)
             
+            # 先尝试优雅关闭
             signal_type = signal.SIGTERM if force else signal.SIGINT
             signal_name = "SIGTERM" if force else "SIGINT"
             
-            # 停止所有进程
+            # 发送信号到所有进程
             for proc in all_processes:
                 try:
-                    proc.send_signal(signal_type)
-                    click.echo(click.style(f"📤 Sent {signal_name} to PID {proc.pid}", fg="cyan"))
+                    if proc.is_running():
+                        proc.send_signal(signal_type)
+                        click.echo(click.style(f"📤 Sent {signal_name} to PID {proc.pid}", fg="cyan"))
                 except (psutil.NoSuchProcess, psutil.AccessDenied):
                     continue
             
-            click.echo(click.style("✅ Shutdown signals sent to all processes", fg="green"))
+            # 等待进程终止
+            click.echo(click.style("⏳ Waiting for processes to terminate...", fg="yellow"))
+            wait_timeout = 10 if not force else 5
+            
+            terminated = []
+            for proc in all_processes:
+                try:
+                    proc.wait(timeout=wait_timeout)
+                    terminated.append(proc.pid)
+                    click.echo(click.style(f"✅ Process {proc.pid} terminated", fg="green"))
+                except psutil.TimeoutExpired:
+                    click.echo(click.style(f"⚠️  Process {proc.pid} did not terminate within {wait_timeout}s", fg="yellow"))
+                except psutil.NoSuchProcess:
+                    terminated.append(proc.pid)
+                    click.echo(click.style(f"✅ Process {proc.pid} already terminated", fg="green"))
+            
+            # 如果有进程没有终止，使用 SIGKILL 强制杀死
+            remaining_processes = []
+            for proc in all_processes:
+                try:
+                    if proc.is_running():
+                        remaining_processes.append(proc)
+                except psutil.NoSuchProcess:
+                    continue
+            
+            if remaining_processes:
+                click.echo(click.style(f"🔨 Force killing {len(remaining_processes)} remaining processes...", fg="red"))
+                for proc in remaining_processes:
+                    try:
+                        proc.kill()  # SIGKILL
+                        click.echo(click.style(f"💀 Killed PID {proc.pid}", fg="red"))
+                    except (psutil.NoSuchProcess, psutil.AccessDenied):
+                        continue
+                
+                # 再次等待
+                for proc in remaining_processes:
+                    try:
+                        proc.wait(timeout=3)
+                    except (psutil.TimeoutExpired, psutil.NoSuchProcess):
+                        continue
+            
+            # 最终检查
+            still_running = []
+            for proc in all_processes:
+                try:
+                    if proc.is_running():
+                        still_running.append(proc.pid)
+                except psutil.NoSuchProcess:
+                    continue
+            
+            if still_running:
+                click.echo(click.style(f"❌ Failed to stop processes: {still_running}", fg="red"))
+            else:
+                click.echo(click.style("✅ All processes terminated successfully", fg="green"))
             
         except psutil.NoSuchProcess:
             click.echo(click.style("❌ Process not found", fg="red"))
