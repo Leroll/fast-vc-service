@@ -249,7 +249,6 @@ After testing completion, the following files are generated in the `outputs/conc
     - [x] Add configuration information
     - [x] add performance testing module
     - [x] Add various timing statistics for single-pass recording in session
-    - [ ] remove timing statistics code from realtime-vc
     - [x] Fix the issue where ws_client receives audio missing the ending segments
     - [x] save audio files to datetime-based directories
     - [x] Add flexible WebSocket message name configuration feature, allowing modification through configuration files

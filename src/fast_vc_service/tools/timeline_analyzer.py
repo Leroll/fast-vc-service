@@ -48,22 +48,21 @@ class TimelineAnalyzer:
         
         # Calculate time differences in milliseconds from start
         send_start = send_df['datetime'].iloc[0]
-        recv_start = recv_df['datetime'].iloc[0]
         
         send_df['elapsed_ms'] = (send_df['datetime'] - send_start).dt.total_seconds() * 1000
-        recv_df['elapsed_ms'] = (recv_df['datetime'] - recv_start).dt.total_seconds() * 1000
+        recv_df['elapsed_ms'] = (recv_df['datetime'] - send_start).dt.total_seconds() * 1000  # 改为使用 send_start
         
         stats = {}
         
         # 1. First Token Latency (首包延迟)
         first_send_time = send_df['elapsed_ms'].iloc[0]
         first_recv_time = recv_df['elapsed_ms'].iloc[0]
-        stats['first_token_latency_ms'] = first_recv_time - first_send_time
+        stats['first_token_latency_ms'] = round(first_recv_time - first_send_time, 2)
         
         # 2. End-to-End Latency (端到端延迟)
         last_send_time = send_df['elapsed_ms'].iloc[-1]
         last_recv_time = recv_df['elapsed_ms'].iloc[-1]
-        stats['end_to_end_latency_ms'] = last_recv_time - last_send_time
+        stats['end_to_end_latency_ms'] = round(last_recv_time - last_send_time, 2)
         
         # 3. Audio-based Latency Analysis (基于音频时长的延迟分析)
         chunk_latencies = []
@@ -88,17 +87,17 @@ class TimelineAnalyzer:
         if chunk_latencies:
             latency_values = [item['latency_ms'] for item in chunk_latencies]
             stats['chunk_latency_stats'] = {
-                'mean_ms': np.mean(latency_values),
-                'median_ms': np.median(latency_values),
-                'min_ms': np.min(latency_values),
-                'max_ms': np.max(latency_values),
-                'std_ms': np.std(latency_values),
-                'p95_ms': np.percentile(latency_values, 95),
-                'p99_ms': np.percentile(latency_values, 99)
+                'mean_ms': round(np.mean(latency_values), 2),
+                'median_ms': round(np.median(latency_values), 2),
+                'min_ms': round(np.min(latency_values), 2),
+                'max_ms': round(np.max(latency_values), 2),
+                'std_ms': round(np.std(latency_values), 2),
+                'p95_ms': round(np.percentile(latency_values, 95), 2),
+                'p99_ms': round(np.percentile(latency_values, 99), 2)
             }
             
             # 4. Jitter (延迟抖动)
-            stats['jitter_ms'] = np.std(latency_values)
+            stats['jitter_ms'] = round(np.std(latency_values), 2)
         
         # 5. Real-time Factor (RTF) Analysis
         if chunk_latencies:
@@ -118,13 +117,13 @@ class TimelineAnalyzer:
             
             if chunk_rtfs:
                 stats['real_time_factor'] = {
-                    'mean': np.mean(chunk_rtfs),
-                    'median': np.median(chunk_rtfs),
-                    'min': np.min(chunk_rtfs),
-                    'max': np.max(chunk_rtfs),
-                    'std': np.std(chunk_rtfs),
-                    'p95': np.percentile(chunk_rtfs, 95),
-                    'p99': np.percentile(chunk_rtfs, 99)
+                    'mean': round(np.mean(chunk_rtfs), 2),
+                    'median': round(np.median(chunk_rtfs), 2),
+                    'min': round(np.min(chunk_rtfs), 2),
+                    'max': round(np.max(chunk_rtfs), 2),
+                    'std': round(np.std(chunk_rtfs), 2),
+                    'p95': round(np.percentile(chunk_rtfs, 95), 2),
+                    'p99': round(np.percentile(chunk_rtfs, 99), 2)
                 }
                 stats['is_real_time'] = stats['real_time_factor']['mean'] <= 1.0
         
@@ -155,22 +154,22 @@ class TimelineAnalyzer:
                 stats['send_timing_analysis'] = {
                     'total_chunks': len(send_timing_analysis),
                     'send_delay_stats': {
-                        'mean_ms': np.mean(send_delays),
-                        'median_ms': np.median(send_delays),
-                        'min_ms': np.min(send_delays),
-                        'max_ms': np.max(send_delays),
-                        'std_ms': np.std(send_delays),
-                        'p95_ms': np.percentile(send_delays, 95),
-                        'p99_ms': np.percentile(send_delays, 99)
+                        'mean_ms': round(np.mean(send_delays), 2),
+                        'median_ms': round(np.median(send_delays), 2),
+                        'min_ms': round(np.min(send_delays), 2),
+                        'max_ms': round(np.max(send_delays), 2),
+                        'std_ms': round(np.std(send_delays), 2),
+                        'p95_ms': round(np.percentile(send_delays, 95), 2),
+                        'p99_ms': round(np.percentile(send_delays, 99), 2)
                     },
                     'delay_ratio_stats': {
-                        'mean': np.mean(delay_ratios),
-                        'median': np.median(delay_ratios),
-                        'min': np.min(delay_ratios),
-                        'max': np.max(delay_ratios),
-                        'std': np.std(delay_ratios),
-                        'p95': np.percentile(delay_ratios, 95),
-                        'p99': np.percentile(delay_ratios, 99)
+                        'mean': round(np.mean(delay_ratios), 2),
+                        'median': round(np.median(delay_ratios), 2),
+                        'min': round(np.min(delay_ratios), 2),
+                        'max': round(np.max(delay_ratios), 2),
+                        'std': round(np.std(delay_ratios), 2),
+                        'p95': round(np.percentile(delay_ratios, 95), 2),
+                        'p99': round(np.percentile(delay_ratios, 99), 2)
                     },
                     'timing_quality': {
                         'chunks_with_positive_delay': sum(1 for d in send_delays if d > 0),
@@ -186,9 +185,9 @@ class TimelineAnalyzer:
         stats['timeline_summary'] = {
             'total_send_events': len(send_timeline),
             'total_recv_events': len(recv_timeline),
-            'send_duration_ms': total_audio_duration_ms,
-            'recv_duration_ms': recv_df['cumulative_ms'].iloc[-1] if len(recv_df) > 0 else 0,
-            'processing_start_to_end_ms': total_processing_time_ms
+            'send_duration_ms': round(total_audio_duration_ms, 2),
+            'recv_duration_ms': round(recv_df['cumulative_ms'].iloc[-1] if len(recv_df) > 0 else 0, 2),
+            'processing_start_to_end_ms': round(total_processing_time_ms, 2)
         }
         
         # Save stats to file if output directory is provided

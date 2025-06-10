@@ -251,7 +251,6 @@ python examples/websocket/concurrent_ws_client.py \
     - [x] 添加配置信息
     - [x] 增加性能测试模块
     - [x] 在session中增加，单通录音的各种耗时统计
-    - [ ] 删去realtime-vc耗时统计的相关代码
     - [x] 解决 ws_client 收到的音频缺少尾部片段的问题
     - [x] 音频按天存储
     - [x] 新增websocket消息名灵活配置功能，可通过配置文件修改 
