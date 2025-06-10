@@ -355,7 +355,7 @@ if __name__ == "__main__":
                         help="Path to source audio file")
     
     parser.add_argument("--output-wav-dir", 
-                        default="wavs/outputs/ws_client", 
+                        default="outputs/ws_client", 
                         help="Directory to save output audio files")
     
     parser.add_argument("--url", 

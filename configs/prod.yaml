@@ -13,7 +13,7 @@ realtime_vc:
   
   # wav 相关
   reference_wav_path: "wavs/references/ref-24k.wav"
-  save_dir: "wavs/outputs/"  # save
+  save_dir: "outputs/"  # save
   save_input: True  # is to save input wav
   save_output: True  # is to save output wav
   

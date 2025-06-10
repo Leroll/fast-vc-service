@@ -30,7 +30,7 @@ class RealtimeVoiceConversionConfig(BaseModel):
     
     # wav 相关
     reference_wav_path: str = "wavs/references/ref-24k.wav"
-    save_dir: str = "wavs/outputs/"  # save
+    save_dir: str = "outputs/"  # save
     save_input: bool = True  # is to save input wav
     save_output: bool = True  # is to save output wav
     

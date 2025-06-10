@@ -402,7 +402,7 @@ def parse_args():
                         help="Path to source audio file")
     
     parser.add_argument("--output-wav-dir", 
-                        default="wavs/outputs/concurrent_ws_client", 
+                        default="outputs/concurrent_ws_client", 
                         help="Base directory to save output audio files")
     
     parser.add_argument("--url", 

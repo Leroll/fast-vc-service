@@ -218,7 +218,7 @@ After testing completion, detailed performance analysis reports are automaticall
 ```
 
 ### Output Files Description
-After testing completion, the following files are generated in the `wavs/outputs/concurrent_ws_client/` directory:
+After testing completion, the following files are generated in the `outputs/concurrent_ws_client/` directory:
 - `clientX_result.json`: Complete result data for each client
 - `clientX_stats.json`: Performance statistics analysis for each client
 - `clientX_output.wav`: Converted audio files (if saving is enabled)

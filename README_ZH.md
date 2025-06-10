@@ -220,7 +220,7 @@ python examples/websocket/concurrent_ws_client.py \
 ```
 
 ### 结果文件说明
-测试完成后会在 `wavs/outputs/concurrent_ws_client/` 目录下生成：
+测试完成后会在 `outputs/concurrent_ws_client/` 目录下生成：
 - `clientX_result.json`: 每个客户端的完整结果数据
 - `clientX_stats.json`: 每个客户端的性能统计分析
 - `clientX_output.wav`: 转换后的音频文件（如果启用保存）
