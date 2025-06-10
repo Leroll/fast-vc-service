@@ -256,7 +256,6 @@ python examples/websocket/concurrent_ws_client.py \
     - [x] 新增websocket消息名灵活配置功能，可通过配置文件修改 
     - [ ] ws_client 增加发送音频samplerate的设置
     - [ ] 支持webRTC
-    - [ ] 裁剪封面图
     - [ ] file_vc，针对最后一个block的问题
     - [ ] 针对 异常情况，比如某个chunk转换rta>1的时候，有没有什么处理方案？
     - [ ] 解决 semaphore leak 的问题

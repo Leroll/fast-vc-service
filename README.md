@@ -254,7 +254,6 @@ After testing completion, the following files are generated in the `outputs/conc
     - [x] Add flexible WebSocket message name configuration feature, allowing modification through configuration files
     - [ ] Add a setting for the audio sample rate in the WebSocket client.
     - [ ] Support webRTC
-    - [ ] Crop cover image
     - [ ] Fix file_vc for the last block issue
     - [ ] Handle exceptional cases, e.g., when a chunk converts with rta>1, what processing solutions exist?
     - [ ] resolve the issue of semaphore leak

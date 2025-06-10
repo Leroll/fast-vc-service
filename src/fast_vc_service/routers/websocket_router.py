@@ -147,7 +147,7 @@ async def process_chunk(websocket: WebSocket,
     """
     realtime_vc = websocket.app.state.realtime_vc
     try:
-        chunk_start = time.perf_counter()
+        t0 = time.perf_counter()
         # Get next complete audio chunk as numpy array
         # New buffer directly returns numpy array
         # it will pad the chunk if needed
@@ -170,7 +170,8 @@ async def process_chunk(websocket: WebSocket,
         session.record_recv_event(output_duration_ms)
         
         # Record processing metrics
-        chunk_time = (time.perf_counter() - chunk_start) * 1000  # in ms
+        chunk_time = (time.perf_counter() - t0) * 1000  # in ms
+        logger.info(f"{session.session_id} | Processed audio chunk: {chunk_time:.2f} ms")
             
     except Exception as e:
         logger.error(f"Error processing audio chunk: \n{traceback.format_exc()}")
@@ -181,40 +182,27 @@ async def process_chunk(websocket: WebSocket,
 
 async def process_new_bytes_and_vc(audio_bytes: bytes, 
                                    websocket: WebSocket, 
-                                   buffer: AudioStreamBuffer, session: Session) -> list:
-    """Process incoming audio bytes and return updated chunks_processed count."""
+                                   buffer: AudioStreamBuffer, session: Session):
+    """Process incoming audio bytes."""
     buffer.add_chunk(audio_bytes)
     
-    temp_processing_times = []
     while buffer.has_complete_chunk():
-        chunk_time = await process_chunk(websocket, buffer, session)
-        if chunk_time is not None:
-            temp_processing_times.append(chunk_time)
-            
-    return temp_processing_times
+        await process_chunk(websocket, buffer, session)
 
 
 async def process_tail_bytes_and_vc(websocket: WebSocket, 
-                                    buffer: AudioStreamBuffer, session: Session) -> list:
+                                    buffer: AudioStreamBuffer, session: Session):
     """Process remaining audio data in the buffer."""
     
-    temp_processing_times = []
     while buffer.get_buffer_duration_ms() > 0:
         logger.info(f"{session.session_id} | Processing remaining audio data: {buffer.get_buffer_duration_ms()} ms")
-        chunk_time = await process_chunk(websocket, buffer, session)
-        if chunk_time is not None:
-            temp_processing_times.append(chunk_time)
-            
-    return temp_processing_times
+        await process_chunk(websocket, buffer, session)
 
 
 @websocket_router.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
     logger.info("WebSocket connection established")
-    start_time = time.perf_counter()
-    chunks_processed = 0
-    processing_times = []
     session, buffer, adapter = None, None, None
     receive_timeout = websocket.app.state.cfg.app.receive_timeout
 
@@ -241,12 +229,10 @@ async def websocket_endpoint(websocket: WebSocket):
                     logger.warning(f"{session.session_id} | Received empty audio bytes")
                     continue
                 
-                temp_processing_times = await process_new_bytes_and_vc(
+                await process_new_bytes_and_vc(
                     audio_bytes, websocket, 
                     buffer, session
                 )
-                chunks_processed += len(temp_processing_times)
-                processing_times.extend(temp_processing_times)
                 
         
             elif "text" in data:
@@ -254,29 +240,16 @@ async def websocket_endpoint(websocket: WebSocket):
                     json_data = json.loads(data["text"])
                     if adapter.is_end_message(json_data):
                         logger.info(f"{session.session_id} | Received end signal. ")
-                        # Process remaining audio data in the buffer
-                        temp_processing_times = await process_tail_bytes_and_vc(
+                        await process_tail_bytes_and_vc(
                             websocket, buffer, session
                         )
-                        chunks_processed += len(temp_processing_times)
-                        processing_times.extend(temp_processing_times)
                         
-                        # save audio
-                        session.save()
+                        session.save()  # save audio
                         
-                        # stats
-                        total_time = (time.time() - start_time) * 1000  # in ms
-                        avg_latency = sum(processing_times) / len(processing_times) if processing_times else 0
-                        
-                        # 使用适配器格式化完成消息
-                        complete_msg = adapter.format_complete_message({
-                            "total_processed_ms": int(total_time),
-                            "chunks_processed": chunks_processed,
-                            "average_latency_ms": int(avg_latency)
-                        })
-                        
+                        complete_msg = adapter.format_complete_message({})  # send complete message
                         await websocket.send_json(complete_msg)
                         logger.info(f"{session.session_id} | Voice conversion completed. ")
+                        
                         break
                 except Exception as e:
                     logger.error(f"Error processing end signal: \n{traceback.format_exc()}")

@@ -8,7 +8,7 @@ def timer_decorator(func):
         result = func(*args, **kwargs)
         end_time = time.perf_counter()
         execution_time = end_time - start_time
-        logger.info(f"{func.__name__} cost: {execution_time:0.2f} s")
+        logger.info(f"{func.__name__} cost: {execution_time:0.3f} s")
         return result
     return wrapper
 
