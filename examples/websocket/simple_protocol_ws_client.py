@@ -181,6 +181,11 @@ async def send_audio_file_simple_protocol(websocket_url,
                 "sample_rate": sample_rate,
                 "sample_bit": 16  
             }
+            
+            # 如果是OPUS编码，添加帧长参数
+            if encoding.upper() == "OPUS":
+                start_signal["opus_frame_duration"] = frame_duration_ms
+            
             await websocket.send(json.dumps(start_signal))
             logger.info(f"Sent start signal to server: {json.dumps(start_signal)}")
             

@@ -6,6 +6,7 @@ app:
 
 buffer:
   prefill_time: 375  # 375ms, decrease first chunk latency
+  opus_frame_duration: 20  # 20ms, opus frame duration
   
 realtime_vc:
   # 设备

@@ -13,6 +13,7 @@
 | 版本 | 日期 | 变更说明 |
 |-----|------|---------|
 | 1.0 | 2025-05-27 | 初始版本 |
+| 1.1 | 2025-06-15 | 增加简单协议支持，新增opus_frame_duration字段|
 
 ## 2. 交互流程
 
@@ -97,7 +98,8 @@ ws://[服务器地址]/ws
   "sample_rate": 16000,
   "bit_depth": 16,
   "channels": 1,
-  "encoding": "PCM"
+  "encoding": "PCM",
+  "opus_frame_duration": 20
 }
 ```
 
@@ -109,6 +111,7 @@ ws://[服务器地址]/ws
 - `bit_depth`: 位深度
 - `channels`: 声道数, 固定为1(单声道)
 - `encoding`: 编码格式(PCM/WAV)
+- `opus_frame_duration`: (可选) OPUS编码帧长，单位为毫秒，默认值为20ms
 
 
 ### 5.2 就绪确认 (ready)
@@ -206,7 +209,8 @@ ws://[服务器地址]/ws
   "signal": "start",
   "stream_id": "stream_12345",
   "sample_rate": 16000,
-  "sample_bit": 16
+  "sample_bit": 16,
+  "opus_frame_duration": 20
 }
 ```
 
@@ -215,6 +219,7 @@ ws://[服务器地址]/ws
 - `stream_id`: 流ID，用于标识当前连接
 - `sample_rate`: 采样率(Hz)
 - `sample_bit`: 位深度
+- `opus_frame_duration`: (可选) OPUS编码帧长，单位为毫秒，默认值为20ms
 
 **注意**: 简单协议不需要API密钥验证，服务器不会发送ready确认消息。
 

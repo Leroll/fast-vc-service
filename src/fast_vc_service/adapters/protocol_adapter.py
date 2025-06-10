@@ -64,7 +64,7 @@ class SimpleProtocolAdapter(ProtocolAdapter):
     def parse_init_message(self, message: Dict[str, Any]) -> Dict[str, Any]:
         if message.get("signal") == "start":
             # 转换为标准格式
-            return {
+            standard_config = {
                 "type": "config",
                 "session_id": message.get("stream_id", ""),
                 "api_key": "simple_protocol",  # 为简单协议设置一个特殊的api_key
@@ -73,6 +73,12 @@ class SimpleProtocolAdapter(ProtocolAdapter):
                 "channels": 1,  # 默认单声道
                 "encoding": "PCM"  # 默认PCM格式
             }
+            
+            # 如果原消息中有opus_frame_duration参数，传递给标准配置
+            if "opus_frame_duration" in message:
+                standard_config["opus_frame_duration"] = message["opus_frame_duration"]
+                
+            return standard_config
         return message
     
     def should_send_ready(self) -> bool:

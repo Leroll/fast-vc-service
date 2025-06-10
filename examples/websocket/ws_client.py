@@ -186,6 +186,11 @@ async def send_audio_file(websocket_url,
                 "channels": 1,
                 "encoding": encoding
             }
+            
+            # 如果是OPUS编码，添加帧长参数
+            if encoding.upper() == "OPUS":
+                config["opus_frame_duration"] = frame_duration_ms
+            
             await websocket.send(json.dumps(config))
             logger.info(f"Sent configuration to server: {json.dumps(config)}")
             

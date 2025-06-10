@@ -21,6 +21,7 @@ class AppConfig(BaseModel):
     
 class BufferConfig(BaseModel):
     prefill_time: int = 375  # Prefill time in milliseconds
+    opus_frame_duration: int = 20  # Opus frame duration in milliseconds
     
 class RealtimeVoiceConversionConfig(BaseModel):
     """换声服务配置类"""

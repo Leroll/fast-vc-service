@@ -93,8 +93,12 @@ async def handle_initial_configuration(websocket: WebSocket):
     # create buffer
     prefill_time = websocket.app.state.cfg.buffer.prefill_time
     if encoding.upper() == "OPUS":
-        frame_duration = config_data.get("frame_duration", 20)  # Default to 20ms if not specified
-        logger.info(f"{session_id} | Using Opus audio buffer.")
+        # 获取OPUS帧长参数，优先级：客户端配置 > 系统配置 > 默认值20
+        opus_frame_duration = standard_config.get("opus_frame_duration")
+        if opus_frame_duration is None:
+            opus_frame_duration = getattr(websocket.app.state.cfg.buffer, 'opus_frame_duration', 20)
+        
+        logger.info(f"{session_id} | Using Opus audio buffer with frame duration: {opus_frame_duration}ms")
         buffer = OpusAudioStreamBuffer(
             session_id=session_id,
             input_sample_rate=sample_rate,
@@ -102,7 +106,7 @@ async def handle_initial_configuration(websocket: WebSocket):
             output_bit_depth=realtime_vc.cfg.BIT_DEPTH,
             block_time=realtime_vc.cfg.block_time * 1000,  # Convert to milliseconds
             prefill_time=prefill_time,
-            frame_duration=frame_duration  # Opus frame duration in milliseconds
+            frame_duration=opus_frame_duration  # Opus frame duration in milliseconds
         )
     else:  # Default to PCM
         logger.info(f"{session_id} | Using PCM audio buffer.")
