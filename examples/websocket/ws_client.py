@@ -181,12 +181,10 @@ async def send_audio_file(websocket_url,
                 "type": "config",
                 "session_id": session_id,
                 "api_key": api_key,
-                "audio_format": {
-                    "sample_rate": sample_rate,
-                    "bit_depth": 16,
-                    "channels": 1,
-                    "encoding": encoding
-                }
+                "sample_rate": sample_rate,
+                "bit_depth": 16,
+                "channels": 1,
+                "encoding": encoding
             }
             await websocket.send(json.dumps(config))
             logger.info(f"Sent configuration to server: {json.dumps(config)}")

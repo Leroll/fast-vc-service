@@ -94,12 +94,10 @@ ws://[服务器地址]/ws
   "type": "config",
   "session_id": "sess_12345abcde",
   "api_key": "your_api_key_here",
-  "audio_format": {
-    "sample_rate": 16000,
-    "bit_depth": 16,
-    "channels": 1,  
-    "encoding": "PCM"
-  },
+  "sample_rate": 16000,
+  "bit_depth": 16,
+  "channels": 1,
+  "encoding": "PCM"
 }
 ```
 
@@ -107,11 +105,10 @@ ws://[服务器地址]/ws
 - `type`: 固定为"config"
 - `session_id`: 会话ID，用于标识当前连接
 - `api_key`: API密钥，用于身份验证
-- `audio_format`: 源音频格式参数
-  - `sample_rate`: 采样率(Hz)
-  - `bit_depth`: 位深度
-  - `channels`: 声道数, 固定为1(单声道)
-  - `encoding`: 编码格式(PCM/WAV)
+- `sample_rate`: 采样率(Hz)
+- `bit_depth`: 位深度
+- `channels`: 声道数, 固定为1(单声道)
+- `encoding`: 编码格式(PCM/WAV)
 
 
 ### 5.2 就绪确认 (ready)

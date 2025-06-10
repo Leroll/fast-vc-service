@@ -58,11 +58,10 @@ async def handle_initial_configuration(websocket: WebSocket):
         return None, None, None
         
     # extract audio format settings
-    audio_format = config_data.get("audio_format", {})
-    sample_rate = audio_format.get("sample_rate", 16000)
-    bit_depth = audio_format.get("bit_depth", 16)
-    channels = audio_format.get("channels", 1)
-    encoding = audio_format.get("encoding", "PCM")  # supports "PCM" or "OPUS"
+    sample_rate = config_data.get("sample_rate", 16000)
+    bit_depth = config_data.get("bit_depth", 16)
+    channels = config_data.get("channels", 1)
+    encoding = config_data.get("encoding", "PCM")  # supports "PCM" or "OPUS"
     
     # validate audio format settings
     if channels != 1:
@@ -77,7 +76,7 @@ async def handle_initial_configuration(websocket: WebSocket):
     # create buffer
     prefill_time = websocket.app.state.cfg.buffer.prefill_time
     if encoding.upper() == "OPUS":
-        frame_duration = audio_format.get("frame_duration", 20)  # Default to 20ms if not specified
+        frame_duration = config_data.get("frame_duration", 20)  # Default to 20ms if not specified
         logger.info(f"{session_id} | Using Opus audio buffer.")
         buffer = OpusAudioStreamBuffer(
             session_id=session_id,
@@ -107,7 +106,7 @@ async def handle_initial_configuration(websocket: WebSocket):
         "message": "Ready to process audio",
     }
     await websocket.send_json(ready_signal)
-    logger.info(f"{session_id} | Ready with audio format: {audio_format}")
+    logger.info(f"{session_id} | Ready with audio format: sample_rate={sample_rate}, bit_depth={bit_depth}, channels={channels}, encoding={encoding}")
     
     return session, buffer
 
