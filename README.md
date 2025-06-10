@@ -104,36 +104,124 @@ sequenceDiagram
     participant C as Client
     participant S as Server
     
-    C->>S: Configuration request
-    S->>C: Ready confirmation ✅
+    C->>S: Configuration Request
+    S->>C: Ready Confirmation ✅
     
-    loop Real-time audio stream
-        C->>S: 🎤 Audio chunk
-        S->>C: 🔊 Converted audio
+    loop Real-time Audio Stream
+        C->>S: 🎤 Audio Chunk
+        S->>C: 🔊 Converted Audio
     end
     
-    C->>S: End signal
-    S->>C: Completion status ✨
+    C->>S: End Signal
+    S->>C: Completion Status ✨
 ```
 
-**For detailed WebSocket API specification, please refer to**: [WebSocket API Specification](docs/%E6%8E%A5%E5%8F%A3%E6%96%87%E6%A1%A3/WebSocket%20API%E8%A7%84%E8%8C%83.md)  
+**For detailed WebSocket API specification, please refer to**: [WebSocket API Specification](docs/接口文档/WebSocket%20API规范.md)  
 **Supported Formats**: PCM | OPUS  
 
-## 🔥 Quick Test
+## 🔥 Quick Testing
 
-### WebSocket Real-time Conversion
+### WebSocket Real-time Voice Conversion
 ```bash
-python examples/ws_client.py \
+python examples/websocket/ws_client.py \
     --source-wav-path "wavs/sources/low-pitched-male-24k.wav" \
     --encoding OPUS
 ```
 
-### Batch File Testing for voice conversion effect verification, no service startup required
+### Batch File Testing for voice conversion effect validation, no service startup required
 ```bash
 python examples/file_vc.py \
-    --source-wav-path "wavs/sources/low-pitched-male-24k.wav"
+    --source-wav-path "wavs/sources/low-pitched-male-24k.wav" \
 ```
 
+## 🚀 Concurrent Performance Testing
+
+### Multi-client Concurrent Testing
+Use concurrent WebSocket clients to test server processing capabilities:
+
+```bash
+# Start 5 concurrent clients simultaneously with no delay
+python examples/websocket/concurrent_ws_client.py \
+    --num-clients 5 \
+    --source-wav-path "wavs/sources/low-pitched-male-24k.wav" \
+    --encoding OPUS
+
+# Start 10 clients with 2-second intervals between each
+python examples/websocket/concurrent_ws_client.py \
+    --num-clients 10 \
+    --delay-between-starts 2.0 \
+    --max-workers 4 \
+    --timeout 600
+
+# Test different audio formats
+python examples/websocket/concurrent_ws_client.py \
+    --num-clients 3 \
+    --encoding PCM \
+    --chunk-time 40 \
+    --real-time
+```
+
+### Test Parameter Description
+- `--num-clients`: Number of concurrent clients (default: 5)
+- `--delay-between-starts`: Delay in seconds between starting each client (default: 0.0, simultaneous start)
+- `--max-workers`: Maximum number of worker processes (default: min(8, num_clients))
+- `--timeout`: Timeout in seconds for each client (default: 420)
+- `--chunk-time`: Audio chunk time in milliseconds (default: 20ms)
+- `--encoding`: Audio encoding format, PCM or OPUS (default: PCM)
+- `--real-time`: Enable real-time audio sending simulation
+- `--no-real-time`: Disable real-time simulation, send audio as fast as possible
+
+### Performance Metrics Analysis
+
+After testing completion, detailed performance analysis reports are automatically generated, including:
+
+#### 🕐 Latency Metrics
+- **First Token Latency**: Processing delay of the first audio packet
+- **End-to-End Latency**: Processing delay of the complete audio stream
+- **Chunk Latency Statistics**: Latency distribution for each audio chunk (mean, median, P95, P99, etc.)
+- **Jitter**: Standard deviation of latency, measuring latency stability
+
+#### ⚡ Real-time Performance Metrics
+- **Real-time Factor (RTF)**: Ratio of processing time to audio duration
+  - RTF < 1.0: Meets real-time processing requirements
+  - RTF > 1.0: Processing speed cannot keep up with audio playback speed
+- **RTF Statistics**: Including mean, median, P95, P99, and other distribution information
+
+#### 📊 Send Timing Analysis
+- **Send Delay Statistics**: Actual send intervals vs expected audio intervals
+- **Timing Quality Assessment**: Send stability and consecutive delay detection
+
+#### 📈 Sample Output
+```json
+{
+  "first_token_latency_ms": 285.3,
+  "end_to_end_latency_ms": 1247.8,
+  "chunk_latency_stats": {
+    "mean_ms": 312.5,
+    "median_ms": 298.1,
+    "p95_ms": 456.7,
+    "p99_ms": 523.2
+  },
+  "real_time_factor": {
+    "mean": 0.87,
+    "median": 0.85,
+    "p95": 1.12
+  },
+  "is_real_time": true,
+  "timeline_summary": {
+    "total_send_events": 156,
+    "total_recv_events": 148,
+    "send_duration_ms": 3120,
+    "processing_start_to_end_ms": 3368
+  }
+}
+```
+
+### Output Files Description
+After testing completion, the following files are generated in the `wavs/outputs/concurrent_ws_client/` directory:
+- `clientX_result.json`: Complete result data for each client
+- `clientX_stats.json`: Performance statistics analysis for each client
+- `clientX_output.wav`: Converted audio files (if saving is enabled)
 
 # 🚧 Under Construction...TODO
 - [ ] tag - v0.1 - Basic Service - v2025-xx
@@ -159,7 +247,7 @@ python examples/file_vc.py \
     - [x] extract tail audio processing logic into separate function
     - [x] Add WebSocket timeout mechanism for connection closure and resource cleanup
     - [x] Add configuration information
-    - [ ] add performance testing module
+    - [x] add performance testing module
     - [ ] Add various timing statistics for single-pass recording in session, remove related code from realtime-vc
     - [x] Fix the issue where ws_client receives audio missing the ending segments
     - [x] save audio files to datetime-based directories

@@ -226,7 +226,7 @@ async def send_audio_file(websocket_url,
                                     'cumulative_ms': recv_audio_ms
                                 })
                                 
-                                logger.info(f"recv | {recv_audio_ms:.1f}ms")
+                                logger.info(f"{session_id} | recv | {recv_audio_ms:.1f}ms")
                                 
                             else:
                                 # It's a control message
@@ -281,7 +281,7 @@ async def send_audio_file(websocket_url,
                             'cumulative_ms': sent_audio_ms
                         })
                         
-                        logger.info(f"send | {sent_audio_ms:.1f}ms")
+                        logger.info(f"{session_id} | send | {sent_audio_ms:.1f}ms")
                         
                         # If simulating real-time, wait appropriate amount of time
                         if real_time_simulation:
@@ -400,7 +400,8 @@ if __name__ == "__main__":
     
     args = parser.parse_args()
     
-    asyncio.run(send_audio_file(
+    # Run the async function and get result
+    result = asyncio.run(send_audio_file(
         websocket_url=args.url,
         api_key=args.api_key,
         real_time_simulation=not args.no_real_time,
@@ -412,3 +413,36 @@ if __name__ == "__main__":
         frame_duration_ms=args.frame_duration,
         save_output=not args.no_save_output,
     ))
+    
+    # Print the result
+    print("\n" + "="*60)
+    print("WEBSOCKET CLIENT RESULT")
+    print("="*60)
+    print(f"Success: {result['success']}")
+    print(f"Session ID: {result['session_id']}")
+    print(f"Send timeline events: {len(result['send_timeline'])}")
+    print(f"Receive timeline events: {len(result['recv_timeline'])}")
+    
+    if result['send_timeline']:
+        print(f"First send event: {result['send_timeline'][0]}")
+        print(f"Last send event: {result['send_timeline'][-1]}")
+    
+    if result['recv_timeline']:
+        print(f"First receive event: {result['recv_timeline'][0]}")
+        print(f"Last receive event: {result['recv_timeline'][-1]}")
+    
+    if result['output_path']:
+        print(f"Output saved to: {result['output_path']}")
+    
+    if result['error']:
+        print(f"Error: {result['error']}")
+    
+    print("="*60)
+    
+    # Save result to JSON for inspection
+    import json
+    result_file = Path(args.output_wav_dir) / f"{result['session_id']}_result.json"
+    result_file.parent.mkdir(parents=True, exist_ok=True)
+    with open(result_file, 'w') as f:
+        json.dump(result, f, indent=2, default=str)
+    print(f"Full result saved to: {result_file}")

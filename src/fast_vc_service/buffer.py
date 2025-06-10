@@ -57,7 +57,7 @@ class AudioStreamBuffer:
         self.buffer = bytearray()
         self.silence_frame = b'\x00' * self.input_bytes_per_frame
         if prefill_time < block_time:  # prefill for first chunk
-            padding_ms = block_time - prefill_time
+            padding_ms = prefill_time
             padding_bytes = int(padding_ms / 1000 * self.input_bytes_per_second)
             padding_bytes = self.silence_frame * (padding_bytes // self.input_bytes_per_frame)  # ensure full frames
             self.buffer.extend(padding_bytes)

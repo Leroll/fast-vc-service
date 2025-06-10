@@ -125,7 +125,7 @@ sequenceDiagram
 
 ### WebSocket 实时换声
 ```bash
-python examples/ws_client.py \
+python examples/websocket/ws_client.py \
     --source-wav-path "wavs/sources/low-pitched-male-24k.wav" \
     --encoding OPUS
 ```
@@ -136,6 +136,94 @@ python examples/file_vc.py \
     --source-wav-path "wavs/sources/low-pitched-male-24k.wav" \
 ```
 
+## 🚀 并发性能测试
+
+### 多客户端并发测试
+使用并发WebSocket客户端测试服务器的处理能力：
+
+```bash
+# 启动5个并发客户端，无延迟同时开始
+python examples/websocket/concurrent_ws_client.py \
+    --num-clients 5 \
+    --source-wav-path "wavs/sources/low-pitched-male-24k.wav" \
+    --encoding OPUS
+
+# 启动10个客户端，每隔2秒启动一个
+python examples/websocket/concurrent_ws_client.py \
+    --num-clients 10 \
+    --delay-between-starts 2.0 \
+    --max-workers 4 \
+    --timeout 600
+
+# 测试不同音频格式
+python examples/websocket/concurrent_ws_client.py \
+    --num-clients 3 \
+    --encoding PCM \
+    --chunk-time 40 \
+    --real-time
+```
+
+### 测试参数说明
+- `--num-clients`: 并发客户端数量（默认：5）
+- `--delay-between-starts`: 客户端启动间隔秒数（默认：0.0，同时启动）
+- `--max-workers`: 最大工作进程数（默认：min(8, num_clients)）
+- `--timeout`: 单个客户端超时时间（默认：420秒）
+- `--chunk-time`: 音频分块时间，毫秒（默认：20ms）
+- `--encoding`: 音频编码格式，PCM或OPUS（默认：PCM）
+- `--real-time`: 启用实时音频发送模拟
+- `--no-real-time`: 禁用实时模拟，尽可能快地发送
+
+### 性能指标分析
+
+测试完成后会自动生成详细的性能分析报告，包括：
+
+#### 🕐 延迟指标
+- **首包延迟 (First Token Latency)**: 第一个音频包的处理延迟
+- **端到端延迟 (End-to-End Latency)**: 完整音频流的处理延迟
+- **分块延迟统计**: 每个音频块的延迟分布（均值、中位数、P95、P99等）
+- **延迟抖动 (Jitter)**: 延迟的标准差，衡量延迟稳定性
+
+#### ⚡ 实时性指标
+- **实时因子 (RTF)**: 处理时间/音频时长的比值
+  - RTF < 1.0: 满足实时处理要求
+  - RTF > 1.0: 处理速度跟不上音频播放速度
+- **RTF统计**: 包含均值、中位数、P95、P99等分布信息
+
+#### 📊 发送时序分析
+- **发送延迟统计**: 实际发送间隔 vs 期望音频间隔
+- **时序质量评估**: 发送稳定性和连续延迟检测
+
+#### 📈 示例输出
+```json
+{
+  "first_token_latency_ms": 285.3,
+  "end_to_end_latency_ms": 1247.8,
+  "chunk_latency_stats": {
+    "mean_ms": 312.5,
+    "median_ms": 298.1,
+    "p95_ms": 456.7,
+    "p99_ms": 523.2
+  },
+  "real_time_factor": {
+    "mean": 0.87,
+    "median": 0.85,
+    "p95": 1.12
+  },
+  "is_real_time": true,
+  "timeline_summary": {
+    "total_send_events": 156,
+    "total_recv_events": 148,
+    "send_duration_ms": 3120,
+    "processing_start_to_end_ms": 3368
+  }
+}
+```
+
+### 结果文件说明
+测试完成后会在 `wavs/outputs/concurrent_ws_client/` 目录下生成：
+- `clientX_result.json`: 每个客户端的完整结果数据
+- `clientX_stats.json`: 每个客户端的性能统计分析
+- `clientX_output.wav`: 转换后的音频文件（如果启用保存）
 
 # 🚧 施工中...TODO
 - [ ] tag - v0.1 - 基础服务相关 - v2025-xx
@@ -161,7 +249,7 @@ python examples/file_vc.py \
     - [x] 抽取ws-server中结尾残留音频处理逻辑至独立函数中
     - [x] 新增ws超时关闭链接机制，触发回收
     - [x] 添加配置信息
-    - [ ] 增加性能测试模块
+    - [x] 增加性能测试模块
     - [ ] 在session中增加，单通录音的各种耗时统计，删去realtime-vc的相关代码
     - [x] 解决 ws_client 收到的音频缺少尾部片段的问题
     - [x] 音频按天存储
