@@ -326,6 +326,26 @@ async def send_audio_file_simple_protocol(websocket_url,
         # 3. At the end of successful processing:
         result['success'] = True
         
+        # 4. post processing
+        # merge send and receive timeline 
+        merged_timeline = []
+        for event in result['send_timeline']:
+            merged_timeline.append({
+                'timestamp': event['timestamp'],
+                'cumulative_ms': event['cumulative_ms'],
+                'event_type': 'send',
+                'stream_id': stream_id
+            })
+        for event in result['recv_timeline']:
+            merged_timeline.append({
+                'timestamp': event['timestamp'],
+                'cumulative_ms': event['cumulative_ms'],
+                'event_type': 'recv',
+                'stream_id': stream_id
+            })
+        merged_timeline.sort(key=lambda x: x['timestamp'])
+        result['merged_timeline'] = merged_timeline
+        
         return result
                 
     except Exception as e:
@@ -430,7 +450,7 @@ if __name__ == "__main__":
     
     # Save result to JSON for inspection
     import json
-    result_file = Path(args.output_wav_dir) / f"{result['stream_id']}_result.json"
+    result_file = Path(args.output_wav_dir) / f"{result['stream_id']}_timeline.json"
     result_file.parent.mkdir(parents=True, exist_ok=True)
     with open(result_file, 'w') as f:
         json.dump(result, f, indent=2, default=str)

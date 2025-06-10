@@ -119,6 +119,7 @@ async def handle_initial_configuration(websocket: WebSocket):
             block_time=realtime_vc.cfg.block_time * 1000,  # Convert to milliseconds
             prefill_time=prefill_time
         )
+    buffer.set_session(session)  # for recording send events
     
     # 根据协议决定是否发送ready消息
     if adapter.should_send_ready():
@@ -163,6 +164,10 @@ async def process_chunk(websocket: WebSocket,
         converted_bytes = int_data.tobytes()
         
         await websocket.send_bytes(converted_bytes)
+        
+        # record output event
+        output_duration_ms = len(result) / 16000 * 1000
+        session.record_recv_event(output_duration_ms)
         
         # Record processing metrics
         chunk_time = (time.perf_counter() - chunk_start) * 1000  # in ms

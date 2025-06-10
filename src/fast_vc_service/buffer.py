@@ -69,6 +69,13 @@ class AudioStreamBuffer:
         self.output_bit_depth = output_bit_depth
         self.needs_conversion = self._is_needs_conversion()
         
+        # 添加 session 引用用于记录事件
+        self.session = None
+        
+    def set_session(self, session):
+        """设置关联的 session 对象用于记录事件"""
+        self.session = session
+        
     def _is_needs_conversion(self):
         """Check if format conversion is needed
         """
@@ -88,9 +95,29 @@ class AudioStreamBuffer:
         """Add audio chunk to buffer
         
         Args:
-            audio_chunk: Raw audio bytes from WebSocket
+            audio_chunk: Raw audio bytes from WebSocket (PCM format)
         """
+        # 计算音频时长并记录 send 事件
+        if self.session and audio_chunk:
+            chunk_duration_ms = self._calculate_chunk_duration_ms(audio_chunk)
+            self.session.record_send_event(chunk_duration_ms)
+        
         self.buffer.extend(audio_chunk)
+    
+    def _calculate_chunk_duration_ms(self, audio_chunk: bytes) -> float:
+        """计算PCM音频块的时长（毫秒）
+        
+        Args:
+            audio_chunk: PCM 音频数据 bytes
+            
+        Returns:
+            float: 音频时长（毫秒）
+        """
+        # 根据位深度计算样本数
+        samples_count = len(audio_chunk) // self.input_bytes_per_frame
+        # 计算时长
+        duration_ms = samples_count / self.input_sample_rate * 1000
+        return duration_ms
     
     def get_buffer_duration_ms(self):
         """Get current buffer duration in milliseconds

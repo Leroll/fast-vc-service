@@ -17,6 +17,7 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.append(str(PROJECT_ROOT))
 
 from examples.websocket.ws_client import send_audio_file
+from fast_vc_service.tools.timeline_analyzer import TimelineAnalyzer
 
 
 def run_single_client(client_id, client_config):
@@ -171,7 +172,7 @@ def calculate_latency_stats(client_id,
                             output_dir,
                             prefill_time=375):
     """
-    Calculate comprehensive latency and streaming performance statistics.
+    使用统一的分析工具计算延迟统计
     
     Args:
         send_timeline: List of {'timestamp': str, 'cumulative_ms': float}
@@ -181,195 +182,13 @@ def calculate_latency_stats(client_id,
     Returns:
         dict: Comprehensive statistics including latency, RTF, and streaming metrics
     """
-    
-    if not send_timeline or not recv_timeline:
-        return {"error": "Empty timeline data"}
-    
-    # Convert to DataFrames for easier processing
-    send_df = pd.DataFrame(send_timeline)
-    recv_df = pd.DataFrame(recv_timeline)
-    recv_df['cumulative_ms'] = (recv_df['cumulative_ms'] - prefill_time).copy()  # Adjust for prefill time
-    
-    # Convert timestamps to datetime objects
-    send_df['datetime'] = pd.to_datetime(send_df['timestamp'])
-    recv_df['datetime'] = pd.to_datetime(recv_df['timestamp'])
-    
-    # Calculate time differences in milliseconds from start
-    send_start = send_df['datetime'].iloc[0]
-    recv_start = recv_df['datetime'].iloc[0]
-    
-    send_df['elapsed_ms'] = (send_df['datetime'] - send_start).dt.total_seconds() * 1000
-    recv_df['elapsed_ms'] = (recv_df['datetime'] - recv_start).dt.total_seconds() * 1000
-    
-    stats = {}
-    
-    # 1. First Token Latency (首包延迟)
-    first_send_time = send_df['elapsed_ms'].iloc[0]
-    first_recv_time = recv_df['elapsed_ms'].iloc[0]
-    stats['first_token_latency_ms'] = first_recv_time - first_send_time
-    
-    # 2. End-to-End Latency (端到端延迟)
-    last_send_time = send_df['elapsed_ms'].iloc[-1]
-    last_recv_time = recv_df['elapsed_ms'].iloc[-1]
-    stats['end_to_end_latency_ms'] = last_recv_time - last_send_time
-    
-    # 3. Audio-based Latency Analysis (基于音频时长的延迟分析)
-    # For each received audio segment, find the corresponding sent segment
-    chunk_latencies = []
-    
-    for _, recv_row in recv_df.iterrows():
-        recv_audio_ms = recv_row['cumulative_ms']
-        recv_time = recv_row['elapsed_ms']
-        
-        # Find the send event that corresponds to this audio duration
-        # We look for the send event where cumulative_ms >= recv_audio_ms
-        corresponding_send = send_df[send_df['cumulative_ms'] >= recv_audio_ms]
-        
-        if not corresponding_send.empty:
-            send_time = corresponding_send.iloc[0]['elapsed_ms']
-            latency = recv_time - send_time
-            chunk_latencies.append({
-                'audio_ms': recv_audio_ms,
-                'latency_ms': latency,
-                'send_time': send_time,
-                'recv_time': recv_time
-            })
-    
-    if chunk_latencies:
-        latency_values = [item['latency_ms'] for item in chunk_latencies]
-        stats['chunk_latency_stats'] = {
-            'mean_ms': np.mean(latency_values),
-            'median_ms': np.median(latency_values),
-            'min_ms': np.min(latency_values),
-            'max_ms': np.max(latency_values),
-            'std_ms': np.std(latency_values),
-            'p95_ms': np.percentile(latency_values, 95),
-            'p99_ms': np.percentile(latency_values, 99)
-        }
-        
-        # 4. Jitter (延迟抖动)
-        stats['jitter_ms'] = np.std(latency_values)
-    
-    # 5. Real-time Factor (RTF) Analysis
-    if chunk_latencies:
-        # RTF = processing_time / audio_duration
-        # for streaming, we calculate RTF for each chunk and average them
-        chunk_rtfs = []
-        
-        for i, latency_info in enumerate(chunk_latencies):
-            if i == 0:
-                # 第一个chunk的音频时长
-                chunk_audio_duration = latency_info['audio_ms']
-            else:
-                # 后续chunk的音频时长 = 当前累积时长 - 前一个累积时长
-                chunk_audio_duration = latency_info['audio_ms'] - chunk_latencies[i-1]['audio_ms']
-            
-            # chunk的处理时间就是其延迟
-            chunk_processing_time = latency_info['latency_ms']
-            
-            if chunk_audio_duration > 0:
-                chunk_rtf = chunk_processing_time / chunk_audio_duration
-                chunk_rtfs.append(chunk_rtf)
-        
-        if chunk_rtfs:
-            stats['real_time_factor'] = {
-                'mean': np.mean(chunk_rtfs),
-                'median': np.median(chunk_rtfs),
-                'min': np.min(chunk_rtfs),
-                'max': np.max(chunk_rtfs),
-                'std': np.std(chunk_rtfs),
-                'p95': np.percentile(chunk_rtfs, 95),
-                'p99': np.percentile(chunk_rtfs, 99)
-            }
-            stats['is_real_time'] = stats['real_time_factor']['mean'] <= 1.0
-        else:
-            stats['real_time_factor'] = {'error': 'No valid chunk RTF data'}
-            stats['is_real_time'] = False
-    
-    # 6. Send Timing Analysis (发送时序分析)
-    send_timing_analysis = []
-    expected_intervals = []
-    actual_intervals = []
-    
-    for i in range(1, len(send_df)):
-        # 计算实际发送时间间隔
-        actual_interval = send_df.iloc[i]['elapsed_ms'] - send_df.iloc[i-1]['elapsed_ms']
-        actual_intervals.append(actual_interval)
-        
-        # 计算期望的音频时间间隔
-        expected_audio_interval = send_df.iloc[i]['cumulative_ms'] - send_df.iloc[i-1]['cumulative_ms']
-        expected_intervals.append(expected_audio_interval)
-        
-        # 计算发送延迟：实际间隔 vs 期望间隔
-        send_delay = actual_interval - expected_audio_interval
-        send_timing_analysis.append({
-            'chunk_index': i,
-            'expected_interval_ms': expected_audio_interval,
-            'actual_interval_ms': actual_interval,
-            'send_delay_ms': send_delay,
-            'delay_ratio': send_delay / expected_audio_interval if expected_audio_interval > 0 else 0
-        })
-    
-    if send_timing_analysis:
-        send_delays = [item['send_delay_ms'] for item in send_timing_analysis]
-        delay_ratios = [item['delay_ratio'] for item in send_timing_analysis]
-        
-        stats['send_timing_analysis'] = {
-            'total_chunks': len(send_timing_analysis),
-            'send_delay_stats': {
-                'mean_ms': np.mean(send_delays),
-                'median_ms': np.median(send_delays),
-                'min_ms': np.min(send_delays),
-                'max_ms': np.max(send_delays),
-                'std_ms': np.std(send_delays),
-                'p95_ms': np.percentile(send_delays, 95),
-                'p99_ms': np.percentile(send_delays, 99)
-            },
-            'delay_ratio_stats': {
-                'mean': np.mean(delay_ratios),
-                'median': np.median(delay_ratios),
-                'min': np.min(delay_ratios),
-                'max': np.max(delay_ratios),
-                'std': np.std(delay_ratios),
-                'p95': np.percentile(delay_ratios, 95),
-                'p99': np.percentile(delay_ratios, 99)
-            },
-            'timing_quality': {
-                'chunks_with_positive_delay': sum(1 for d in send_delays if d > 0),
-                'chunks_with_significant_delay': sum(1 for d in send_delays if d > 10),  # >10ms delay
-                'max_consecutive_delays': 0,  # 计算连续延迟的最大长度
-                'is_sending_stable': np.std(send_delays) < 5.0  # 发送是否稳定（标准差<5ms）
-            }
-        }
-        
-        # 计算连续延迟的最大长度
-        consecutive_delays = 0
-        max_consecutive = 0
-        for delay in send_delays:
-            if delay > 5:  # 认为>5ms为延迟
-                consecutive_delays += 1
-                max_consecutive = max(max_consecutive, consecutive_delays)
-            else:
-                consecutive_delays = 0
-        stats['send_timing_analysis']['timing_quality']['max_consecutive_delays'] = max_consecutive
-    
-    # 7. Timeline Summary
-    total_audio_duration_ms = send_df['cumulative_ms'].iloc[-1]
-    total_processing_time_ms = recv_df['elapsed_ms'].iloc[-1] - send_df['elapsed_ms'].iloc[0]
-    stats['timeline_summary'] = {
-        'total_send_events': len(send_timeline),
-        'total_recv_events': len(recv_timeline),
-        'send_duration_ms': total_audio_duration_ms,
-        'recv_duration_ms': recv_df['cumulative_ms'].iloc[-1] if len(recv_df) > 0 else 0,
-        'processing_start_to_end_ms': total_processing_time_ms
-    }
-    
-    # Save stats to JSON file in the same directory as audio files
-    stats_file = output_dir / f"client{client_id}_stats.json"
-    with open(stats_file, 'w') as f:
-        json.dump(stats, f, indent=2, default=str)
-    
-    logger.info(f"Saved latency stats for client {client_id} to {stats_file}")
+    return TimelineAnalyzer.calculate_latency_stats(
+        session_id=f"client{client_id}",
+        send_timeline=send_timeline,
+        recv_timeline=recv_timeline,
+        output_dir=output_dir,
+        prefill_time=prefill_time
+    )
 
 
 def parse_args():
@@ -546,8 +365,8 @@ def main():
     for result in results:
         client_id = result['client_id']
         
-        result_file = output_dir / f"client{client_id}_result.json"
-        with open(result_file, 'w') as f:
+        timeline_file = output_dir / f"client{client_id}_timeline.json"
+        with open(timeline_file, 'w') as f:
             json.dump(result, f, indent=2, default=str)
         
         if result.get('success', False):
