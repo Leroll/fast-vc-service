@@ -251,7 +251,7 @@ After testing completion, the following files are generated in the `outputs/conc
     - [ ] Add various timing statistics for single-pass recording in session, remove related code from realtime-vc
     - [x] Fix the issue where ws_client receives audio missing the ending segments
     - [x] save audio files to datetime-based directories
-    - [ ] Add flexible WebSocket message name configuration feature, allowing modification through configuration files
+    - [x] Add flexible WebSocket message name configuration feature, allowing modification through configuration files
     - [ ] Add a setting for the audio sample rate in the WebSocket client.
     - [ ] Support webRTC
     - [ ] Crop cover image

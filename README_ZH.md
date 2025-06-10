@@ -253,7 +253,7 @@ python examples/websocket/concurrent_ws_client.py \
     - [ ] 在session中增加，单通录音的各种耗时统计，删去realtime-vc的相关代码
     - [x] 解决 ws_client 收到的音频缺少尾部片段的问题
     - [x] 音频按天存储
-    - [ ] 新增websocket消息名灵活配置功能，可通过配置文件修改 
+    - [x] 新增websocket消息名灵活配置功能，可通过配置文件修改 
     - [ ] ws_client 增加发送音频samplerate的设置
     - [ ] 支持webRTC
     - [ ] 裁剪封面图
