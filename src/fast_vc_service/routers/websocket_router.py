@@ -5,6 +5,7 @@ import numpy as np
 import traceback
 import json
 import asyncio
+from typing import Dict, Set
 
 from fast_vc_service.buffer import AudioStreamBuffer, OpusAudioStreamBuffer
 from fast_vc_service.session import Session
@@ -12,6 +13,34 @@ from fast_vc_service.adapters.protocol_detector import ProtocolDetector
 from fast_vc_service.adapters.protocol_adapter import ProtocolAdapter
 
 websocket_router = APIRouter()
+
+
+class ConnectionMonitor:
+    """WebSocket connection monitor."""
+    
+    def __init__(self):
+        self._active_connections: Set[str] = set()
+        self._lock = asyncio.Lock()  # 异步锁，防止并发修改
+    
+    async def add_connection(self, session_id: str) -> int:
+        """add a new connection"""
+        async with self._lock:
+            self._active_connections.add(session_id)
+            return len(self._active_connections)
+    
+    async def remove_connection(self, session_id: str) -> int:
+        """remove a connection"""
+        async with self._lock:
+            self._active_connections.discard(session_id)
+            return len(self._active_connections)
+    
+    async def get_connection_count(self) -> int:
+        """Get the current number of active connections."""
+        async with self._lock:
+            return len(self._active_connections)
+        
+connection_monitor = ConnectionMonitor()
+
 
 def validate_api_key(api_key: str) -> bool:
     """Validate the API key."""
@@ -133,7 +162,9 @@ async def handle_initial_configuration(websocket: WebSocket):
     else:
         logger.info(f"{session_id} | Skipping ready signal for simple protocol")
     
+    current_connections = await connection_monitor.add_connection(session_id)
     logger.info(f"{session_id} | Ready with audio format: sample_rate={sample_rate}, bit_depth={bit_depth}, channels={channels}, encoding={encoding}")
+    logger.info(f"{session_id} | Active connections: {current_connections}")
     
     return session, buffer, adapter
 
@@ -205,12 +236,14 @@ async def websocket_endpoint(websocket: WebSocket):
     logger.info("WebSocket connection established")
     session, buffer, adapter = None, None, None
     receive_timeout = websocket.app.state.cfg.app.receive_timeout
+    connection_added = False
 
     try:
         # handle initial configuration
         session, buffer, adapter = await handle_initial_configuration(websocket)
         if not session:
             return
+        connection_added = True
         
         # handle audio processing
         while True:
@@ -270,6 +303,10 @@ async def websocket_endpoint(websocket: WebSocket):
             if websocket.client_state.name != "DISCONNECTED":
                 await websocket.close()
                 logger.info(f"{session_log_id} | WebSocket connection closed in finally. ")
+            
+            if connection_added and session:
+                remaining_connections = await connection_monitor.remove_connection(session.session_id)
+                logger.info(f"{session_log_id} | Connection removed. Remaining active connections: {remaining_connections}")
             
             if buffer:
                 buffer.clear()
