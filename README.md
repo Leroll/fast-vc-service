@@ -24,7 +24,7 @@
 
 # 🚀 Quick Start
 
-## Environment Setup
+## Installation
 
 ### Method 1: Using Poetry (Recommended)
 ```bash
@@ -39,16 +39,33 @@ poetry install  # Install dependencies
 git clone --recursive https://github.com/Leroll/fast-vc-service.git
 cd fast-vc-service
 cp .env.example .env  # Configure model download path and source
-pip install -e .  # Install project and its dependencies in editable mode
+pip install -e .  # Install project and dependencies in editable mode
+```
+
+### Method 3: Using Existing Conda Environment
+```bash
+git clone --recursive https://github.com/Leroll/fast-vc-service.git
+cd fast-vc-service
+cp .env.example .env  # Configure environment variables
+
+# Activate existing conda environment (Python 3.10+)
+conda activate your_env_name
+
+# Option 3.1: Using Poetry (disable virtual environment)
+poetry config virtualenvs.create false
+poetry install
+
+# Option 3.2: Direct pip installation
+pip install -e .
 ```
 
 When running for the first time, models will be automatically downloaded to the checkpoint folder.  
-If you experience network issues, uncomment the `HF_ENDPOINT` variable in the `.env` file to use domestic mirror sources for accelerated model downloading.
+If you encounter network issues, uncomment the `HF_ENDPOINT` variable in the `.env` file to use domestic mirror sources for accelerated model downloads.
 
 ## Start Service
 ```bash
-# Start the service
-fast-vc serve  # Default startup using env_profile from .env
+# Start service
+fast-vc serve  # Default startup using env_profile in .env
 fast-vc serve --env prod  # Specify environment configuration
 
 # Using Poetry
@@ -253,12 +270,10 @@ After testing completion, the following files are generated in the `outputs/conc
     - [x] save audio files to datetime-based directories
     - [x] Add flexible WebSocket message name configuration feature, allowing modification through configuration files
     - [x] Add a setting for the audio sample rate in the WebSocket client.
-    - [ ] Support webRTC
-    - [ ] Fix file_vc for the last block issue
+    - [ ] create Docker image for easy deployment 
     - [ ] Handle exceptional cases, e.g., when a chunk converts with rta>1, what processing solutions exist?
     - [ ] resolve the issue of semaphore leak
     - [ ] Add dynamic diffusion steps adaptation based on load to ensure real-time performance
-    - [ ] create Docker image for easy deployment 
     - [ ] Create AutoDL image
 - [ ] tag - v0.2 - Audio Quality - v2025-xx
     - [ ] Investigate chunk size issue in infer_wav, 8781 after vcmodel, 9120 without it [sola module record]
@@ -271,6 +286,8 @@ After testing completion, the following files are generated in the `outputs/conc
     - [ ] Add encrypted wav return for GET requests
     - [ ] add support for wss
     - [ ] Implement JWT token-based authentication
+    - [ ] Support webRTC
+    - [ ] Fix file_vc for the last block issue
 
 # 🙏 Acknowledgements
 - [Seed-VC](https://github.com/Plachtaa/seed-vc) - Provides powerful underlying voice conversion model

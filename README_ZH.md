@@ -24,7 +24,7 @@
 
 # 🚀 快速开始
 
-## 环境配置
+## 安装
 
 ### 方式一：使用 Poetry（推荐）
 ```bash
@@ -40,6 +40,23 @@ git clone --recursive https://github.com/Leroll/fast-vc-service.git
 cd fast-vc-service
 cp .env.example .env  # 配置模型下载路径与下载源
 pip install -e .  # 以可编辑模式安装项目及其依赖
+```
+
+### 方式三：使用现有 Conda 环境
+```bash
+git clone --recursive https://github.com/Leroll/fast-vc-service.git
+cd fast-vc-service
+cp .env.example .env  # 配置环境变量
+
+# 激活现有的conda环境（Python 3.10+）
+conda activate your_env_name
+
+# 方式3.1：使用 Poetry（禁用虚拟环境）
+poetry config virtualenvs.create false
+poetry install
+
+# 方式3.2：使用 pip 直接安装
+pip install -e .
 ```
 
 当第一次运行时，模型会自动下载到checkpoint文件夹下。  
@@ -255,12 +272,10 @@ python examples/websocket/concurrent_ws_client.py \
     - [x] 音频按天存储
     - [x] 新增websocket消息名灵活配置功能，可通过配置文件修改 
     - [x] ws_client 增加发送音频samplerate的设置
-    - [ ] 支持webRTC
-    - [ ] file_vc，针对最后一个block的问题
+    - [ ] 制作镜像，方便部署
     - [ ] 针对 异常情况，比如某个chunk转换rta>1的时候，有没有什么处理方案？
     - [ ] 解决 semaphore leak 的问题
     - [ ] 新增基于负责情况动态适配difusion steps 的功能，以保证实时性
-    - [ ] 制作镜像，方便部署
     - [ ] 制作AutoDL镜像
 - [ ] tag - v0.2 - 音频质量相关 -  v2025-xx
     - [ ] infer_wav 每个chunk大小问题排查，在经过vcmodel之后，为8781，不经过的话为9120【sola模块记录】
@@ -273,6 +288,8 @@ python examples/websocket/concurrent_ws_client.py \
     - [ ] 新增get请求返回加密wav
     - [ ] 新增wss支持
     - [ ] 鉴权部分更新为令牌（JWT）方式
+    - [ ] 支持webRTC
+    - [ ] file_vc，针对最后一个block的问题
 
 # 🙏 致谢
 - [Seed-VC](https://github.com/Plachtaa/seed-vc) - 提供了强大的底层变声模型
