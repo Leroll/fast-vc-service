@@ -26,7 +26,7 @@
 
 ## Installation
 
-### Method 1: Using Poetry (Recommended)
+### Method 1: Using Poetry
 ```bash
 git clone --recursive https://github.com/Leroll/fast-vc-service.git
 cd fast-vc-service
