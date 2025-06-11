@@ -29,7 +29,7 @@ class ModelFactory:
         self.logger = logger.bind(name="app")
         self.logger.info("initializing ModelFactory...")
         self.cfg = model_config
-        self._setup_cache_paths()
+        self.hf_cache_path, self.modelscope_cache_path = self._setup_cache_paths()
         self.device = self.cfg.device
         self.is_torch_compile = self.cfg.is_torch_compile
         self.logger.info(f"HF_ENDPOINT: {os.environ.get('HF_ENDPOINT', 'default')}")
@@ -62,6 +62,8 @@ class ModelFactory:
         
         self.logger.info(f"HF_HUB_CACHE set to: {hf_cache_path}")
         self.logger.info(f"MODELSCOPE_CACHE set to: {modelscope_cache_path}")
+        
+        return hf_cache_path, modelscope_cache_path
 
     @timer_decorator
     def _load_models(self):
@@ -361,7 +363,13 @@ class ModelFactory:
         
         self.logger.info("===> Loading VAD model")
         from funasr import AutoModel  # 这是新版本增加的vad模块
-        vad_model = AutoModel(model="fsmn-vad", model_revision="v2.0.4")
+        try: 
+            vad_model = AutoModel(model="fsmn-vad", model_revision="v2.0.4")
+        except:
+            # try loading from local path
+            vad_model_path = self.modelscope_cache_path / "hub/iic/speech_fsmn_vad_zh-cn-16k-common-pytorch"
+            vad_model = AutoModel(model=vad_model_path) 
+        
         
         # 计算vad_model的参数量
         total_params = self.cal_model_params(vad_model.model)
