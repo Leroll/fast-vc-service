@@ -71,7 +71,7 @@ class SimpleProtocolAdapter(ProtocolAdapter):
                 "sample_rate": message.get("sample_rate", 16000),
                 "bit_depth": message.get("sample_bit", 16),
                 "channels": 1,  # 默认单声道
-                "encoding": "PCM"  # 默认PCM格式
+                "encoding": message.get("encoding", "PCM")  # 支持encoding参数，默认PCM格式
             }
             
             # 如果原消息中有opus_frame_duration参数，传递给标准配置

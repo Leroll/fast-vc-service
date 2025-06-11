@@ -110,7 +110,7 @@ ws://[服务器地址]/ws
 - `sample_rate`: 采样率(Hz)
 - `bit_depth`: 位深度
 - `channels`: 声道数, 固定为1(单声道)
-- `encoding`: 编码格式(PCM/WAV)
+- `encoding`: 编码格式(PCM/OPUS)，默认值为"PCM"
 - `opus_frame_duration`: (可选) OPUS编码帧长，单位为毫秒，默认值为20ms
 
 
@@ -210,6 +210,7 @@ ws://[服务器地址]/ws
   "stream_id": "stream_12345",
   "sample_rate": 16000,
   "sample_bit": 16,
+  "encoding": "PCM",
   "opus_frame_duration": 20
 }
 ```
@@ -219,6 +220,7 @@ ws://[服务器地址]/ws
 - `stream_id`: 流ID，用于标识当前连接
 - `sample_rate`: 采样率(Hz)
 - `sample_bit`: 位深度
+- `encoding`: 编码格式(PCM/OPUS)，默认值为"PCM"
 - `opus_frame_duration`: (可选) OPUS编码帧长，单位为毫秒，默认值为20ms
 
 **注意**: 简单协议不需要API密钥验证，服务器不会发送ready确认消息。
