@@ -29,6 +29,7 @@ class ModelFactory:
         self.logger = logger.bind(name="app")
         self.logger.info("initializing ModelFactory...")
         self.cfg = model_config
+        self._setup_cache_paths()
         self.device = self.cfg.device
         self.is_torch_compile = self.cfg.is_torch_compile
         self.logger.info(f"HF_ENDPOINT: {os.environ.get('HF_ENDPOINT', 'default')}")
@@ -36,6 +37,31 @@ class ModelFactory:
         self.logger.info(f"Using torch compile: {self.is_torch_compile}")
         
         self.models = self._load_models()
+
+    def _setup_cache_paths(self):
+        """set up cache paths for HF and ModelScope"""
+        project_root = Path(__file__).resolve().parent.parent.parent
+        
+        hf_cache = os.environ.get('HF_HUB_CACHE', 'checkpoints/hf_cache')
+        modelscope_cache = os.environ.get('MODELSCOPE_CACHE', 'checkpoints/modelscope_cache')
+        
+        hf_cache_path = Path(hf_cache)
+        modelscope_cache_path = Path(modelscope_cache)
+        
+        if not hf_cache_path.is_absolute():
+            hf_cache_path = project_root / hf_cache_path
+        if not modelscope_cache_path.is_absolute():
+            modelscope_cache_path = project_root / modelscope_cache_path
+        
+        # set absolute paths to environment variables
+        os.environ['HF_HUB_CACHE'] = str(hf_cache_path)
+        os.environ['MODELSCOPE_CACHE'] = str(modelscope_cache_path)
+        
+        hf_cache_path.mkdir(parents=True, exist_ok=True)
+        modelscope_cache_path.mkdir(parents=True, exist_ok=True)
+        
+        self.logger.info(f"HF_HUB_CACHE set to: {hf_cache_path}")
+        self.logger.info(f"MODELSCOPE_CACHE set to: {modelscope_cache_path}")
 
     @timer_decorator
     def _load_models(self):
