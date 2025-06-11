@@ -118,7 +118,7 @@ sequenceDiagram
     S->>C: 完成状态 ✨
 ```
 
-**详细的WebSocket API规范请参考**: [WebSocket API规范](docs/%E6%8E%A5%E5%8F%A3%E6%96%87%E6%A1%A3/WebSocket%20API%E8%A7%84%E8%8C%83.md)  
+**详细的WebSocket API规范请参考**: [WebSocket API规范](docs/api_docs/websocket-api-doc.md)  
 **支持格式**: PCM | OPUS  
 
 ## 🔥 快速测试

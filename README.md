@@ -116,7 +116,7 @@ sequenceDiagram
     S->>C: Completion Status ✨
 ```
 
-**For detailed WebSocket API specification, please refer to**: [WebSocket API Specification](docs/接口文档/WebSocket%20API规范.md)  
+**For detailed WebSocket API specification, please refer to**: [WebSocket API Specification](docs/api_docs/websocket-api-doc_EN.md)  
 **Supported Formats**: PCM | OPUS  
 
 ## 🔥 Quick Testing
