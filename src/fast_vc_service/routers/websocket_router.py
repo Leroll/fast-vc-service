@@ -229,7 +229,7 @@ async def process_tail_bytes_and_vc(websocket: WebSocket,
         logger.info(f"{session.session_id} | Processing remaining audio data: {buffer.get_buffer_duration_ms()} ms")
         await process_chunk(websocket, buffer, session)
 
-
+@websocket_router.websocket("/")
 @websocket_router.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
