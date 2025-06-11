@@ -275,8 +275,14 @@ def clean(confirm: bool):
 def version():
     """Show version information."""
     from . import __version__
+    from . import __build_date__
+    from . import __author__ 
     click.echo(click.style(f"🎤 Fast VC Service ", fg="cyan", bold=True) + 
                click.style(f"v{__version__}", fg="green", bold=True))
- 
+    click.echo(click.style(f"📅 Build Date: ", fg="cyan", bold=True) +
+               click.style(f"{__build_date__}", fg="green", bold=True)),
+    click.echo(click.style(f"👷 Author: ", fg="cyan", bold=True)+
+               click.style(f"{__author__}", fg="green", bold=True))
+
 if __name__ == "__main__":
     cli()
