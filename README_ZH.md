@@ -26,7 +26,7 @@
 
 ## 安装
 
-### 方式一：使用 Poetry（推荐）
+### 方式一：使用 Poetry
 ```bash
 git clone --recursive https://github.com/Leroll/fast-vc-service.git
 cd fast-vc-service
@@ -34,15 +34,7 @@ cp .env.example .env  # 配置环境变量
 poetry install  # 安装依赖
 ```
 
-### 方式二：使用 pip
-```bash
-git clone --recursive https://github.com/Leroll/fast-vc-service.git
-cd fast-vc-service
-cp .env.example .env  # 配置模型下载路径与下载源
-pip install -e .  # 以可编辑模式安装项目及其依赖
-```
-
-### 方式三：使用现有 Conda 环境
+### 方式二：使用现有 Conda 环境
 ```bash
 git clone --recursive https://github.com/Leroll/fast-vc-service.git
 cd fast-vc-service
@@ -51,16 +43,24 @@ cp .env.example .env  # 配置环境变量
 # 激活现有的conda环境（Python 3.10+）
 conda activate your_env_name
 
-# 方式3.1：使用 Poetry（禁用虚拟环境）
+# 使用 Poetry（禁用虚拟环境）
 poetry config virtualenvs.create false
 poetry install
-
-# 方式3.2：使用 pip 直接安装
-pip install -e .
 ```
 
 当第一次运行时，模型会自动下载到checkpoint文件夹下。  
 如果有网络问题，可取消注 `.env` 文件中的 `HF_ENDPOINT` 变量，使用国内镜像源加速模型下载。
+
+
+### 替换poetry源（如果有需要）
+```
+poetry source remove aliyun
+poetry source add new_name https://xx/pypi/simple --priority=primary
+rm poetry.lock  # 删除锁文件，重新生成
+poetry lock 
+poetry install  
+```
+
 
 
 ## 启动服务
@@ -272,6 +272,7 @@ python examples/websocket/concurrent_ws_client.py \
     - [x] 音频按天存储
     - [x] 新增websocket消息名灵活配置功能，可通过配置文件修改 
     - [x] ws_client 增加发送音频samplerate的设置
+    - [ ] 增加websocket接口，基于id调取压编码以及加密后的音频以及统计文件
     - [ ] 制作镜像，方便部署
     - [ ] 针对 异常情况，比如某个chunk转换rta>1的时候，有没有什么处理方案？
     - [ ] 解决 semaphore leak 的问题

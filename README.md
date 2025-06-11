@@ -34,15 +34,7 @@ cp .env.example .env  # Configure environment variables
 poetry install  # Install dependencies
 ```
 
-### Method 2: Using pip
-```bash
-git clone --recursive https://github.com/Leroll/fast-vc-service.git
-cd fast-vc-service
-cp .env.example .env  # Configure model download path and source
-pip install -e .  # Install project and dependencies in editable mode
-```
-
-### Method 3: Using Existing Conda Environment
+### Method 2: Using Existing Conda Environment
 ```bash
 git clone --recursive https://github.com/Leroll/fast-vc-service.git
 cd fast-vc-service
@@ -51,16 +43,22 @@ cp .env.example .env  # Configure environment variables
 # Activate existing conda environment (Python 3.10+)
 conda activate your_env_name
 
-# Option 3.1: Using Poetry (disable virtual environment)
+# Using Poetry (disable virtual environment)
 poetry config virtualenvs.create false
 poetry install
-
-# Option 3.2: Direct pip installation
-pip install -e .
 ```
 
 When running for the first time, models will be automatically downloaded to the checkpoint folder.  
 If you encounter network issues, uncomment the `HF_ENDPOINT` variable in the `.env` file to use domestic mirror sources for accelerated model downloads.
+
+### Replace poetry source (if needed)
+```
+poetry source remove aliyun
+poetry source add new_name https://xx/pypi/simple --priority=primary
+rm poetry.lock  # Delete lock file to regenerate
+poetry lock 
+poetry install  
+```
 
 ## Start Service
 ```bash
@@ -270,6 +268,7 @@ After testing completion, the following files are generated in the `outputs/conc
     - [x] save audio files to datetime-based directories
     - [x] Add flexible WebSocket message name configuration feature, allowing modification through configuration files
     - [x] Add a setting for the audio sample rate in the WebSocket client.
+    - [ ] Add WebSocket interface for retrieving compressed/encrypted audio and statistics files by ID
     - [ ] create Docker image for easy deployment 
     - [ ] Handle exceptional cases, e.g., when a chunk converts with rta>1, what processing solutions exist?
     - [ ] resolve the issue of semaphore leak
