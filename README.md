@@ -252,12 +252,14 @@ After testing completion, the following files are generated in the `outputs/conc
     - [x] Fix the issue where ws_client receives audio missing the ending segments
     - [x] save audio files to datetime-based directories
     - [x] Add flexible WebSocket message name configuration feature, allowing modification through configuration files
-    - [ ] Add a setting for the audio sample rate in the WebSocket client.
+    - [x] Add a setting for the audio sample rate in the WebSocket client.
     - [ ] Support webRTC
     - [ ] Fix file_vc for the last block issue
     - [ ] Handle exceptional cases, e.g., when a chunk converts with rta>1, what processing solutions exist?
     - [ ] resolve the issue of semaphore leak
     - [ ] Add dynamic diffusion steps adaptation based on load to ensure real-time performance
+    - [ ] create Docker image for easy deployment 
+    - [ ] Create AutoDL image
 - [ ] tag - v0.2 - Audio Quality - v2025-xx
     - [ ] Investigate chunk size issue in infer_wav, 8781 after vcmodel, 9120 without it [sola module record]
     - [ ] Investigate potential sound jitter issues
@@ -266,7 +268,6 @@ After testing completion, the following files are generated in the `outputs/conc
 - [ ] tag - v0.3 - Service Flexibility and Stability - v2025-xx
     - [ ] Use torchaudio to read references directly to GPU, saving transfer steps
     - [ ] Configure startup of different model instances as different microservices
-    - [ ] Create AutoDL image for one-click deployment
     - [ ] Add encrypted wav return for GET requests
     - [ ] add support for wss
     - [ ] Implement JWT token-based authentication

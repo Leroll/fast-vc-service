@@ -66,6 +66,8 @@ class RealtimeVoiceConversionConfig(BaseModel):
                                
     # 辅助参数
     max_tracking_counter: int = 10_000  # 用于记录单chunk推理时间损耗的最大记录数量
+                                        # record audio duration = max_tracking_counter * block_time
+                                        # default: 10_000 * 0.5 = 5000s = 83min
 
 
 class ModelConfig(BaseModel):

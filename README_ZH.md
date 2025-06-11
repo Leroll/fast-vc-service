@@ -254,12 +254,14 @@ python examples/websocket/concurrent_ws_client.py \
     - [x] 解决 ws_client 收到的音频缺少尾部片段的问题
     - [x] 音频按天存储
     - [x] 新增websocket消息名灵活配置功能，可通过配置文件修改 
-    - [ ] ws_client 增加发送音频samplerate的设置
+    - [x] ws_client 增加发送音频samplerate的设置
     - [ ] 支持webRTC
     - [ ] file_vc，针对最后一个block的问题
     - [ ] 针对 异常情况，比如某个chunk转换rta>1的时候，有没有什么处理方案？
     - [ ] 解决 semaphore leak 的问题
     - [ ] 新增基于负责情况动态适配difusion steps 的功能，以保证实时性
+    - [ ] 制作镜像，方便部署
+    - [ ] 制作AutoDL镜像
 - [ ] tag - v0.2 - 音频质量相关 -  v2025-xx
     - [ ] infer_wav 每个chunk大小问题排查，在经过vcmodel之后，为8781，不经过的话为9120【sola模块记录】
     - [ ] 声音貌似有些抖动，待排查
@@ -268,7 +270,6 @@ python examples/websocket/concurrent_ws_client.py \
 - [ ] tag - v0.3 - 服务灵活稳定相关 - v2025-xx
     - [ ] reference 使用torchaudio 直接读取到GPU中，省去转移的步骤。
     - [ ] 配置化启动不同的模型实例，配置为不同的微服务？
-    - [ ] 制作AutoDL镜像，方便一键部署
     - [ ] 新增get请求返回加密wav
     - [ ] 新增wss支持
     - [ ] 鉴权部分更新为令牌（JWT）方式

@@ -52,6 +52,7 @@ def run_single_client(client_id, client_config):
                     save_output=client_config['save_output'],
                     output_wav_dir=client_config['output_wav_dir'],
                     encoding=client_config['encoding'],
+                    target_sample_rate=client_config['target_sample_rate'],
                     chunk_time_ms=client_config['chunk_time_ms'],
                     bitrate=client_config['bitrate'],
                     frame_duration_ms=client_config['frame_duration_ms']
@@ -224,6 +225,17 @@ def parse_args():
                         default="outputs/concurrent_ws_client", 
                         help="Base directory to save output audio files")
     
+    parser.add_argument("--encoding",
+                       choices=["PCM", "OPUS"],
+                       default="PCM",
+                       help="Audio encoding format (PCM or OPUS)")
+    
+    parser.add_argument("--samplerate", "--sr",
+                       type=int,
+                       choices=[8000, 12000, 16000, 24000, 48000],
+                       default=16000,
+                       help="Target sample rate in Hz (must be Opus compatible: 8000, 12000, 16000, 24000, 48000)")
+    
     parser.add_argument("--url", 
                         default="ws://localhost:8042/ws", 
                         help="WebSocket URL")
@@ -244,11 +256,6 @@ def parse_args():
     parser.add_argument("--no-real-time", 
                         action="store_true", 
                         help="Disable real-time simulation (send audio as fast as possible)")
-    
-    parser.add_argument("--encoding",
-                       choices=["PCM", "OPUS"],
-                       default="PCM",
-                       help="Audio encoding format (PCM or OPUS)")
     
     parser.add_argument("--bitrate",
                        type=int,
@@ -283,6 +290,7 @@ def parse_args():
         'save_output': not args.no_save_output,
         'output_wav_dir': str(output_dir),  # Use the session-specific directory
         'encoding': args.encoding,
+        'target_sample_rate': args.samplerate,
         'chunk_time_ms': args.chunk_time,
         'bitrate': args.bitrate,
         'frame_duration_ms': args.frame_duration

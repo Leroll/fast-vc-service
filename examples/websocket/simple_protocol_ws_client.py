@@ -14,7 +14,7 @@ from loguru import logger
 from datetime import datetime
 
 
-def read_audio_file(audio_path, encoding):
+def read_audio_file(audio_path, encoding, target_sample_rate):
     """
     Read an audio file.
     
@@ -41,15 +41,12 @@ def read_audio_file(audio_path, encoding):
             audio = audio.astype(np.float32)
             if np.max(np.abs(audio)) > 1.0:
                 audio /= np.max(np.abs(audio))
-                
-    # Ensure sample rate is compatible with Opus             
-    if encoding == "OPUS":  
-        opus_sample_rates = [8000, 12000, 16000, 24000, 48000]
-        if sample_rate not in opus_sample_rates:
-            closest_rate = min(opus_sample_rates, key=lambda x: abs(x - sample_rate))
-            logger.warning(f"Sample rate {sample_rate} Hz not supported by Opus. Resampling to {closest_rate} Hz")
-            audio = resampy.resample(audio, sample_rate, closest_rate)
-            sample_rate = closest_rate
+    
+    # Resample to target sample rate
+    if target_sample_rate != sample_rate:
+        logger.info(f"Resampling from {sample_rate} Hz to {target_sample_rate} Hz")
+        audio = resampy.resample(audio, sample_rate, target_sample_rate)
+        sample_rate = target_sample_rate
     
     return audio, sample_rate
 
@@ -85,6 +82,7 @@ async def send_audio_file_simple_protocol(websocket_url,
                           output_wav_dir="wavs/outputs/simple_protocol_ws_client", 
                           # encoding params
                           encoding="PCM",
+                          target_sample_rate=16000,  # 添加目标采样率参数
                           # pcm params 
                           chunk_time_ms=500,
                           # opus params
@@ -105,6 +103,7 @@ async def send_audio_file_simple_protocol(websocket_url,
         output_wav_dir: Directory to save output audio files
         
         encoding: Format to send audio in ("PCM" or "OPUS")
+        target_sample_rate: Target sample rate for audio processing (default: 16000)
         chunk_time_ms: Time in ms for each audio chunk (default: 500ms)
         bitrate: Bitrate for Opus encoding (default: 128k bps)
         frame_duration_ms: Duration of each Opus frame in ms (default: 20ms)
@@ -131,6 +130,11 @@ async def send_audio_file_simple_protocol(websocket_url,
     try:
         assert encoding in ["PCM", "OPUS"], "Encoding must be either 'PCM' or 'OPUS'"
         
+        # 验证采样率是否支持 Opus
+        opus_sample_rates = [8000, 12000, 16000, 24000, 48000]
+        if target_sample_rate not in opus_sample_rates:
+            raise ValueError(f"Sample rate {target_sample_rate} Hz not supported. Must be one of: {opus_sample_rates}")
+        
         # 1. before connecting, load audio file and prepare parameters
         # Generate stream ID if not provided
         if stream_id is None:
@@ -147,8 +151,8 @@ async def send_audio_file_simple_protocol(websocket_url,
             result['output_path'] = str(output_path)
             logger.info(f"Output will be saved to: {output_path}")
         
-        # read audio file
-        audio, sample_rate = read_audio_file(audio_path, encoding)
+        # read audio file with target sample rate
+        audio, sample_rate = read_audio_file(audio_path, encoding, target_sample_rate)
         logger.info(f"Audio loaded: {len(audio)} samples at {sample_rate} Hz")
         
         # cal frame size of each chunk
@@ -367,6 +371,17 @@ if __name__ == "__main__":
                         default="outputs/simple_protocol_ws_client", 
                         help="Directory to save output audio files")
     
+    parser.add_argument("--encoding",
+                       choices=["PCM", "OPUS"],
+                       default="PCM",
+                       help="Audio encoding format (PCM or OPUS)")
+    
+    parser.add_argument("--samplerate", "--sr",
+                       type=int,
+                       choices=[8000, 12000, 16000, 24000, 48000],
+                       default=16000,
+                       help="Target sample rate in Hz (must be Opus compatible: 8000, 12000, 16000, 24000, 48000)")
+    
     parser.add_argument("--url", 
                         default="ws://localhost:8042/ws", 
                         help="WebSocket URL")
@@ -387,11 +402,6 @@ if __name__ == "__main__":
     parser.add_argument("--no-real-time", 
                         action="store_true", 
                         help="Disable real-time simulation (send audio as fast as possible)")
-    
-    parser.add_argument("--encoding",
-                       choices=["PCM", "OPUS"],
-                       default="PCM",
-                       help="Audio encoding format (PCM or OPUS)")
     
     parser.add_argument("--bitrate",
                        type=int,
@@ -417,6 +427,7 @@ if __name__ == "__main__":
         stream_id=args.stream_id,
         output_wav_dir=args.output_wav_dir,
         encoding=args.encoding,
+        target_sample_rate=args.samplerate,
         chunk_time_ms=args.chunk_time,
         bitrate=args.bitrate,
         frame_duration_ms=args.frame_duration,
