@@ -65,6 +65,8 @@ poetry install
 # Start service
 fast-vc serve  # Default startup using env_profile in .env
 fast-vc serve --env prod  # Specify environment configuration
+nohup fast-vc serve > /dev/null 2>&1 &  # Run in background
+```
 
 # Using Poetry
 poetry run fast-vc serve
@@ -268,7 +270,7 @@ After testing completion, the following files are generated in the `outputs/conc
     - [x] save audio files to datetime-based directories
     - [x] Add flexible WebSocket message name configuration feature, allowing modification through configuration files
     - [x] Add a setting for the audio sample rate in the WebSocket client.
-    - [ ] Add WebSocket interface for retrieving compressed/encrypted audio and statistics files by ID
+    - [x] Add WebSocket interface for retrieving compressed/encrypted audio and statistics files by ID
     - [ ] create Docker image for easy deployment 
     - [ ] Handle exceptional cases, e.g., when a chunk converts with rta>1, what processing solutions exist?
     - [ ] resolve the issue of semaphore leak

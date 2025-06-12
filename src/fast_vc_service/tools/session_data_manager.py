@@ -51,10 +51,10 @@ class SessionDataManager:
         return session_files
     
     def _convert_date_to_folder_path(self, date_str: str) -> Optional[str]:
-        """ Convert a date string in the format 'YYYY-MM-DD' to a folder path format 'YYYY/M/D'."""
+        """ Convert a date string in the format 'YYYY-MM-DD' to a folder path format 'YYYY/MM/DD'."""
         try:
             date_obj = datetime.strptime(date_str, "%Y-%m-%d")
-            return f"{date_obj.year}/{date_obj.month}/{date_obj.day}"
+            return f"{date_obj.year}/{date_obj.month:02d}/{date_obj.day:02d}"
         except ValueError as e:
             logger.error(f"Invalid date format {date_str}, expected YYYY-MM-DD: {e}")
             return None

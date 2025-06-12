@@ -68,6 +68,7 @@ poetry install
 # 启动服务
 fast-vc serve  # 默认启动使用 .env 中的 env_profile
 fast-vc serve --env prod  # 指定环境配置
+nohup fast-vc serve > /dev/null 2>&1 &  # 后台运行服务
 
 # 使用 Poetry
 poetry run fast-vc serve
@@ -272,7 +273,7 @@ python examples/websocket/concurrent_ws_client.py \
     - [x] 音频按天存储
     - [x] 新增websocket消息名灵活配置功能，可通过配置文件修改 
     - [x] ws_client 增加发送音频samplerate的设置
-    - [ ] 增加websocket接口，基于id调取压编码以及加密后的音频以及统计文件
+    - [x] 增加websocket接口，基于id调取压编码以及加密后的音频以及统计文件
     - [ ] 制作镜像，方便部署
     - [ ] 针对 异常情况，比如某个chunk转换rta>1的时候，有没有什么处理方案？
     - [ ] 解决 semaphore leak 的问题

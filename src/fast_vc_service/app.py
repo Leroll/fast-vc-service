@@ -5,7 +5,7 @@ from pydantic import BaseModel
 import traceback
 
 from fast_vc_service.config import Config
-from fast_vc_service.routers import base_router, websocket_router
+from fast_vc_service.routers import base_router, websocket_router, tools_router
 from fast_vc_service.logging_config import LoggingSetup
 from fast_vc_service.realtime_vc import RealtimeVoiceConversion
 
@@ -39,6 +39,7 @@ def create_app() -> FastAPI:
     logger.info("registering routers...")
     app.include_router(base_router)
     app.include_router(websocket_router)
+    app.include_router(tools_router)
     
     logger.info("-" * 21 + "service initialized" + "-" * 21)
     return app
