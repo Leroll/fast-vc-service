@@ -1,6 +1,7 @@
 from loguru import logger
 import logging
 import sys 
+from pathlib import Path
 
 class InterceptHandler(logging.Handler):
     """send standard logging messages to Loguru logger"""
@@ -32,7 +33,7 @@ class LoggingSetup:
     _initialized = False
     
     @classmethod
-    def setup(cls):
+    def setup(cls, log_dir: str):
         """配置日志系统，确保只被调用一次"""
         
         # 如果已经初始化过，直接返回
@@ -51,9 +52,11 @@ class LoggingSetup:
             colorize=True,
         )
         
+        log_dir = Path(log_dir)
+        logger.info(f"logging directory: {log_dir}")
         # 添加 Uvicorn 日志文件
         logger.add(
-            "logs/uvicorn.log",
+            str(log_dir / "uvicorn.log"),
             rotation="1 MB",
             level="INFO",
             enqueue=True,
@@ -64,7 +67,7 @@ class LoggingSetup:
         )
         
         logger.add(
-            "logs/app.log",
+            str(log_dir / "app.log"),
             rotation="1 MB", 
             level="INFO",
             enqueue=True,

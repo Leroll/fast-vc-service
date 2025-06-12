@@ -18,6 +18,7 @@ class AppConfig(BaseModel):
     port: int = 8042
     workers: int = 2  # Number of workers for uvicorn
     receive_timeout: int = 60*8  # Timeout for receiving audio bytes in seconds
+    log_dir: str = "logs"
     
 class BufferConfig(BaseModel):
     prefill_time: int = 375  # Prefill time in milliseconds

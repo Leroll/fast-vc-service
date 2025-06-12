@@ -3,6 +3,7 @@ app:
   port: 8042
   workers: 2  # Number of workers for uvicorn
   receive_timeout: 120  # Timeout for receiving audio bytes in seconds
+  log_dir: logs
 
 buffer:
   prefill_time: 375  # 375ms, decrease first chunk latency

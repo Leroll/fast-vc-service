@@ -13,7 +13,8 @@ def create_app() -> FastAPI:
     """Create and configure the FastAPI application."""
     
     # Initialize logging
-    LoggingSetup.setup()
+    cfg = Config().get_config()
+    LoggingSetup.setup(cfg.app.log_dir)
     logger.info("-" * 21 + "initilizing service" + "-" * 21)
     
     # Create FastAPI application
@@ -23,7 +24,6 @@ def create_app() -> FastAPI:
     )
     
     # Initialize realtime voice conversion service
-    cfg = Config().get_config()
     app.state.cfg = cfg
     logger.info("initializing class: RealtimeVoiceConversion ...")
     try:
