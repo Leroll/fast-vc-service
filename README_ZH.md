@@ -279,6 +279,7 @@ python examples/websocket/concurrent_ws_client.py \
     - [ ] 解决 semaphore leak 的问题
     - [ ] 新增基于负责情况动态适配difusion steps 的功能，以保证实时性
     - [ ] 制作AutoDL镜像
+    - [ ] 新增性能测试记录
 - [ ] tag - v0.2 - 音频质量相关 -  v2025-xx
     - [ ] infer_wav 每个chunk大小问题排查，在经过vcmodel之后，为8781，不经过的话为9120【sola模块记录】
     - [ ] 声音貌似有些抖动，待排查

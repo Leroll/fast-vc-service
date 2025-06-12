@@ -275,6 +275,7 @@ After testing completion, the following files are generated in the `outputs/conc
     - [ ] Handle exceptional cases, e.g., when a chunk converts with rta>1, what processing solutions exist?
     - [ ] resolve the issue of semaphore leak
     - [ ] Add dynamic diffusion steps adaptation based on load to ensure real-time performance
+    - [ ] Add performance testing results in the README
     - [ ] Create AutoDL image
 - [ ] tag - v0.2 - Audio Quality - v2025-xx
     - [ ] Investigate chunk size issue in infer_wav, 8781 after vcmodel, 9120 without it [sola module record]
