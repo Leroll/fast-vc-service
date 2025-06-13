@@ -2,6 +2,8 @@ from loguru import logger
 import logging
 import sys 
 from pathlib import Path
+import os
+import socket
 
 class InterceptHandler(logging.Handler):
     """send standard logging messages to Loguru logger"""
@@ -33,13 +35,48 @@ class LoggingSetup:
     _initialized = False
     
     @classmethod
-    def setup(cls, log_dir: str):
-        """配置日志系统，确保只被调用一次"""
+    def _get_instance_identifier(cls) -> str:
+        """获取实例标识符，用于区分不同的实例"""
+        # 优先级顺序：环境变量 > Pod名 > 主机名 > 默认值
+        
+        # 1. 使用自定义环境变量
+        instance_id = os.getenv("INSTANCE_ID")
+        if instance_id:
+            return instance_id
+            
+        # 2. 使用Kubernetes Pod名称
+        pod_name = os.getenv("HOSTNAME")  # K8s中通常Pod名就是HOSTNAME
+        if pod_name and pod_name != "localhost":
+            return pod_name
+            
+        # 3. 使用主机名
+        try:
+            hostname = socket.gethostname()
+            if hostname and hostname != "localhost":
+                return hostname
+        except Exception:
+            pass
+            
+        # 4. 默认值
+        return "default"
+    
+    @classmethod
+    def setup(cls, log_dir: str, instance_name: str = None):
+        """配置日志系统，确保只被调用一次
+        
+        Args:
+            log_dir: 日志目录
+            instance_name: 实例名称，如果不提供则自动获取
+        """
         
         # 如果已经初始化过，直接返回
         if cls._initialized:
             logger.debug("logging system already initialized, skipping setup")
             return
+            
+        # 获取实例标识符
+        if instance_name is None:
+            instance_name = cls._get_instance_identifier()
             
         # 移除默认的 loguru 处理器
         logger.remove()
@@ -53,10 +90,11 @@ class LoggingSetup:
         )
         
         log_dir = Path(log_dir)
-        logger.info(f"logging directory: {log_dir}")
-        # 添加 Uvicorn 日志文件
+        logger.info(f"logging directory: {log_dir}, instance: {instance_name}")
+        
+        # 添加 Uvicorn 日志文件 - 包含实例名
         logger.add(
-            str(log_dir / "uvicorn.log"),
+            str(log_dir / f"uvicorn-{instance_name}.log"),
             rotation="1 MB",
             level="INFO",
             enqueue=True,
@@ -66,8 +104,9 @@ class LoggingSetup:
             format="{time:YYYY-MM-DD HH:mm:ss.SSS} | {level} | {name} | {message}",
         )
         
+        # 添加应用日志文件 - 包含实例名
         logger.add(
-            str(log_dir / "app.log"),
+            str(log_dir / f"app-{instance_name}.log"),
             rotation="1 MB", 
             level="INFO",
             enqueue=True,
@@ -89,4 +128,4 @@ class LoggingSetup:
         
         # 标记为已初始化
         cls._initialized = True
-        logger.info("logging system initialized successfully")
+        logger.info(f"logging system initialized successfully for instance: {instance_name}")
