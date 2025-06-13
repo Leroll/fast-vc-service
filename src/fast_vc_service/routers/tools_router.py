@@ -1,15 +1,13 @@
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi import Path as FPath  # to avoid conflict with Path from pathlib
 from loguru import logger
 from typing import Optional
 
-from fast_vc_service.tools.session_data_manager import SessionDataManager
-
 tools_router = APIRouter(tags=["Tools"], prefix="/tools")
-data_manager = SessionDataManager()
 
 @tools_router.get("/session/{session_id}", summary="Retrieve compressed session data")
 async def get_session_data(
+    request: Request,
     session_id: str = FPath(..., description="session ID to retrieve"),
     date: Optional[str] = Query(None, description="Optional date hint (2015-06-11) to narrow search")
 ):
@@ -28,6 +26,7 @@ async def get_session_data(
     ```
     """
     try:
+        data_manager = request.app.state.session_data_manager
         return data_manager.encode(session_id, date)
     except Exception as e:
         logger.error(f"Error retrieving session data for {session_id}: {e}")

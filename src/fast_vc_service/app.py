@@ -8,6 +8,7 @@ from fast_vc_service.config import Config
 from fast_vc_service.routers import base_router, websocket_router, tools_router
 from fast_vc_service.logging_config import LoggingSetup
 from fast_vc_service.realtime_vc import RealtimeVoiceConversion
+from fast_vc_service.tools.session_data_manager import SessionDataManager
 
 def create_app() -> FastAPI:
     """Create and configure the FastAPI application."""
@@ -25,6 +26,12 @@ def create_app() -> FastAPI:
     
     # Initialize realtime voice conversion service
     app.state.cfg = cfg
+    
+    logger.info("initializing SessionDataManager...")
+    app.state.session_data_manager = SessionDataManager(
+        outputs_dir=cfg.realtime_vc.save_dir
+    )
+    
     logger.info("initializing class: RealtimeVoiceConversion ...")
     try:
         app.state.realtime_vc = RealtimeVoiceConversion(
