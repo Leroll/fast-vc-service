@@ -39,13 +39,13 @@ RUN apt-get update && apt-get install -y \
 RUN pip install poetry==$POETRY_VERSION
 COPY pyproject.toml poetry.lock* ./
 RUN poetry config virtualenvs.create false \
-    && poetry install --no-dev --no-root \
+    && poetry install --no-root \
     && rm -rf $POETRY_CACHE_DIR
 
 # Install Fast-vc
 COPY . .
 RUN cp .env.example .env
-RUN poetry install --no-dev
+RUN poetry install
 RUN chmod +x /app
 
 EXPOSE 8042
