@@ -22,6 +22,21 @@
 
 > Features are continuously being updated. Stay tuned for our latest developments... ✨
 
+# 📊 Performance Metrics
+
+<div align="center">
+
+| GPU | Concurrency | Chunk time | First Token Latency | End-to-End Latency | Avg Chunk Latency | Avg RTF | Median RTF | P95 RTF |
+|-----|-----|------|------------|--------|------------|---------|----------|---------|
+| 1080TI | 1 | 500 | 157.0 | 272.0 | 252.2  | 0.50 | 0.51 | 0.61 | 
+| 1080TI | 2 | 500 | 157.5 | 283.5 | 273.63 | 0.55 | 0.58 | 0.61 |
+| 1080TI | 3 | 500 | 154.3 | 261.3 | 304.93 | 0.61 | 0.62 | 0.73 |
+
+</div>
+
+- Time is in milliseconds (ms) 
+- You can view detailed performance test reports in [perfermance_tests](docs/perfermance_tests/).
+
 # 🚀 Quick Start
 
 ## Installation
@@ -270,11 +285,8 @@ After testing completion, the following files are generated in the `outputs/conc
     - [x] Add flexible WebSocket message name configuration feature, allowing modification through configuration files
     - [x] Add a setting for the audio sample rate in the WebSocket client.
     - [x] Add WebSocket interface for retrieving compressed/encrypted audio and statistics files by ID
-    - [ ] create Docker image for easy deployment 
-    - [ ] Handle exceptional cases, e.g., when a chunk converts with rta>1, what processing solutions exist?
-    - [ ] resolve the issue of semaphore leak
-    - [ ] Add dynamic diffusion steps adaptation based on load to ensure real-time performance
     - [ ] Add performance testing results in the README
+    - [ ] create Docker image for easy deployment 
     - [ ] Create AutoDL image
 - [ ] tag - v0.2 - Audio Quality - v2025-xx
     - [ ] Investigate chunk size issue in infer_wav, 8781 after vcmodel, 9120 without it [sola module record]
