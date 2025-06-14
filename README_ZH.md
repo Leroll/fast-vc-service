@@ -12,7 +12,7 @@
 </div>
 
 <div align="center">
-  <h3>基于 Seed-VC 的实时换声服务，提供 WebSocket 接口，支持 PCM 和 Opus 音频格式</h3>
+  <h3>基于 Seed-VC 的实时语音转换服务，提供 WebSocket 接口，支持 PCM 和 Opus 音频格式</h3>
 </div> 
 
 <div align="center">
@@ -116,7 +116,7 @@ fast-vc version
     <em>🚀 命令演示</em>
 </p>
 
-# 📡 实时流式换声
+# 📡 实时流式语音转换
 
 ## WebSocket 连接流程
 ```mermaid
@@ -141,16 +141,16 @@ sequenceDiagram
 
 ## 🔥 快速测试
 
-### WebSocket 实时换声
+### WebSocket 实时语音转换
 ```bash
 python examples/websocket/ws_client.py \
     --source-wav-path "wavs/sources/low-pitched-male-24k.wav" \
     --encoding OPUS
 ```
 
-### 批量文件测试, 用于验证换声效果, 不需要启动服务
+### 批量文件测试, 用于验证语音转换效果, 不需要启动服务
 ```bash
-python examples/file_vc.py \
+python examples/file_conversion/file_vc.py \
     --source-wav-path "wavs/sources/low-pitched-male-24k.wav" \
 ```
 
@@ -296,4 +296,4 @@ python examples/websocket/concurrent_ws_client.py \
 
 # 🙏 致谢
 - [Seed-VC](https://github.com/Plachtaa/seed-vc) - 提供了强大的底层变声模型
-- [RVC](https://github.com/RVC-Project/Retrieval-based-Voice-Conversion-WebUI) - 提供了基础的流式换声pipeline
+- [RVC](https://github.com/RVC-Project/Retrieval-based-Voice-Conversion-WebUI) - 提供了基础的流式语音转换pipeline

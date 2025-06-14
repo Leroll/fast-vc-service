@@ -24,7 +24,7 @@ from fast_vc_service.config import RealtimeVoiceConversionConfig, ModelConfig
 
 @Singleton
 class RealtimeVoiceConversion:
-    """流式换声服务核心类"""
+    """流式语音转换服务核心类"""
 
     def __init__(self, cfg:RealtimeVoiceConversionConfig, model_cfg: ModelConfig) -> None:
         self.cfg = cfg 

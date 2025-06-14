@@ -66,7 +66,6 @@ poetry install
 fast-vc serve  # Default startup using env_profile in .env
 fast-vc serve --env prod  # Specify environment configuration
 nohup fast-vc serve > /dev/null 2>&1 &  # Run in background
-```
 
 # Using Poetry
 poetry run fast-vc serve
@@ -147,7 +146,7 @@ python examples/websocket/ws_client.py \
 
 ### Batch File Testing for voice conversion effect validation, no service startup required
 ```bash
-python examples/file_vc.py \
+python examples/file_conversion/file_vc.py \
     --source-wav-path "wavs/sources/low-pitched-male-24k.wav" \
 ```
 

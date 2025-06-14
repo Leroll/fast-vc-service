@@ -25,7 +25,7 @@ class BufferConfig(BaseModel):
     opus_frame_duration: int = 20  # Opus frame duration in milliseconds
     
 class RealtimeVoiceConversionConfig(BaseModel):
-    """换声服务配置类"""
+    """语音转换服务配置类"""
     
     # 设备
     device: str = str(torch.device("cuda" if torch.cuda.is_available() else "cpu"))
