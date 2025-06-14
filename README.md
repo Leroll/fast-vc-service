@@ -34,8 +34,8 @@
 
 </div>
 
-- Time is in milliseconds (ms) 
-- You can view detailed performance test reports in [perfermance_tests](docs/perfermance_tests/).
+- Time unit: milliseconds (ms)
+- View detailed test report: [Performance-Report_1080ti](docs/perfermance_tests/performance-test-report_version0.1.0_1080ti.md)
 
 # 🚀 Quick Start
 

@@ -34,8 +34,8 @@
 
 </div>
 
-- 时间为 ms
-- 你可以在 [perfermance_tests](docs/perfermance_tests/) 查看详细的性能测试报告。
+- 时间单位为: 毫秒(ms)
+- 查看详细的测试报告: [性能测试报告_1080ti](docs/perfermance_tests/performance-test-report_version0.1.0_1080ti.md)。
 
 # 🚀 快速开始
 
