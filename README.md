@@ -257,38 +257,20 @@ After testing completion, the following files are generated in the `outputs/conc
 - `clientX_stats.json`: Performance statistics analysis for each client
 - `clientX_output.wav`: Converted audio files (if saving is enabled)
 
+# 📦 Version Updates
+
+**v0.1.0 - v2025-06-15**: Basic Service Framework   
+
+  Completed the core framework construction of real-time voice conversion service based on Seed-VC, implementing WebSocket streaming inference, performance monitoring, multi-format audio support and other complete basic functions.   
+
+  - Real-time streaming voice conversion service
+  - WebSocket API support for PCM and Opus formats
+  - Complete performance monitoring and statistics system
+  - Flexible configuration management and environment variable support 
+  - Multi-Worker concurrent processing capability
+  - Concurrent performance testing framework
+
 # 🚧 Under Construction...TODO
-- [ ] tag - v0.1 - Basic Service - v2025-xx
-    - [x] Complete initial version of streaming inference code
-    - [x] Add .env for storing source and related variables
-    - [x] Split streaming inference modules
-    - [x] Add performance tracking statistics module
-    - [x] Add opus encoding/decoding module
-    - [x] Add asgi app service and log system, resolve conflicts between uvicorn and loguru
-    - [x] Convert output to 16k before outputting, using slice assignment
-    - [x] Add session class for context storage during streaming inference
-    - [x] Clean up redundant code, remove unnecessary logic
-    - [x] Complete pipeline reconstruction of each module
-    - [x] Complete session replacement improvements
-    - [x] Improve log system
-    - [x] Complete WS service code + PCM
-    - [x] Complete WS + Opus
-    - [x] Add WebSocket support description to the README, then draw a process flowchart.
-    - [x] Optimizing Package Management for Better Usability and Stability
-    - [x] add new command `clean` to clear log files    
-    - [x] add support for multi workers
-    - [x] extract audio processing logic into separate function
-    - [x] extract tail audio processing logic into separate function
-    - [x] Add WebSocket timeout mechanism for connection closure and resource cleanup
-    - [x] Add configuration information
-    - [x] add performance testing module
-    - [x] Add various timing statistics for single-pass recording in session
-    - [x] Fix the issue where ws_client receives audio missing the ending segments
-    - [x] save audio files to datetime-based directories
-    - [x] Add flexible WebSocket message name configuration feature, allowing modification through configuration files
-    - [x] Add a setting for the audio sample rate in the WebSocket client.
-    - [x] Add WebSocket interface for retrieving compressed/encrypted audio and statistics files by ID
-    - [x] Add performance testing results in the README
 - [ ] tag - v0.2 - Audio Quality - v2025-xx
     - [ ] Investigate chunk size issue in infer_wav, 8781 after vcmodel, 9120 without it [sola module record]
     - [ ] Investigate potential sound jitter issues

@@ -261,38 +261,22 @@ python examples/websocket/concurrent_ws_client.py \
 - `clientX_stats.json`: 每个客户端的性能统计分析
 - `clientX_output.wav`: 转换后的音频文件（如果启用保存）
 
+
+# 📦 版本更新
+
+**v0.1.0 - v2025-06-15**: 基础服务框架   
+
+  完成了基于 Seed-VC 的实时语音转换服务的核心框架搭建，实现了 WebSocket 流式推理、性能监控、多格式音频支持等完整的基础功能。   
+
+  - 实时流式语音转换服务
+  - WebSocket API 支持 PCM 和 Opus 格式
+  - 完整的性能监控和统计系统
+  - 灵活的配置管理和环境变量支持 
+  - 多Worker并发处理能力
+  - 并发性能测试框架
+
+
 # 🚧 施工中...TODO
-- [ ] tag - v0.1 - 基础服务相关 - v2025-xx
-    - [x] 完成初版流式推理代码 
-    - [x] 新增.env用于存放源等相关变量
-    - [x] 拆分流式推理各模块
-    - [x] 新增性能追踪统计模块
-    - [x] 增加opus编解码模块
-    - [x] 新增asgi app服务和log日志系统，解决uvicorn与loguru的冲突问题
-    - [x] 输出ouput转换为16k之后再输出，同时使用切片赋值
-    - [x] 新增session类，用于流式推理过程中上下文存储
-    - [x] 冗余代码清理，删去不必要的逻辑
-    - [x] 完成各模块流水线重构
-    - [x] session 部分的替换完善
-    - [x] 完善log系统
-    - [x] 完成ws服务代码 + PCM
-    - [x] 完成ws + opus 服务代码
-    - [x] Readme中添加websocket支持的描述，然后画出流程图
-    - [x] 优化requirement包管理方式，更易用与稳定
-    - [x] 新增clean命令，用于清理日志文件
-    - [x] 新增多worker支持
-    - [x] 抽取ws-server中音频处理逻辑至独立函数中
-    - [x] 抽取ws-server中结尾残留音频处理逻辑至独立函数中
-    - [x] 新增ws超时关闭链接机制，触发回收
-    - [x] 添加配置信息
-    - [x] 增加性能测试模块
-    - [x] 在session中增加，单通录音的各种耗时统计
-    - [x] 解决 ws_client 收到的音频缺少尾部片段的问题
-    - [x] 音频按天存储
-    - [x] 新增websocket消息名灵活配置功能，可通过配置文件修改 
-    - [x] ws_client 增加发送音频samplerate的设置
-    - [x] 增加websocket接口，基于id调取压编码以及加密后的音频以及统计文件
-    - [x] 新增性能测试记录
 - [ ] tag - v0.2 - 音频质量相关 -  v2025-xx
     - [ ] infer_wav 每个chunk大小问题排查，在经过vcmodel之后，为8781，不经过的话为9120【sola模块记录】
     - [ ] 声音貌似有些抖动，待排查
