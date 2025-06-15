@@ -22,20 +22,23 @@
 
 > Features are continuously being updated. Stay tuned for our latest developments... ✨
 
-# 📊 Performance Metrics
+# 📊 Performance
 
 <div align="center">
 
-| GPU | Concurrency | Chunk time | First Token Latency | End-to-End Latency | Avg Chunk Latency | Avg RTF | Median RTF | P95 RTF |
-|-----|-----|------|------------|--------|------------|---------|----------|---------|
-| 1080TI | 1 | 500 | 157.0 | 272.0 | 252.2  | 0.50 | 0.51 | 0.61 | 
-| 1080TI | 2 | 500 | 157.5 | 283.5 | 273.63 | 0.55 | 0.58 | 0.61 |
-| 1080TI | 3 | 500 | 154.3 | 261.3 | 304.93 | 0.61 | 0.62 | 0.73 |
+|GPU |Concurrency |Worker |Chunk time |First Token Latency |End-to-End Latency |Avg Chunk Latency |Avg RTF | Median RTF | P95 RTF |
+|-----|----|--------|----------|-------------|----------|-------------|---------|----------|---------|
+|4090D  |1  |6      |500       |136.0        |143.0     |105.0        |0.21     |0.22      |0.24     |
+|4090D  |12 |12     |500       |140.1        |256.6     |216.6        |0.44     |0.45      |0.51     |
+|1080TI |1  |6      |500       |157.0        |272.0     |252.2        |0.50     |0.51      |0.61     |
+|1080TI |3  |6      |500       |154.3        |261.3     |304.9        |0.61     |0.62      |0.73     |
 
 </div>
 
 - Time unit: milliseconds (ms)
-- View detailed test report: [Performance-Report_1080ti](docs/perfermance_tests/version0.1.0_1080ti.md)
+- View detailed test report: 
+    - [Performance-Report_1080ti](docs/perfermance_tests/version0.1.0_1080ti.md)
+    - [Performance-Report_4090D](docs/perfermance_tests/version0.1.0_4090D.md)
 
 # 🚀 Quick Start
 
