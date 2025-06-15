@@ -292,9 +292,7 @@ python examples/websocket/concurrent_ws_client.py \
     - [x] 新增websocket消息名灵活配置功能，可通过配置文件修改 
     - [x] ws_client 增加发送音频samplerate的设置
     - [x] 增加websocket接口，基于id调取压编码以及加密后的音频以及统计文件
-    - [ ] 新增性能测试记录
-    - [ ] 制作镜像，方便部署
-    - [ ] 制作AutoDL镜像
+    - [x] 新增性能测试记录
 - [ ] tag - v0.2 - 音频质量相关 -  v2025-xx
     - [ ] infer_wav 每个chunk大小问题排查，在经过vcmodel之后，为8781，不经过的话为9120【sola模块记录】
     - [ ] 声音貌似有些抖动，待排查
@@ -308,6 +306,8 @@ python examples/websocket/concurrent_ws_client.py \
     - [ ] 鉴权部分更新为令牌（JWT）方式
     - [ ] 支持webRTC
     - [ ] file_vc，针对最后一个block的问题
+    - [ ] 制作镜像，方便部署
+    - [ ] 制作AutoDL镜像
 
 # 🙏 致谢
 - [Seed-VC](https://github.com/Plachtaa/seed-vc) - 提供了强大的底层变声模型

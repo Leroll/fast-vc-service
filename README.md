@@ -288,9 +288,7 @@ After testing completion, the following files are generated in the `outputs/conc
     - [x] Add flexible WebSocket message name configuration feature, allowing modification through configuration files
     - [x] Add a setting for the audio sample rate in the WebSocket client.
     - [x] Add WebSocket interface for retrieving compressed/encrypted audio and statistics files by ID
-    - [ ] Add performance testing results in the README
-    - [ ] create Docker image for easy deployment 
-    - [ ] Create AutoDL image
+    - [x] Add performance testing results in the README
 - [ ] tag - v0.2 - Audio Quality - v2025-xx
     - [ ] Investigate chunk size issue in infer_wav, 8781 after vcmodel, 9120 without it [sola module record]
     - [ ] Investigate potential sound jitter issues
@@ -304,6 +302,8 @@ After testing completion, the following files are generated in the `outputs/conc
     - [ ] Implement JWT token-based authentication
     - [ ] Support webRTC
     - [ ] Fix file_vc for the last block issue
+    - [ ] create Docker image for easy deployment 
+    - [ ] Create AutoDL image
 
 # 🙏 Acknowledgements
 - [Seed-VC](https://github.com/Plachtaa/seed-vc) - Provides powerful underlying voice conversion model
