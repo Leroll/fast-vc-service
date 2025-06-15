@@ -32,8 +32,8 @@
 
 
 ## 测试结论 Test Conclusions
-- **1080ti 推荐生产配置**: 建议并发数为2-3个客户端，能够维持良好的实时处理性能。   
-- **GTX 1080 Ti Recommended Production Configuration**: Recommended concurrency of 2-3 clients to maintain good real-time processing performance.   
+- **RTX 4090D 推荐生产配置**: 可稳定支持12并发。
+- **RTX 4090D Recommended Production Configuration**: Can stably support 12 concurrent requests.
 
 ### ps: 
 - 你可以运行 `python examples/websocket/concurrent_ws_client.py` 来测试fast-vc在你本地的性能表现。
