@@ -240,3 +240,193 @@ class TimelineAnalyzer:
         # 按时间戳排序
         merged_timeline.sort(key=lambda x: x['timestamp'])
         return merged_timeline
+    
+    @staticmethod
+    def calculate_average_stats(stats_list):
+        """
+        Calculate average statistics from multiple concurrent sessions.
+        
+        Args:
+            stats_list: List of stats dictionaries from multiple sessions
+            
+        Returns:
+            dict: Averaged statistics representing overall concurrent performance
+        """
+        if not stats_list:
+            return {"error": "Empty stats list"}
+        
+        # Filter out error entries
+        valid_stats = [stats for stats in stats_list if "error" not in stats]
+        if not valid_stats:
+            return {"error": "No valid stats found"}
+        
+        n_sessions = len(valid_stats)
+        averaged_stats = {
+            "concurrent_sessions_count": n_sessions,
+            "concurrent_analysis": True
+        }
+        
+        # 1. Average First Token Latency
+        first_token_latencies = [stats.get('first_token_latency_ms', 0) for stats in valid_stats if 'first_token_latency_ms' in stats]
+        if first_token_latencies:
+            averaged_stats['first_token_latency_ms'] = {
+                'mean': round(np.mean(first_token_latencies), 2),
+                'median': round(np.median(first_token_latencies), 2),
+                'min': round(np.min(first_token_latencies), 2),
+                'max': round(np.max(first_token_latencies), 2),
+                'std': round(np.std(first_token_latencies), 2)
+            }
+        
+        # 2. Average End-to-End Latency
+        e2e_latencies = [stats.get('end_to_end_latency_ms', 0) for stats in valid_stats if 'end_to_end_latency_ms' in stats]
+        if e2e_latencies:
+            averaged_stats['end_to_end_latency_ms'] = {
+                'mean': round(np.mean(e2e_latencies), 2),
+                'median': round(np.median(e2e_latencies), 2),
+                'min': round(np.min(e2e_latencies), 2),
+                'max': round(np.max(e2e_latencies), 2),
+                'std': round(np.std(e2e_latencies), 2)
+            }
+        
+        # 3. Average Chunk Latency Stats
+        chunk_stats_keys = ['mean_ms', 'median_ms', 'min_ms', 'max_ms', 'std_ms', 'p95_ms', 'p99_ms']
+        chunk_latency_stats = {}
+        
+        for key in chunk_stats_keys:
+            values = [stats.get('chunk_latency_stats', {}).get(key, 0) 
+                     for stats in valid_stats 
+                     if 'chunk_latency_stats' in stats and key in stats['chunk_latency_stats']]
+            if values:
+                chunk_latency_stats[key] = round(np.mean(values), 2)
+        
+        if chunk_latency_stats:
+            averaged_stats['chunk_latency_stats'] = chunk_latency_stats
+        
+        # 4. Average Jitter
+        jitter_values = [stats.get('jitter_ms', 0) for stats in valid_stats if 'jitter_ms' in stats]
+        if jitter_values:
+            averaged_stats['jitter_ms'] = {
+                'mean': round(np.mean(jitter_values), 2),
+                'median': round(np.median(jitter_values), 2),
+                'min': round(np.min(jitter_values), 2),
+                'max': round(np.max(jitter_values), 2),
+                'std': round(np.std(jitter_values), 2)
+            }
+        
+        # 5. Average Real-time Factor
+        rtf_keys = ['mean', 'median', 'min', 'max', 'std', 'p95', 'p99']
+        rtf_stats = {}
+        
+        for key in rtf_keys:
+            values = [stats.get('real_time_factor', {}).get(key, 0) 
+                     for stats in valid_stats 
+                     if 'real_time_factor' in stats and key in stats['real_time_factor']]
+            if values:
+                rtf_stats[key] = round(np.mean(values), 2)
+        
+        if rtf_stats:
+            averaged_stats['real_time_factor'] = rtf_stats
+            
+        # Real-time performance summary
+        real_time_sessions = [stats.get('is_real_time', False) for stats in valid_stats if 'is_real_time' in stats]
+        if real_time_sessions:
+            averaged_stats['real_time_performance'] = {
+                'sessions_real_time': sum(real_time_sessions),
+                'total_sessions': len(real_time_sessions),
+                'real_time_ratio': round(sum(real_time_sessions) / len(real_time_sessions), 2)
+            }
+        
+        # 6. Average Send Timing Analysis
+        if any('send_timing_analysis' in stats for stats in valid_stats):
+            send_timing_stats = {}
+            
+            # Average delay stats
+            delay_keys = ['mean_ms', 'median_ms', 'min_ms', 'max_ms', 'std_ms', 'p95_ms', 'p99_ms']
+            delay_stats = {}
+            
+            for key in delay_keys:
+                values = [stats.get('send_timing_analysis', {}).get('send_delay_stats', {}).get(key, 0)
+                         for stats in valid_stats 
+                         if 'send_timing_analysis' in stats and 
+                            'send_delay_stats' in stats['send_timing_analysis'] and
+                            key in stats['send_timing_analysis']['send_delay_stats']]
+                if values:
+                    delay_stats[key] = round(np.mean(values), 2)
+            
+            if delay_stats:
+                send_timing_stats['send_delay_stats'] = delay_stats
+            
+            # Average delay ratio stats
+            ratio_stats = {}
+            for key in ['mean', 'median', 'min', 'max', 'std', 'p95', 'p99']:
+                values = [stats.get('send_timing_analysis', {}).get('delay_ratio_stats', {}).get(key, 0)
+                         for stats in valid_stats 
+                         if 'send_timing_analysis' in stats and 
+                            'delay_ratio_stats' in stats['send_timing_analysis'] and
+                            key in stats['send_timing_analysis']['delay_ratio_stats']]
+                if values:
+                    ratio_stats[key] = round(np.mean(values), 2)
+            
+            if ratio_stats:
+                send_timing_stats['delay_ratio_stats'] = ratio_stats
+            
+            # Timing quality aggregation
+            total_chunks = sum([stats.get('send_timing_analysis', {}).get('total_chunks', 0) 
+                               for stats in valid_stats if 'send_timing_analysis' in stats])
+            
+            positive_delays = sum([stats.get('send_timing_analysis', {}).get('timing_quality', {}).get('chunks_with_positive_delay', 0)
+                                  for stats in valid_stats 
+                                  if 'send_timing_analysis' in stats and 'timing_quality' in stats['send_timing_analysis']])
+            
+            significant_delays = sum([stats.get('send_timing_analysis', {}).get('timing_quality', {}).get('chunks_with_significant_delay', 0)
+                                     for stats in valid_stats 
+                                     if 'send_timing_analysis' in stats and 'timing_quality' in stats['send_timing_analysis']])
+            
+            stable_sessions = sum([stats.get('send_timing_analysis', {}).get('timing_quality', {}).get('is_sending_stable', False)
+                                  for stats in valid_stats 
+                                  if 'send_timing_analysis' in stats and 'timing_quality' in stats['send_timing_analysis']])
+            
+            max_consecutive_delays = [stats.get('send_timing_analysis', {}).get('timing_quality', {}).get('max_consecutive_delays', 0)
+                                     for stats in valid_stats 
+                                     if 'send_timing_analysis' in stats and 'timing_quality' in stats['send_timing_analysis']]
+            
+            timing_quality = {
+                'total_chunks_all_sessions': total_chunks,
+                'chunks_with_positive_delay_all_sessions': positive_delays,
+                'chunks_with_significant_delay_all_sessions': significant_delays,
+                'sessions_with_stable_sending': stable_sessions,
+                'stable_sending_ratio': round(stable_sessions / n_sessions, 2) if n_sessions > 0 else 0
+            }
+            
+            if max_consecutive_delays:
+                timing_quality['avg_max_consecutive_delays'] = round(np.mean(max_consecutive_delays), 2)
+                timing_quality['max_consecutive_delays_across_sessions'] = max(max_consecutive_delays)
+            
+            send_timing_stats['timing_quality'] = timing_quality
+            send_timing_stats['total_chunks'] = total_chunks
+            
+            if send_timing_stats:
+                averaged_stats['send_timing_analysis'] = send_timing_stats
+        
+        # 7. Timeline Summary Aggregation
+        timeline_summaries = [stats.get('timeline_summary', {}) for stats in valid_stats if 'timeline_summary' in stats]
+        if timeline_summaries:
+            total_send_events = sum([summary.get('total_send_events', 0) for summary in timeline_summaries])
+            total_recv_events = sum([summary.get('total_recv_events', 0) for summary in timeline_summaries])
+            
+            send_durations = [summary.get('send_duration_ms', 0) for summary in timeline_summaries]
+            recv_durations = [summary.get('recv_duration_ms', 0) for summary in timeline_summaries]
+            processing_times = [summary.get('processing_start_to_end_ms', 0) for summary in timeline_summaries]
+            
+            averaged_stats['timeline_summary'] = {
+                'total_sessions': n_sessions,
+                'total_send_events_all_sessions': total_send_events,
+                'total_recv_events_all_sessions': total_recv_events,
+                'avg_send_duration_ms': round(np.mean(send_durations), 2) if send_durations else 0,
+                'avg_recv_duration_ms': round(np.mean(recv_durations), 2) if recv_durations else 0,
+                'avg_processing_time_ms': round(np.mean(processing_times), 2) if processing_times else 0,
+                'total_send_duration_ms': round(sum(send_durations), 2),
+                'total_recv_duration_ms': round(sum(recv_durations), 2)
+            }
+        
+        return averaged_stats

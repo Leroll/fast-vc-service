@@ -370,6 +370,7 @@ def main():
     
     # Calculate latency stats for each successful client and save to files
     successful_count = 0
+    stats_list = []
     for result in results:
         client_id = result['client_id']
         
@@ -378,13 +379,20 @@ def main():
             json.dump(result, f, indent=2, default=str)
         
         if result.get('success', False):
-            calculate_latency_stats(
+            stats = calculate_latency_stats(
                 client_id=client_id,
                 send_timeline=result.get('send_timeline', []),
                 recv_timeline=result.get('recv_timeline', []),
                 output_dir=output_dir
             )
+            stats_list.append(stats)
             successful_count += 1
+    if stats_list:
+        averaged_stats = TimelineAnalyzer.calculate_average_stats(stats_list)
+        averaged_stats_file = output_dir / "averaged_stats.json"
+        with open(averaged_stats_file, 'w') as f:
+            json.dump(averaged_stats, f, indent=2, default=str)
+    
     
     # Print summary
     failed = len(results) - successful_count

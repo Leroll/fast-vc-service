@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Timeline Analyzer - Analyze send/recv events with latency calculation
 """
@@ -165,4 +164,8 @@ def main():
 
 
 if __name__ == "__main__":
+    """
+    example usage:
+        python timeline_lognize.py path/to/timeline.json --prefill-time 375
+    """
     main()
