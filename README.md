@@ -270,22 +270,16 @@ After testing completion, the following files are generated in the `outputs/conc
   - Multi-Worker concurrent processing capability
   - Concurrent performance testing framework
 
-# 🚧 Under Construction...TODO
-- [ ] tag - v0.2 - Audio Quality - v2025-xx
-    - [ ] Investigate chunk size issue in infer_wav, 8781 after vcmodel, 9120 without it [sola module record]
-    - [ ] Investigate potential sound jitter issues
-    - [ ] Add pitch extraction functionality in streaming scenarios for male deep voice conversion issues
+# 🚧 Work in Progress...TODO
+- [ ] tag - v0.1.1 - Add adaptive pitch extraction in streaming scenarios - v2025-06-19
+    - [ ] Add adaptive pitch extraction functionality with corresponding toggle switch
     - [ ] Complete support for seed-vc V2.0 model
-- [ ] tag - v0.3 - Service Flexibility and Stability - v2025-xx
-    - [ ] Use torchaudio to read references directly to GPU, saving transfer steps
-    - [ ] Configure startup of different model instances as different microservices
-    - [ ] Add encrypted wav return for GET requests
-    - [ ] add support for wss
-    - [ ] Implement JWT token-based authentication
-    - [ ] Support webRTC
-    - [ ] Fix file_vc for the last block issue
-    - [ ] create Docker image for easy deployment 
-    - [ ] Create AutoDL image
+- [ ] tag - v0.2 - Improve inference efficiency, reduce RTF - v2025-xx
+    - [ ] Explore solutions to reduce model inference latency (e.g., new model architectures, quantization, etc.)
+    - [ ] Use torchaudio to directly read reference audio to GPU, eliminating transfer steps
+    - [ ] Fix file_vc issue with the last block
+    - [ ] Create Docker images for easy deployment
+    - [ ] Create AutoDL images
 
 # 🙏 Acknowledgements
 - [Seed-VC](https://github.com/Plachtaa/seed-vc) - Provides powerful underlying voice conversion model
