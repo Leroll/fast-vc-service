@@ -92,6 +92,7 @@ class RealtimeVoiceConversion:
         msg += json.dumps(stats, indent=4, ensure_ascii=False) + "\n"
         msg += "====================================================================\n"
         logger.info(msg)
+        return stats
     
     def _init_realtime_parameters(self):
         """Initialize parameters related to real-time processing"""
