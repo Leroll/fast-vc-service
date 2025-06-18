@@ -362,8 +362,6 @@ class RealtimeVoiceConversion:
         # vad 放在 noise_gate 之后的话，vad 耗时异常增加，v100上会增加到 600，700ms
         # vad 放在前面就正常了，应该是zc级别的精度置0给vad造成了很大的困惑
         
-        t0 = time.perf_counter()
-        
         vad_model = self.models["vad_model"]
         res = vad_model.generate(input=indata, cache=session.vad_cache, is_final=False, chunk_size=self.vad_chunk_size)  # ---- 改成优化后的函数
         res_value = res[0]["value"]
@@ -372,15 +370,13 @@ class RealtimeVoiceConversion:
         elif len(res_value) % 2 == 1 and session.vad_speech_detected:
             session.set_speech_detected_false_at_end_flag = True
             
-        vad_time = time.perf_counter() - t0
-        self.vad_time.append(vad_time)
+        
     
     def _noise_gate(self, indata, session):
         """通过分贝阈值的方式，讲低于某个分贝的音频数据置为0
         """
         if session.vad_speech_detected:  # vad 检测出来人声才会进行 noise-gate
-            t0 = time.perf_counter()
-            
+    
             indata = np.append(session.rms_buffer, indata)  # rms_buffer 仅用在这个地方
             rms = librosa.feature.rms(
                 y=indata, frame_length=4 * self.zc, hop_length=self.zc
@@ -394,10 +390,7 @@ class RealtimeVoiceConversion:
                 if db_threhold[i]:
                     indata[i * self.zc : (i + 1) * self.zc] = 0  # 这里是以 zc 为一个窗格的，20ms
             indata = indata[self.zc // 2 :]   # 这里最终输出的indata 前面贴了 2个zc，40ms 的 rms-buffer
-                                                  # 这个在后面的 input_wav_res 填入的时候给平掉了
-            
-            noise_gate_time = time.perf_counter() - t0
-            self.noise_gate_time.append(noise_gate_time)
+                                                  # 这个在后面的 input_wav_res 填入的时候给平掉了 
         else:
             session.rms_buffer[:] = 0  # vad 检测不出来的时候，缓存置0
             
@@ -408,8 +401,7 @@ class RealtimeVoiceConversion:
         
         平移input_wav，填入新chunk
         """
-        t0 = time.perf_counter()
-        
+
         # 平移一个block_frame
         # 尝试使用 torch.roll() 耗时反而增加
         session.input_wav[: -self.block_frame] = session.input_wav[self.block_frame :].clone()  
@@ -420,9 +412,6 @@ class RealtimeVoiceConversion:
             self.cfg.device
         )
         
-        preprocess_time = time.perf_counter() - t0
-        self.preprocessing_time.append(preprocess_time)
-        
     def _voice_conversion(self, session) -> torch.Tensor:
         """vc inference 
         
@@ -432,8 +421,6 @@ class RealtimeVoiceConversion:
         if not session.vad_speech_detected:  # if don't detect speech, set to zero
             infer_wav = session.infer_wav_zero 
         else:  
-            t0 = time.perf_counter()
-            
             infer_wav = self._vc_infer(
                 session.input_wav,
                 self.skip_head,
@@ -448,9 +435,6 @@ class RealtimeVoiceConversion:
                 logger.debug(f"before resample: {infer_wav.shape}")
                 infer_wav = self.resampler_model_to_common(infer_wav)
                 logger.debug(f"after resample: {infer_wav.shape}, theroy_length: 8800")
-                
-            voice_conversion_time = time.perf_counter() - t0
-            self.vc_time.append(voice_conversion_time)
             
         return infer_wav 
     
@@ -459,7 +443,6 @@ class RealtimeVoiceConversion:
         
         infer_wav: [sola_buffer + sola_search + block]
         """
-        t0 = time.perf_counter()
         
         # SOLA algorithm from https://github.com/yxlllc/DDSP-SVC
         conv_input = infer_wav[
@@ -497,8 +480,6 @@ class RealtimeVoiceConversion:
         # the new sola_buffer is the same wav_area as the next infer_wav[：sola_buffer_frame]
         # it means that sola_buffer is the area to smoothing between two chunks
     
-        sola_time = time.perf_counter() - t0
-        self.sola_time.append(sola_time)
         return infer_wav
     
     def _compute_rms(self, waveform:torch.tensor, 
@@ -541,7 +522,6 @@ class RealtimeVoiceConversion:
         """
         
         if session.vad_speech_detected:  # only do rms-mixing when vad detected
-            t0 = time.perf_counter()
             
             # original code in rvc is: [self.extra_frame: ]
             # their has changed in seed-vc, using the same region of vc model final output 
@@ -577,9 +557,6 @@ class RealtimeVoiceConversion:
             infer_wav *= torch.pow(
                 rms_input / rms_infer, torch.tensor(1 - self.cfg.rms_mix_rate)
             )
-            
-            rms_mix_time = time.perf_counter() - t0
-            self.rms_mix_time.append(rms_mix_time)
         else:
             rms_mix_time = None
             
@@ -591,7 +568,8 @@ class RealtimeVoiceConversion:
         Args:
             indata: self.cfg.samplerate 采样率的音频数据, pcm格式, channel=1
         """
-        t0 = time.perf_counter()
+        start_time = time.perf_counter()
+        time_records = {}
         
         logger.debug(f"in_data.max: {in_data.max()}, in_data.min: {in_data.min()}")
         if self.cfg.save_input:  # save input chunk
@@ -600,24 +578,49 @@ class RealtimeVoiceConversion:
         in_data = librosa.to_mono(in_data.T)  # 转换完之后的indata shape: (11025,), max=1.0116995573043823, min=-1.0213052034378052
         
         # 1. vad
+        t0 = time.perf_counter()
         self._vad(in_data, session) 
+        vad_time = time.perf_counter() - t0
+        self.vad_time.append(vad_time)
+        time_records["vad"] = vad_time
         
         # 2. noise_gate
         if self.cfg.noise_gate and (self.cfg.noise_gate_threshold > -60):
+            t0 = time.perf_counter()
             in_data = self._noise_gate(in_data)
+            noise_gate_time = time.perf_counter() - t0
+            self.noise_gate_time.append(noise_gate_time)
+            time_records["ng"] = noise_gate_time
         
         # 3. preprocessing
-        self._preprocessing(in_data, session)  
+        t0 = time.perf_counter()
+        self._preprocessing(in_data, session) 
+        preprocess_time = time.perf_counter() - t0
+        self.preprocessing_time.append(preprocess_time) 
+        time_records["pre"] = preprocess_time
         
         # 4. voice conversion
+        t0 = time.perf_counter()
         infer_wav = self._voice_conversion(session) 
+        voice_conversion_time = time.perf_counter() - t0
+        self.vc_time.append(voice_conversion_time)
+        time_records["vc"] = voice_conversion_time
         
         # 5. rms—mix
         if self.cfg.rms_mix_rate < 1:  
+            t0 = time.perf_counter()
             infer_wav = self._rms_mixing(infer_wav, session)
+            rms_mix_time = time.perf_counter() - t0
+            self.rms_mix_time.append(rms_mix_time)
+            time_records["rms_m"] = rms_mix_time
+            
         
         # 6. sola
+        t0 = time.perf_counter()
         infer_wav = self._sola(infer_wav, session) 
+        sola_time = time.perf_counter() - t0
+        self.sola_time.append(sola_time)
+        time_records["sola"] = sola_time
         
         # 7. output
         session.out_data[:] = (
@@ -645,11 +648,15 @@ class RealtimeVoiceConversion:
             session.add_chunk_output(session.out_data)
         
         # tracking
-        chunk_time = time.perf_counter() - t0
+        chunk_time = time.perf_counter() - start_time
         self.chunk_time.append(chunk_time)
+        time_msg = " | ".join([f"{k}:{v*1000:0.1f}" for k, v in time_records.items()])
+        time_msg = f"chunk: {chunk_time*1000:0.1f} | " + time_msg
         
         self.tracking_counter += 1  # 每chunk +1 
         if self.tracking_counter >= self.cfg.max_tracking_counter:
             self._performance_report()
             self.tracking_counter = 0
+            
+        return time_msg
 

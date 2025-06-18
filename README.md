@@ -272,6 +272,8 @@ After testing completion, the following files are generated in the `outputs/conc
 
 # 🚧 Work in Progress...TODO
 - [ ] tag - v0.1.1 - Add adaptive pitch extraction in streaming scenarios - v2025-06-19
+    - [x] Add performance monitoring query interface to support real-time performance metrics queries
+    - [x] Refine timing logs
     - [ ] Add adaptive pitch extraction functionality with corresponding toggle switch
     - [ ] Complete support for seed-vc V2.0 model
 - [ ] tag - v0.2 - Improve inference efficiency, reduce RTF - v2025-xx

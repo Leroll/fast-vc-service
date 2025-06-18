@@ -183,7 +183,7 @@ async def process_chunk(websocket: WebSocket,
         # New buffer directly returns numpy array
         # it will pad the chunk if needed
         numpy_chunk = buffer.get_next_chunk()  
-        realtime_vc.chunk_vc(numpy_chunk, session)
+        time_msg = realtime_vc.chunk_vc(numpy_chunk, session)
         result = session.out_data
         
         if result is None or len(result) == 0:
@@ -201,14 +201,13 @@ async def process_chunk(websocket: WebSocket,
         session.record_recv_event(output_duration_ms)
         
         # Record processing metrics
-        chunk_time = (time.perf_counter() - t0) * 1000  # in ms
-        logger.info(f"{session.session_id} | Processed audio chunk: {chunk_time:.2f} ms")
+        e2e_time = (time.perf_counter() - t0) * 1000  # in ms
+        time_msg = f"E2E: {e2e_time:.1f} | " + time_msg if time_msg else ""
+        logger.info(f"{session.session_id} | {time_msg}")
             
     except Exception as e:
         logger.error(f"Error processing audio chunk: \n{traceback.format_exc()}")
         return None
-    
-    return chunk_time
 
 
 async def process_new_bytes_and_vc(audio_bytes: bytes, 

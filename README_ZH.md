@@ -278,6 +278,8 @@ python examples/websocket/concurrent_ws_client.py \
 
 # 🚧 施工中...TODO
 - [ ] tag - v0.1.1 - 添加流式场景下，音高自适应提取功能 -  v2025-06-19
+    - [x] 新增查询性能监控接口，支持查询实时性能指标
+    - [x] 细化耗时日志
     - [ ] 增加音高自适应提取功能，并添加对应开关
     - [ ] 完成对seed-vc V2.0 模型支持
 - [ ] tag - v0.2 - 提升推理时效，降低RTF - v2025-xx
