@@ -263,6 +263,7 @@ python examples/websocket/concurrent_ws_client.py \
 
 
 # 📦 版本更新
+<!-- don't forget to change version in __init__ and toml -->
 
 **v0.1.1 - v2025-06-19**: 新增换声性能优化   
 
