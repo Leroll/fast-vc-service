@@ -375,7 +375,7 @@ class RealtimeVoiceConversion:
     def _noise_gate(self, indata, session):
         """通过分贝阈值的方式，讲低于某个分贝的音频数据置为0
         """
-        if session.vad_speech_detected:  # vad 检测出来人声才会进行 noise-gate
+        if session.vad_speech_detected or session.is_first_chunk:  # vad 检测出来人声才会进行 noise-gate
     
             indata = np.append(session.rms_buffer, indata)  # rms_buffer 仅用在这个地方
             rms = librosa.feature.rms(
@@ -418,9 +418,7 @@ class RealtimeVoiceConversion:
         Returns:
             infer_wav: 推理后的音频数据, torch.tensor, device=self.cfg.device
         """
-        if not session.vad_speech_detected:  # if don't detect speech, set to zero
-            infer_wav = session.infer_wav_zero 
-        else:  
+        if session.vad_speech_detected or session.is_first_chunk:  # if don't detect speech, set to zero
             infer_wav = self._vc_infer(
                 session.input_wav,
                 self.skip_head,
@@ -435,6 +433,8 @@ class RealtimeVoiceConversion:
                 logger.debug(f"before resample: {infer_wav.shape}")
                 infer_wav = self.resampler_model_to_common(infer_wav)
                 logger.debug(f"after resample: {infer_wav.shape}, theroy_length: 8800")
+        else:       
+            infer_wav = session.infer_wav_zero 
             
         return infer_wav 
     
@@ -521,7 +521,7 @@ class RealtimeVoiceConversion:
             session: context of the current session
         """
         
-        if session.vad_speech_detected:  # only do rms-mixing when vad detected
+        if session.vad_speech_detected or session.is_first_chunk:  # only do rms-mixing when vad detected
             
             # original code in rvc is: [self.extra_frame: ]
             # their has changed in seed-vc, using the same region of vc model final output 
@@ -640,18 +640,22 @@ class RealtimeVoiceConversion:
         # 80ms + 20ms + 20ms = 120ms if zc_duration = 20ms
         
         # vad flag
+        is_speech_detected = "Y" if session.vad_speech_detected else "N"
         if session.set_speech_detected_false_at_end_flag:
             session.vad_speech_detected = False
             session.set_speech_detected_false_at_end_flag = False
         
         if self.cfg.save_output:  # save output chunk
             session.add_chunk_output(session.out_data)
+            
+        if session.is_first_chunk: 
+            session.is_first_chunk = False
         
         # tracking
         chunk_time = time.perf_counter() - start_time
         self.chunk_time.append(chunk_time)
         time_msg = " | ".join([f"{k}: {v*1000:0.1f}" for k, v in time_records.items()])
-        time_msg = f"chunk: {chunk_time*1000:0.1f} | " + time_msg
+        time_msg = f"{is_speech_detected} | chunk: {chunk_time*1000:0.1f} | " + time_msg
         
         self.tracking_counter += 1  # 每chunk +1 
         if self.tracking_counter >= self.cfg.max_tracking_counter:

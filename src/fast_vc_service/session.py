@@ -25,6 +25,7 @@ class Session:
         self.output_wav_record = []
         self.save_dir = save_dir
         self.is_saved = False  # flag to indicate if the session has been saved
+        self.is_first_chunk = True 
         
         # Timeline tracking
         self.send_timeline = []  # 记录发送音频的时间线
