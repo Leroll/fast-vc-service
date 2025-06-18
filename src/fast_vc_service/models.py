@@ -354,7 +354,7 @@ class ModelFactory:
         """torch.compile 加速"""
         # 这里用 torch.compile() 加速一下看看
         self.semantic_fn = torch.compile(self.semantic_fn, mode="max-autotune")  # fullgraph=True 先不用
-        self.dit_fn = torch.compile(self.dit_fn, mode="max_autotune")
+        self.dit_fn = torch.compile(self.dit_fn, mode="max-autotune")
         # vocoder_fn = torch.compile(self.vocoder_fn, mode="max-autotune")  # mode="max-autotune"
         
     @timer_decorator
