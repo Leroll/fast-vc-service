@@ -650,7 +650,7 @@ class RealtimeVoiceConversion:
         # tracking
         chunk_time = time.perf_counter() - start_time
         self.chunk_time.append(chunk_time)
-        time_msg = " | ".join([f"{k}:{v*1000:0.1f}" for k, v in time_records.items()])
+        time_msg = " | ".join([f"{k}: {v*1000:0.1f}" for k, v in time_records.items()])
         time_msg = f"chunk: {chunk_time*1000:0.1f} | " + time_msg
         
         self.tracking_counter += 1  # 每chunk +1 
