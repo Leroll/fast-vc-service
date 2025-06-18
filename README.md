@@ -259,6 +259,12 @@ After testing completion, the following files are generated in the `outputs/conc
 
 # 📦 Version Updates
 
+**v0.1.1 - v2025-06-19**: Voice Conversion Performance Optimization   
+
+  - Added performance monitoring API endpoint /tools/performance-report for real-time performance metrics
+  - Enhanced timing logs for better performance bottleneck analysis
+  - Mitigated delay issue caused by first audio packet model invocation
+
 **v0.1.0 - v2025-06-15**: Basic Service Framework   
 
   Completed the core framework construction of real-time voice conversion service based on Seed-VC, implementing WebSocket streaming inference, performance monitoring, multi-format audio support and other complete basic functions.   
@@ -271,9 +277,7 @@ After testing completion, the following files are generated in the `outputs/conc
   - Concurrent performance testing framework
 
 # 🚧 Work in Progress...TODO
-- [ ] tag - v0.1.1 - Add adaptive pitch extraction in streaming scenarios - v2025-06-19
-    - [x] Add performance monitoring query interface to support real-time performance metrics queries
-    - [x] Refine timing logs
+- [ ] tag - v0.1.2 - Add adaptive pitch extraction in streaming scenarios - v2025-06-26
     - [ ] Add adaptive pitch extraction functionality with corresponding toggle switch
     - [ ] Complete support for seed-vc V2.0 model
 - [ ] tag - v0.2 - Improve inference efficiency, reduce RTF - v2025-xx
