@@ -276,8 +276,6 @@ async def websocket_endpoint(websocket: WebSocket):
                             websocket, buffer, session
                         )
                         
-                        session.save()  # save audio
-                        
                         complete_msg = adapter.format_complete_message({})  # send complete message
                         await websocket.send_json(complete_msg)
                         logger.info(f"{session.session_id} | Voice conversion completed. ")
