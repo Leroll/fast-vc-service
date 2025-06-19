@@ -114,7 +114,7 @@ class RealtimeVoiceConversion:
         self.extra_frame_right = int( np.round( self.extra_frame_right / self.zc ) ) * self.zc
         
         # vad
-        self.vad_chunk_size = 1000 * self.cfg.block_time
+        self.vad_chunk_size = 1000 * self.cfg.block_time  # 转换成ms
         
         # sola
         self.sola_buffer_frame = min( self.crossfade_frame, 4 * self.zc ) # 80ms帧 和 crossfade帧(默认40ms)中的小数
@@ -364,6 +364,7 @@ class RealtimeVoiceConversion:
         
         vad_model = self.models["vad_model"]
         res = vad_model.generate(input=indata, cache=session.vad_cache, is_final=False, chunk_size=self.vad_chunk_size)  # ---- 改成优化后的函数
+        logger.info(f"VAD result: {res}")
         res_value = res[0]["value"]
         if len(res_value) % 2 == 1 and not session.vad_speech_detected:
             session.vad_speech_detected = True

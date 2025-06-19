@@ -362,7 +362,7 @@ class ModelFactory:
         """加载vad模型"""
         
         self.logger.info("===> Loading VAD model")
-        from funasr import AutoModel  # 这是新版本增加的vad模块
+        from funasr import AutoModel
         try: 
             vad_model = AutoModel(model="fsmn-vad", model_revision="v2.0.4")
         except:
