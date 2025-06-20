@@ -5,6 +5,7 @@
 <div align="center">
   <img alt="GitHub stars" src="https://img.shields.io/github/stars/Leroll/fast-vc-service?style=social">
   <img alt="Github downloads" src="https://img.shields.io/github/downloads/Leroll/fast-vc-service/total?style=flat-square">
+  <img alt="GitHub release" src="https://img.shields.io/github/v/release/Leroll/fast-vc-service?style=flat-square">
   <a href="https://github.com/Leroll/fast-vc-service/commits/main">
     <img alt="GitHub last commit" src="https://img.shields.io/github/last-commit/Leroll/fast-vc-service">
   </a>
