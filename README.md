@@ -27,7 +27,7 @@ Fast-VC-Service aims to build a high-performance real-time streaming voice conve
 
 <div align="center">
 
-[Core Features](#core-features) | [Quick Start](#quick-start) | [Performance](#performance) | [Version Updates](#version-updates) | [TODO](#todo) | [Acknowledgements](#acknowledgements)
+[Core Features](#-core-features) | [Quick Start](#-quick-start) | [Performance](#-performance) | [Version Updates](#-version-updates) | [TODO](#-todo) | [Acknowledgements](#-acknowledgements)
 
 </div>
 
