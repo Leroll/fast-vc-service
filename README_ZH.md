@@ -31,7 +31,7 @@ Fast-VC-Service 旨在打造一款专为生产环境设计的，高性能实时�
 
 </div>
 
-# 核心特性
+# ✨ 核心特性
 
 - **实时转换**: 基于 Seed-VC 的低延迟流式语音转换
 - **WebSocket API**: 支持 PCM 和 OPUS 音频格式
@@ -40,9 +40,9 @@ Fast-VC-Service 旨在打造一款专为生产环境设计的，高性能实时�
 - **易部署**: 简单配置，一键启动
 
 
-# 快速开始
+# 🚀 快速开始 
 
-## 一键安装
+## 📦 一键安装
 ```bash
 # 克隆项目
 git clone --recursive https://github.com/Leroll/fast-vc-service.git
@@ -58,7 +58,7 @@ poetry install
 fast-vc serve
 ```
 
-## 快速测试
+## 🧪 快速测试
 ```bash
 # WebSocket 实时语音转换
 python examples/websocket/ws_client.py \
@@ -69,7 +69,7 @@ python examples/websocket/ws_client.py \
 > 详细安装使用指南请参看 [快速开始](docs/getting_started/quick_started.md) 文档。
 
 
-# 性能表现
+# 📈 性能表现 
 
 <div align="center">
 
@@ -88,7 +88,7 @@ python examples/websocket/ws_client.py \
     - [性能测试报告_1080ti](docs/perfermance_tests/version0.1.0_1080ti.md)
 
 
-# 版本更新
+# 📝 版本更新 
 <!-- don't forget to change version in __init__ and toml -->
 
 **2025-06-19 - v0.1.1**: 首包性能优化   
@@ -108,7 +108,7 @@ python examples/websocket/ws_client.py \
   - 多Worker并发处理能力
   - 并发性能测试框架
 
-# TODO
+# 🚧 TODO 
 - [ ] tag - v0.1.2 - 添加流式场景下，音高自适应提取功能 -  v2025-06-26
     - [ ] vad 改用 onnx-gpu, 以提升推理速度
     - [ ] 增加音高自适应提取功能，并添加对应开关
@@ -120,6 +120,6 @@ python examples/websocket/ws_client.py \
     - [ ] 制作镜像，方便部署
     - [ ] 制作AutoDL镜像
 
-# 致谢
+# 🙏 致谢 
 - [Seed-VC](https://github.com/Plachtaa/seed-vc) - 提供了强大的底层变声模型
 - [RVC](https://github.com/RVC-Project/Retrieval-based-Voice-Conversion-WebUI) - 提供了基础的流式语音转换pipeline

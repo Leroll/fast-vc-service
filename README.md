@@ -31,7 +31,7 @@ Fast-VC-Service aims to build a high-performance real-time streaming voice conve
 
 </div>
 
-# Core Features
+# ✨ Core Features
 
 - **Real-time Conversion**: Low-latency streaming voice conversion based on Seed-VC
 - **WebSocket API**: Support for PCM and OPUS audio formats
@@ -40,9 +40,9 @@ Fast-VC-Service aims to build a high-performance real-time streaming voice conve
 - **Easy Deployment**: Simple configuration, one-click startup
 
 
-# Quick Start
+# 🚀 Quick Start
 
-## One-click Installation
+## 📦 One-click Installation
 ```bash
 # Clone project
 git clone --recursive https://github.com/Leroll/fast-vc-service.git
@@ -58,7 +58,7 @@ poetry install
 fast-vc serve
 ```
 
-## Quick Testing
+## 🧪 Quick Testing
 ```bash
 # WebSocket real-time voice conversion
 python examples/websocket/ws_client.py \
@@ -70,8 +70,7 @@ python examples/websocket/ws_client.py \
 
 
 
-
-# Performance
+# 📈 Performance
 
 <div align="center">
 
@@ -90,7 +89,7 @@ python examples/websocket/ws_client.py \
     - [Performance-Report_1080ti](docs/perfermance_tests/version0.1.0_1080ti.md)
 
 
-# Version Updates
+# 📝 Version Updates
 <!-- don't forget to change version in __init__ and toml -->
 
 **2025-06-19 - v0.1.1**: First Packet Performance Optimization   
@@ -110,7 +109,7 @@ python examples/websocket/ws_client.py \
   - Multi-Worker concurrent processing capability
   - Concurrent performance testing framework
 
-# TODO
+# 🚧 TODO
 - [ ] tag - v0.1.2 - Add adaptive pitch extraction in streaming scenarios - v2025-06-26
     - [ ] Change VAD to use ONNX-GPU to improve inference speed
     - [ ] Add adaptive pitch extraction functionality with corresponding toggle switch
@@ -122,6 +121,6 @@ python examples/websocket/ws_client.py \
     - [ ] Create Docker images for easy deployment
     - [ ] Create AutoDL images
 
-# Acknowledgements
+# 🙏 Acknowledgements
 - [Seed-VC](https://github.com/Plachtaa/seed-vc) - Provides powerful underlying voice conversion model
 - [RVC](https://github.com/RVC-Project/Retrieval-based-Voice-Conversion-WebUI) - Provides basic streaming voice conversion pipeline
