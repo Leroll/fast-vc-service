@@ -23,7 +23,55 @@
 
 > Features are continuously being updated. Stay tuned for our latest developments... ✨
 
-# 📊 Performance
+Fast-VC-Service aims to build a high-performance real-time streaming voice conversion cloud service designed for production environments. Based on the Seed-VC model, it supports WebSocket protocol and PCM/OPUS audio encoding formats.
+
+<div align="center">
+
+[Core Features](#core-features) | [Quick Start](#quick-start) | [Performance](#performance) | [Version Updates](#version-updates) | [TODO](#todo) | [Acknowledgements](#acknowledgements)
+
+</div>
+
+# Core Features
+
+- **Real-time Conversion**: Low-latency streaming voice conversion based on Seed-VC
+- **WebSocket API**: Support for PCM and OPUS audio formats
+- **Performance Monitoring**: Complete real-time performance metrics statistics
+- **High Concurrency**: Multi-Worker concurrent processing, supporting production environments
+- **Easy Deployment**: Simple configuration, one-click startup
+
+
+# Quick Start
+
+## One-click Installation
+```bash
+# Clone project
+git clone --recursive https://github.com/Leroll/fast-vc-service.git
+cd fast-vc-service
+
+# Configure environment
+cp .env.example .env
+
+# Install dependencies (Poetry recommended)
+poetry install
+
+# Start service
+fast-vc serve
+```
+
+## Quick Testing
+```bash
+# WebSocket real-time voice conversion
+python examples/websocket/ws_client.py \
+    --source-wav-path "wavs/sources/low-pitched-male-24k.wav" \
+    --encoding PCM
+```
+
+> For detailed installation and usage guide, please refer to [Quick Start](docs/getting_started/quick_started_en.md) documentation.
+
+
+
+
+# Performance
 
 <div align="center">
 
@@ -38,235 +86,20 @@
 
 - Time unit: milliseconds (ms)
 - View detailed test report: 
-    - [Performance-Report_1080ti](docs/perfermance_tests/version0.1.0_1080ti.md)
     - [Performance-Report_4090D](docs/perfermance_tests/version0.1.0_4090D.md)
+    - [Performance-Report_1080ti](docs/perfermance_tests/version0.1.0_1080ti.md)
 
-# 🚀 Quick Start
 
-## Installation
+# Version Updates
+<!-- don't forget to change version in __init__ and toml -->
 
-### Method 1: Using Poetry
-```bash
-git clone --recursive https://github.com/Leroll/fast-vc-service.git
-cd fast-vc-service
-cp .env.example .env  # Configure environment variables
-poetry install  # Install dependencies
-```
-
-### Method 2: Using Existing Conda Environment
-```bash
-git clone --recursive https://github.com/Leroll/fast-vc-service.git
-cd fast-vc-service
-cp .env.example .env  # Configure environment variables
-
-# Activate existing conda environment (Python 3.10+)
-conda activate your_env_name
-
-# Using Poetry (disable virtual environment)
-poetry config virtualenvs.create false
-poetry install
-```
-
-When running for the first time, models will be automatically downloaded to the checkpoint folder.  
-If you encounter network issues, uncomment the `HF_ENDPOINT` variable in the `.env` file to use domestic mirror sources for accelerated model downloads.
-
-### Replace poetry source (if needed)
-```
-poetry source remove aliyun
-poetry source add new_name https://xx/pypi/simple --priority=primary
-rm poetry.lock  # Delete lock file to regenerate
-poetry lock 
-poetry install  
-```
-
-## Start Service
-```bash
-# Start service
-fast-vc serve  # Default startup using env_profile in .env
-fast-vc serve --env prod  # Specify environment configuration
-nohup fast-vc serve > /dev/null 2>&1 &  # Run in background
-
-# Using Poetry
-poetry run fast-vc serve
-```
-
-<!-- Add service startup demo -->
-<p align="center">
-    <img src="https://github.com/Leroll/fast-vc-service/releases/download/v0.0.1/fast-vc-serve.gif" alt="Service Startup Demo" width="800">
-    <br>
-    <em>🚀 Service Startup Process</em>
-</p>
-
-## Service Management
-```bash
-# Check service status
-fast-vc status
-
-# Stop service (graceful shutdown)
-fast-vc stop
-fast-vc stop --force   # Force stop
-
-# Clean log files
-fast-vc clean
-fast-vc clean -y  # Skip confirmation
-
-# Show version information
-fast-vc version
-```
-
-### Service Management Commands
-- `serve`: Start FastAPI server
-- `status`: Check service running status and process information
-- `stop`: Graceful shutdown (send SIGINT signal)
-- `stop --force`: Force shutdown (send SIGTERM signal)
-- `clean`: Clean log files in logs/ directory
-- `clean -y`: Clean log files without confirmation prompt
-- `version`: Display service version information
-
-Service information is automatically saved to the project's `temp/` directory, supporting process status checking and automatic cleanup.
-
-<p align="center">
-    <img src="https://github.com/Leroll/fast-vc-service/releases/download/v0.0.1/fast-vc-command.gif" alt="Command Demo" width="800">
-    <br>
-    <em>🚀 Command Demonstration</em>
-</p>
-
-# 📡 Real-time Streaming Voice Conversion
-
-## WebSocket Connection Flow
-```mermaid
-sequenceDiagram
-    participant C as Client
-    participant S as Server
-    
-    C->>S: Configuration Request
-    S->>C: Ready Confirmation ✅
-    
-    loop Real-time Audio Stream
-        C->>S: 🎤 Audio Chunk
-        S->>C: 🔊 Converted Audio
-    end
-    
-    C->>S: End Signal
-    S->>C: Completion Status ✨
-```
-
-**For detailed WebSocket API specification, please refer to**: [WebSocket API Specification](docs/api_docs/websocket-api-doc_EN.md)  
-**Supported Formats**: PCM | OPUS  
-
-## 🔥 Quick Testing
-
-### WebSocket Real-time Voice Conversion
-```bash
-python examples/websocket/ws_client.py \
-    --source-wav-path "wavs/sources/low-pitched-male-24k.wav" \
-    --encoding OPUS
-```
-
-### Batch File Testing for voice conversion effect validation, no service startup required
-```bash
-python examples/file_conversion/file_vc.py \
-    --source-wav-path "wavs/sources/low-pitched-male-24k.wav" \
-```
-
-## 🚀 Concurrent Performance Testing
-
-### Multi-client Concurrent Testing
-Use concurrent WebSocket clients to test server processing capabilities:
-
-```bash
-# Start 5 concurrent clients simultaneously with no delay
-python examples/websocket/concurrent_ws_client.py \
-    --num-clients 5 \
-    --source-wav-path "wavs/sources/low-pitched-male-24k.wav" \
-    --encoding OPUS
-
-# Start 10 clients with 2-second intervals between each
-python examples/websocket/concurrent_ws_client.py \
-    --num-clients 10 \
-    --delay-between-starts 2.0 \
-    --max-workers 4 \
-    --timeout 600
-
-# Test different audio formats
-python examples/websocket/concurrent_ws_client.py \
-    --num-clients 3 \
-    --encoding PCM \
-    --chunk-time 40 \
-    --real-time
-```
-
-### Test Parameter Description
-- `--num-clients`: Number of concurrent clients (default: 5)
-- `--delay-between-starts`: Delay in seconds between starting each client (default: 0.0, simultaneous start)
-- `--max-workers`: Maximum number of worker processes (default: min(8, num_clients))
-- `--timeout`: Timeout in seconds for each client (default: 420)
-- `--chunk-time`: Audio chunk time in milliseconds (default: 20ms)
-- `--encoding`: Audio encoding format, PCM or OPUS (default: PCM)
-- `--real-time`: Enable real-time audio sending simulation
-- `--no-real-time`: Disable real-time simulation, send audio as fast as possible
-
-### Performance Metrics Analysis
-
-After testing completion, detailed performance analysis reports are automatically generated, including:
-
-#### 🕐 Latency Metrics
-- **First Token Latency**: Processing delay of the first audio packet
-- **End-to-End Latency**: Processing delay of the complete audio stream
-- **Chunk Latency Statistics**: Latency distribution for each audio chunk (mean, median, P95, P99, etc.)
-- **Jitter**: Standard deviation of latency, measuring latency stability
-
-#### ⚡ Real-time Performance Metrics
-- **Real-time Factor (RTF)**: Ratio of processing time to audio duration
-  - RTF < 1.0: Meets real-time processing requirements
-  - RTF > 1.0: Processing speed cannot keep up with audio playback speed
-- **RTF Statistics**: Including mean, median, P95, P99, and other distribution information
-
-#### 📊 Send Timing Analysis
-- **Send Delay Statistics**: Actual send intervals vs expected audio intervals
-- **Timing Quality Assessment**: Send stability and consecutive delay detection
-
-#### 📈 Sample Output
-```json
-{
-  "first_token_latency_ms": 285.3,
-  "end_to_end_latency_ms": 1247.8,
-  "chunk_latency_stats": {
-    "mean_ms": 312.5,
-    "median_ms": 298.1,
-    "p95_ms": 456.7,
-    "p99_ms": 523.2
-  },
-  "real_time_factor": {
-    "mean": 0.87,
-    "median": 0.85,
-    "p95": 1.12
-  },
-  "is_real_time": true,
-  "timeline_summary": {
-    "total_send_events": 156,
-    "total_recv_events": 148,
-    "send_duration_ms": 3120,
-    "processing_start_to_end_ms": 3368
-  }
-}
-```
-
-### Output Files Description
-After testing completion, the following files are generated in the `outputs/concurrent_ws_client/` directory:
-- `clientX_result.json`: Complete result data for each client
-- `clientX_stats.json`: Performance statistics analysis for each client
-- `clientX_output.wav`: Converted audio files (if saving is enabled)
-
-# 📦 Version Updates
-
-**v0.1.1 - v2025-06-19**: Voice Conversion Performance Optimization   
+**2025-06-19 - v0.1.1**: First Packet Performance Optimization   
 
   - Added performance monitoring API endpoint /tools/performance-report for real-time performance metrics
   - Enhanced timing logs for better performance bottleneck analysis
   - Mitigated delay issue caused by first audio packet model invocation
 
-**v0.1.0 - v2025-06-15**: Basic Service Framework   
+**2025-06-15 - v0.1.0**: Basic Service Framework   
 
   Completed the core framework construction of real-time voice conversion service based on Seed-VC, implementing WebSocket streaming inference, performance monitoring, multi-format audio support and other complete basic functions.   
 
@@ -277,7 +110,7 @@ After testing completion, the following files are generated in the `outputs/conc
   - Multi-Worker concurrent processing capability
   - Concurrent performance testing framework
 
-# 🚧 Work in Progress...TODO
+# TODO
 - [ ] tag - v0.1.2 - Add adaptive pitch extraction in streaming scenarios - v2025-06-26
     - [ ] Change VAD to use ONNX-GPU to improve inference speed
     - [ ] Add adaptive pitch extraction functionality with corresponding toggle switch
@@ -289,6 +122,6 @@ After testing completion, the following files are generated in the `outputs/conc
     - [ ] Create Docker images for easy deployment
     - [ ] Create AutoDL images
 
-# 🙏 Acknowledgements
+# Acknowledgements
 - [Seed-VC](https://github.com/Plachtaa/seed-vc) - Provides powerful underlying voice conversion model
 - [RVC](https://github.com/RVC-Project/Retrieval-based-Voice-Conversion-WebUI) - Provides basic streaming voice conversion pipeline
