@@ -111,10 +111,10 @@ python examples/websocket/ws_client.py \
 
 # 🚧 TODO 
 - [ ] tag - v0.1.2 - 添加流式场景下，音高自适应提取功能 -  v2025-06-26
-    - [ ] 制作镜像，方便部署
-    - [ ] vad 改用 onnx-gpu, 以提升推理速度
+    - [ ] vad 改用 onnx, 以提升推理速度； 同时对比 vad onnx放在cpu和gpu推理，对整体性能和并发的影响
     - [ ] 增加音高自适应提取功能，并添加对应开关
     - [ ] 完成对seed-vc V2.0 模型支持
+    - [ ] 制作镜像，方便部署
 - [ ] tag - v0.2 - 提升推理时效，降低RTF - v2025-xx
     - [ ] 探索降低模型推理时延的方案（比如新的模型架构、量化等）
     - [ ] reference 使用torchaudio 直接读取到GPU中，省去转移的步骤。

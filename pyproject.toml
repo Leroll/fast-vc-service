@@ -39,6 +39,8 @@ gradio = "4.44.0"
 modelscope = "1.18.1"
 python-dotenv = "1.1.0"
 psutil = "7.0.0"
+onnxruntime-gpu = "^1.22.0"
+funasr-onnx = "^0.4.1"
 
 [[tool.poetry.source]]
 name = "aliyun"

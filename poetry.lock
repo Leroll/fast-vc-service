@@ -467,6 +467,29 @@ url = "https://mirrors.aliyun.com/pypi/simple"
 reference = "aliyun"
 
 [[package]]
+name = "coloredlogs"
+version = "15.0.1"
+description = "Colored terminal output for Python's logging module"
+optional = false
+python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
+groups = ["main"]
+files = [
+    {file = "coloredlogs-15.0.1-py2.py3-none-any.whl", hash = "sha256:612ee75c546f53e92e70049c9dbfcc18c935a2b9a53b66085ce9ef6a6e5c0934"},
+    {file = "coloredlogs-15.0.1.tar.gz", hash = "sha256:7c991aa71a4577af2f82600d8f8f3a89f936baeaf9b50a9c197da014e5bf16b0"},
+]
+
+[package.dependencies]
+humanfriendly = ">=9.1"
+
+[package.extras]
+cron = ["capturer (>=2.4)"]
+
+[package.source]
+type = "legacy"
+url = "https://mirrors.aliyun.com/pypi/simple"
+reference = "aliyun"
+
+[[package]]
 name = "comm"
 version = "0.2.2"
 description = "Jupyter Python Comm implementation, for usage in ipykernel, xeus-python etc."
@@ -1055,6 +1078,23 @@ url = "https://mirrors.aliyun.com/pypi/simple"
 reference = "aliyun"
 
 [[package]]
+name = "flatbuffers"
+version = "25.2.10"
+description = "The FlatBuffers serialization format for Python"
+optional = false
+python-versions = "*"
+groups = ["main"]
+files = [
+    {file = "flatbuffers-25.2.10-py2.py3-none-any.whl", hash = "sha256:ebba5f4d5ea615af3f7fd70fc310636fbb2bbd1f566ac0a23d98dd412de50051"},
+    {file = "flatbuffers-25.2.10.tar.gz", hash = "sha256:97e451377a41262f8d9bd4295cc836133415cc03d8cb966410a4af92eb00d26e"},
+]
+
+[package.source]
+type = "legacy"
+url = "https://mirrors.aliyun.com/pypi/simple"
+reference = "aliyun"
+
+[[package]]
 name = "flatten-dict"
 version = "0.4.2"
 description = "A flexible utility for flattening and unflattening dict-like objects in Python."
@@ -1228,6 +1268,33 @@ doc = ["Jinja2", "Sphinx", "commonmark", "configargparse (>=1.2.1)", "nbsphinx (
 llm = ["accelerate", "einops", "matplotlib", "pillow", "scipy", "tiktoken", "torchvision", "transformers (>=4.32.0)", "transformers-stream-generator (>=0.0.4)"]
 test = ["black", "editdistance", "flake8 (>=3.7.8)", "flake8-docstrings (>=1.3.1)", "hacking (>=2.0.0)", "jsondiff (>=1.2.0,<2.0.0)", "mock (>=2.0.0)", "pycodestyle", "pytest (>=3.3.0)", "pytest-cov (>=2.7.1)", "pytest-pythonpath (>=0.7.3)", "pytest-timeouts (>=1.2.1)"]
 train = ["editdistance"]
+
+[package.source]
+type = "legacy"
+url = "https://mirrors.aliyun.com/pypi/simple"
+reference = "aliyun"
+
+[[package]]
+name = "funasr-onnx"
+version = "0.4.1"
+description = "FunASR: A Fundamental End-to-End Speech Recognition Toolkit"
+optional = false
+python-versions = "*"
+groups = ["main"]
+files = [
+    {file = "funasr_onnx-0.4.1-py3-none-any.whl", hash = "sha256:180b22a8d12b9b87b088849131b9d07c1192c1c3bfc1628d32b7767248559009"},
+    {file = "funasr_onnx-0.4.1.tar.gz", hash = "sha256:c3b4154b0e3c035ec5551d37ef228be702be9ce542eca50b50db439b3e3fabcd"},
+]
+
+[package.dependencies]
+kaldi-native-fbank = "*"
+librosa = "*"
+numpy = "<=1.26.4"
+onnx = "*"
+onnxruntime = ">=1.7.0"
+PyYAML = ">=5.1.2"
+scipy = "*"
+sentencepiece = "*"
 
 [package.source]
 type = "legacy"
@@ -1502,6 +1569,26 @@ tensorflow-testing = ["keras (<3.0)", "tensorflow"]
 testing = ["InquirerPy (==0.3.4)", "Jinja2", "Pillow", "aiohttp", "fastapi", "gradio", "jedi", "minijinja (>=1.0)", "numpy", "pytest", "pytest-asyncio", "pytest-cov", "pytest-env", "pytest-rerunfailures", "pytest-vcr", "pytest-xdist", "soundfile", "urllib3 (<2.0)"]
 torch = ["safetensors", "torch"]
 typing = ["types-PyYAML", "types-requests", "types-simplejson", "types-toml", "types-tqdm", "types-urllib3", "typing-extensions (>=4.8.0)"]
+
+[package.source]
+type = "legacy"
+url = "https://mirrors.aliyun.com/pypi/simple"
+reference = "aliyun"
+
+[[package]]
+name = "humanfriendly"
+version = "10.0"
+description = "Human friendly output for text interfaces using Python"
+optional = false
+python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
+groups = ["main"]
+files = [
+    {file = "humanfriendly-10.0-py2.py3-none-any.whl", hash = "sha256:1697e1a8a8f550fd43c2865cd84542fc175a61dcb779b6fee18cf6b6ccba1477"},
+    {file = "humanfriendly-10.0.tar.gz", hash = "sha256:6b0b831ce8f15f7300721aa49829fc4e83921a9a301cc7f606be6686a2288ddc"},
+]
+
+[package.dependencies]
+pyreadline3 = {version = "*", markers = "sys_platform == \"win32\" and python_version >= \"3.8\""}
 
 [package.source]
 type = "legacy"
@@ -1880,6 +1967,67 @@ traitlets = ">=5.3"
 [package.extras]
 docs = ["intersphinx-registry", "myst-parser", "pydata-sphinx-theme", "sphinx-autodoc-typehints", "sphinxcontrib-spelling", "traitlets"]
 test = ["ipykernel", "pre-commit", "pytest (<9)", "pytest-cov", "pytest-timeout"]
+
+[package.source]
+type = "legacy"
+url = "https://mirrors.aliyun.com/pypi/simple"
+reference = "aliyun"
+
+[[package]]
+name = "kaldi-native-fbank"
+version = "1.21.2"
+description = ""
+optional = false
+python-versions = ">=3.6.0"
+groups = ["main"]
+files = [
+    {file = "kaldi-native-fbank-1.21.2.tar.gz", hash = "sha256:9d7262fcfdffc076eb309cec596fdda97d4aacf711d4902030b5befa5df2de3a"},
+    {file = "kaldi_native_fbank-1.21.2-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:1cd5690b045ce35e08c041bc012db9b6f4cfe1d181040246027fd573e54214ff"},
+    {file = "kaldi_native_fbank-1.21.2-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:80e8ca7d188312dfe673b9943f6b2a60cb1869a180911ab4b0d195dfa2587c97"},
+    {file = "kaldi_native_fbank-1.21.2-cp310-cp310-manylinux2014_aarch64.manylinux_2_17_aarch64.whl", hash = "sha256:be06b1dd3fa996e80464c117f913084f144d59f8610a63af272377ab634e2070"},
+    {file = "kaldi_native_fbank-1.21.2-cp310-cp310-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:50e3e5b2ada58dccbbba2462377f2ef84cd95d4535de7996af02bab8c41f8089"},
+    {file = "kaldi_native_fbank-1.21.2-cp310-cp310-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:0d12d5d2c650eef54653306094f17ddb66c4a9c2bb5cd677bd8d40f4e13ebda0"},
+    {file = "kaldi_native_fbank-1.21.2-cp310-cp310-win32.whl", hash = "sha256:e9f161cd10bc5530760d74c4152520d22b97ff44a85e1e996a3a3ef7be2f3839"},
+    {file = "kaldi_native_fbank-1.21.2-cp310-cp310-win_amd64.whl", hash = "sha256:7733aaa4561a370de2334ab79d9ae982d7768be9bf17cb4f81dd3cb8e4185c50"},
+    {file = "kaldi_native_fbank-1.21.2-cp311-cp311-macosx_10_9_x86_64.whl", hash = "sha256:fab31b0354e5c43cf12a6214ef270af0d7e59ab0119cafb3de40c7bd831dd137"},
+    {file = "kaldi_native_fbank-1.21.2-cp311-cp311-macosx_11_0_arm64.whl", hash = "sha256:0c306e5ea44f368b5463bc10c2611b520bc12cff34453576e2f7d11ccaf676be"},
+    {file = "kaldi_native_fbank-1.21.2-cp311-cp311-manylinux2014_aarch64.manylinux_2_17_aarch64.whl", hash = "sha256:0d12ce540eca36041c329e103b9ab0fe15a37181163aaee0b38668db43af8a61"},
+    {file = "kaldi_native_fbank-1.21.2-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:e0420b15fc643aa72b09fcce343d6fb01c4bb58a1ade96051c0904771d119a06"},
+    {file = "kaldi_native_fbank-1.21.2-cp311-cp311-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:be981db0555293eab1f4e5e3fc3ec1dc0fc754676cf9551594128b12a2711242"},
+    {file = "kaldi_native_fbank-1.21.2-cp311-cp311-win32.whl", hash = "sha256:fd4739b52f07585dc314de33ea866a4f586d9ebfa587cc89d4f1154fe9346931"},
+    {file = "kaldi_native_fbank-1.21.2-cp311-cp311-win_amd64.whl", hash = "sha256:7bb414bfaad08470309584deef5e2632b17e99ee31740da14e38e4e667519254"},
+    {file = "kaldi_native_fbank-1.21.2-cp312-cp312-macosx_10_13_x86_64.whl", hash = "sha256:53ddf12398ac1960bcaaa39d039b078b290c08bcef514c5da1a9d8343f8dc0e4"},
+    {file = "kaldi_native_fbank-1.21.2-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:a2c2c058038faff885ad16682becdc2cd71bfe1ab3b7424c36e8072966fb873a"},
+    {file = "kaldi_native_fbank-1.21.2-cp312-cp312-manylinux2014_aarch64.manylinux_2_17_aarch64.whl", hash = "sha256:12ef48ef3481cbe877ddf77781b46a8cae553e8ff5efcf40307579027eabccf9"},
+    {file = "kaldi_native_fbank-1.21.2-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:01481bd67f335a36a01adf106d8e0af12a66346a1fd97ca8a3f48da92b56b757"},
+    {file = "kaldi_native_fbank-1.21.2-cp312-cp312-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:5eb0659334d6283830bdf2f17d10ac2f566198b80b62ddf0de461f8fc95e0893"},
+    {file = "kaldi_native_fbank-1.21.2-cp312-cp312-win32.whl", hash = "sha256:0939ada378f6cbfe3d4eb6ac2b688f0f3c90045bad065ae0f671f6996dddaa65"},
+    {file = "kaldi_native_fbank-1.21.2-cp312-cp312-win_amd64.whl", hash = "sha256:c5187cc5d656e3d32e0e1913b48a589536b07b44eccf73006fedd98ab7532987"},
+    {file = "kaldi_native_fbank-1.21.2-cp313-cp313-macosx_10_13_x86_64.whl", hash = "sha256:9fc9fb5ff83adbdca55d8bbd1b381081aa7706249bf19c0f7b1a6c7fdd0f3559"},
+    {file = "kaldi_native_fbank-1.21.2-cp313-cp313-macosx_11_0_arm64.whl", hash = "sha256:b40f97c3563d750f8181669426b62ee0f8626345685b916f2d899afd41af5cc2"},
+    {file = "kaldi_native_fbank-1.21.2-cp313-cp313-manylinux2014_aarch64.manylinux_2_17_aarch64.whl", hash = "sha256:084d10a46232e92739f1b3f3679a396e5cd83544ff6ba87798026949209d1d74"},
+    {file = "kaldi_native_fbank-1.21.2-cp313-cp313-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:a1a51ee2468f73a10fb0fddd90f574f6d69f74d9a9058dd644aeefd300be38ee"},
+    {file = "kaldi_native_fbank-1.21.2-cp313-cp313-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:4528612eed5fe5cd73270faf55221755f8bf003a045c4f4cc8d78e7a05effbbd"},
+    {file = "kaldi_native_fbank-1.21.2-cp313-cp313-win32.whl", hash = "sha256:fcbd9a7b3fbf278cb1617a0e8c55e4c4ade496862aaebcb6e99db3fa6b2dcae0"},
+    {file = "kaldi_native_fbank-1.21.2-cp313-cp313-win_amd64.whl", hash = "sha256:747752a969446ddc1c35e01f6070bde68d054137051310e94f9ae6e5dca25fbb"},
+    {file = "kaldi_native_fbank-1.21.2-cp37-cp37m-macosx_10_9_x86_64.whl", hash = "sha256:06c1b308399e58107f5571a1cf23f11823b455420e3bd47f69abb22a5aee07ab"},
+    {file = "kaldi_native_fbank-1.21.2-cp37-cp37m-win32.whl", hash = "sha256:48d8822c379151949eaf963c3166d54e186d91ffca2256aafa6f0c87859ce189"},
+    {file = "kaldi_native_fbank-1.21.2-cp37-cp37m-win_amd64.whl", hash = "sha256:59b030349f3a623035d5cb95cf7de9d1d86d52f43708d80fcdd508257f8e9031"},
+    {file = "kaldi_native_fbank-1.21.2-cp38-cp38-macosx_10_9_x86_64.whl", hash = "sha256:4daa08c82f0b56d3b054f62b027b751ab74b16bca46c51232a7f44849e370a89"},
+    {file = "kaldi_native_fbank-1.21.2-cp38-cp38-macosx_11_0_arm64.whl", hash = "sha256:5a60e0822ad3802db9007fe40bc1ab795d34af5fd33d982171c4558f37420145"},
+    {file = "kaldi_native_fbank-1.21.2-cp38-cp38-manylinux2014_aarch64.manylinux_2_17_aarch64.whl", hash = "sha256:4e75ed21aaccc72eaef6b6a57a7d5b7f5d38817a21a1dc742041eec89ccc5ed0"},
+    {file = "kaldi_native_fbank-1.21.2-cp38-cp38-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:3de59a1e9d4134228e0c1031c3746aac86748c58d78dd322011b8652cb60b59a"},
+    {file = "kaldi_native_fbank-1.21.2-cp38-cp38-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:6de3f5e592f9cfdaacb2a5489ed4b67fbe91a4c1cfd3334dc90d213aeebbc5e8"},
+    {file = "kaldi_native_fbank-1.21.2-cp38-cp38-win32.whl", hash = "sha256:81fb65bf11945409343a6704bdd6579d745eb27dcdbaf501654010644543fe44"},
+    {file = "kaldi_native_fbank-1.21.2-cp38-cp38-win_amd64.whl", hash = "sha256:d994a2d1cb145936ec0c66c8ce49921d773fa89d5050b7e324674889d65af096"},
+    {file = "kaldi_native_fbank-1.21.2-cp39-cp39-macosx_10_9_x86_64.whl", hash = "sha256:0d5f3d60a7df1abdc783c6450102d3845dd210a0e0d7dbadc9d055723973f677"},
+    {file = "kaldi_native_fbank-1.21.2-cp39-cp39-macosx_11_0_arm64.whl", hash = "sha256:40130fab514886510604b2fe94c9213e2da18aa99456a8bcca11ef9bce36810e"},
+    {file = "kaldi_native_fbank-1.21.2-cp39-cp39-manylinux2014_aarch64.manylinux_2_17_aarch64.whl", hash = "sha256:e2ee5fa0b80464628e536f22d4c54cde5ba5152a06ec73d3cb60c16a1b2f8f65"},
+    {file = "kaldi_native_fbank-1.21.2-cp39-cp39-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:56d419d6e98bb865008324222aa708b207cf17c7e5c89d9a880181484434d2c8"},
+    {file = "kaldi_native_fbank-1.21.2-cp39-cp39-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:a430ef1b62f7c897517ae3919413013910fcdd294b618d80fcf20b6962ea86f3"},
+    {file = "kaldi_native_fbank-1.21.2-cp39-cp39-win32.whl", hash = "sha256:95450f255ae4644a00a25e6841f0da5d99bf54773b1bc8b56d31565efc382dfb"},
+    {file = "kaldi_native_fbank-1.21.2-cp39-cp39-win_amd64.whl", hash = "sha256:739c85a3afca3487f5335cd8633ddb81ae3b36c162b586ccf7aac48e9b2742c0"},
+]
 
 [package.source]
 type = "legacy"
@@ -2916,6 +3064,127 @@ url = "https://mirrors.aliyun.com/pypi/simple"
 reference = "aliyun"
 
 [[package]]
+name = "onnx"
+version = "1.12.0"
+description = "Open Neural Network Exchange"
+optional = false
+python-versions = "*"
+groups = ["main"]
+files = [
+    {file = "onnx-1.12.0-cp310-cp310-macosx_10_12_x86_64.whl", hash = "sha256:bdbd2578424c70836f4d0f9dda16c21868ddb07cc8192f9e8a176908b43d694b"},
+    {file = "onnx-1.12.0-cp310-cp310-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:213e73610173f6b2e99f99a4b0636f80b379c417312079d603806e48ada4ca8b"},
+    {file = "onnx-1.12.0-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:9fd2f4e23078df197bb76a59b9cd8f5a43a6ad2edc035edb3ecfb9042093e05a"},
+    {file = "onnx-1.12.0-cp310-cp310-win32.whl", hash = "sha256:23781594bb8b7ee985de1005b3c601648d5b0568a81e01365c48f91d1f5648e4"},
+    {file = "onnx-1.12.0-cp310-cp310-win_amd64.whl", hash = "sha256:81a3555fd67be2518bf86096299b48fb9154652596219890abfe90bd43a9ec13"},
+    {file = "onnx-1.12.0-cp37-cp37m-macosx_10_12_x86_64.whl", hash = "sha256:5578b93dc6c918cec4dee7fb7d9dd3b09d338301ee64ca8b4f28bc217ed42dca"},
+    {file = "onnx-1.12.0-cp37-cp37m-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:c11162ffc487167da140f1112f49c4f82d815824f06e58bc3095407699f05863"},
+    {file = "onnx-1.12.0-cp37-cp37m-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:341c7016e23273e9ffa9b6e301eee95b8c37d0f04df7cedbdb169d2c39524c96"},
+    {file = "onnx-1.12.0-cp37-cp37m-win32.whl", hash = "sha256:3c6e6bcffc3f5c1e148df3837dc667fa4c51999788c1b76b0b8fbba607e02da8"},
+    {file = "onnx-1.12.0-cp37-cp37m-win_amd64.whl", hash = "sha256:8a7aa61aea339bd28f310f4af4f52ce6c4b876386228760b16308efd58f95059"},
+    {file = "onnx-1.12.0-cp38-cp38-macosx_10_12_x86_64.whl", hash = "sha256:56ceb7e094c43882b723cfaa107d85ad673cfdf91faeb28d7dcadacca4f43a07"},
+    {file = "onnx-1.12.0-cp38-cp38-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:b3629e8258db15d4e2c9b7f1be91a3186719dd94661c218c6f5fde3cc7de3d4d"},
+    {file = "onnx-1.12.0-cp38-cp38-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:2d9a7db54e75529160337232282a4816cc50667dc7dc34be178fd6f6b79d4705"},
+    {file = "onnx-1.12.0-cp38-cp38-win32.whl", hash = "sha256:fea5156a03398fe0e23248042d8651c1eaac5f6637d4dd683b4c1f1320b9f7b4"},
+    {file = "onnx-1.12.0-cp38-cp38-win_amd64.whl", hash = "sha256:f66d2996e65f490a57b3ae952e4e9189b53cc9fe3f75e601d50d4db2dc1b1cd9"},
+    {file = "onnx-1.12.0-cp39-cp39-macosx_10_12_x86_64.whl", hash = "sha256:c39a7a0352c856f1df30dccf527eb6cb4909052e5eaf6fa2772a637324c526aa"},
+    {file = "onnx-1.12.0-cp39-cp39-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:fab13feb4d94342aae6d357d480f2e47d41b9f4e584367542b21ca6defda9e0a"},
+    {file = "onnx-1.12.0-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:c7a9b3ea02c30efc1d2662337e280266aca491a8e86be0d8a657f874b7cccd1e"},
+    {file = "onnx-1.12.0-cp39-cp39-win32.whl", hash = "sha256:f8800f28c746ab06e51ef8449fd1215621f4ddba91be3ffc264658937d38a2af"},
+    {file = "onnx-1.12.0-cp39-cp39-win_amd64.whl", hash = "sha256:af90427ca04c6b7b8107c2021e1273227a3ef1a7a01f3073039cae7855a59833"},
+    {file = "onnx-1.12.0.tar.gz", hash = "sha256:13b3e77d27523b9dbf4f30dfc9c959455859d5e34e921c44f712d69b8369eff9"},
+]
+
+[package.dependencies]
+numpy = ">=1.16.6"
+protobuf = ">=3.12.2,<=3.20.1"
+typing-extensions = ">=3.6.2.1"
+
+[package.extras]
+lint = ["clang-format (==13.0.0)", "flake8", "mypy (==0.782)", "types-protobuf (==3.18.4)"]
+
+[package.source]
+type = "legacy"
+url = "https://mirrors.aliyun.com/pypi/simple"
+reference = "aliyun"
+
+[[package]]
+name = "onnxruntime"
+version = "1.22.0"
+description = "ONNX Runtime is a runtime accelerator for Machine Learning models"
+optional = false
+python-versions = ">=3.10"
+groups = ["main"]
+files = [
+    {file = "onnxruntime-1.22.0-cp310-cp310-macosx_13_0_universal2.whl", hash = "sha256:85d8826cc8054e4d6bf07f779dc742a363c39094015bdad6a08b3c18cfe0ba8c"},
+    {file = "onnxruntime-1.22.0-cp310-cp310-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:468c9502a12f6f49ec335c2febd22fdceecc1e4cc96dfc27e419ba237dff5aff"},
+    {file = "onnxruntime-1.22.0-cp310-cp310-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:681fe356d853630a898ee05f01ddb95728c9a168c9460e8361d0a240c9b7cb97"},
+    {file = "onnxruntime-1.22.0-cp310-cp310-win_amd64.whl", hash = "sha256:20bca6495d06925631e201f2b257cc37086752e8fe7b6c83a67c6509f4759bc9"},
+    {file = "onnxruntime-1.22.0-cp311-cp311-macosx_13_0_universal2.whl", hash = "sha256:8d6725c5b9a681d8fe72f2960c191a96c256367887d076b08466f52b4e0991df"},
+    {file = "onnxruntime-1.22.0-cp311-cp311-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:fef17d665a917866d1f68f09edc98223b9a27e6cb167dec69da4c66484ad12fd"},
+    {file = "onnxruntime-1.22.0-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:b978aa63a9a22095479c38371a9b359d4c15173cbb164eaad5f2cd27d666aa65"},
+    {file = "onnxruntime-1.22.0-cp311-cp311-win_amd64.whl", hash = "sha256:03d3ef7fb11adf154149d6e767e21057e0e577b947dd3f66190b212528e1db31"},
+    {file = "onnxruntime-1.22.0-cp312-cp312-macosx_13_0_universal2.whl", hash = "sha256:f3c0380f53c1e72a41b3f4d6af2ccc01df2c17844072233442c3a7e74851ab97"},
+    {file = "onnxruntime-1.22.0-cp312-cp312-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:c8601128eaef79b636152aea76ae6981b7c9fc81a618f584c15d78d42b310f1c"},
+    {file = "onnxruntime-1.22.0-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:6964a975731afc19dc3418fad8d4e08c48920144ff590149429a5ebe0d15fb3c"},
+    {file = "onnxruntime-1.22.0-cp312-cp312-win_amd64.whl", hash = "sha256:c0d534a43d1264d1273c2d4f00a5a588fa98d21117a3345b7104fa0bbcaadb9a"},
+    {file = "onnxruntime-1.22.0-cp313-cp313-macosx_13_0_universal2.whl", hash = "sha256:fe7c051236aae16d8e2e9ffbfc1e115a0cc2450e873a9c4cb75c0cc96c1dae07"},
+    {file = "onnxruntime-1.22.0-cp313-cp313-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:6a6bbed10bc5e770c04d422893d3045b81acbbadc9fb759a2cd1ca00993da919"},
+    {file = "onnxruntime-1.22.0-cp313-cp313-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:9fe45ee3e756300fccfd8d61b91129a121d3d80e9d38e01f03ff1295badc32b8"},
+    {file = "onnxruntime-1.22.0-cp313-cp313-win_amd64.whl", hash = "sha256:5a31d84ef82b4b05d794a4ce8ba37b0d9deb768fd580e36e17b39e0b4840253b"},
+    {file = "onnxruntime-1.22.0-cp313-cp313t-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:0a2ac5bd9205d831541db4e508e586e764a74f14efdd3f89af7fd20e1bf4a1ed"},
+    {file = "onnxruntime-1.22.0-cp313-cp313t-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:64845709f9e8a2809e8e009bc4c8f73b788cee9c6619b7d9930344eae4c9cd36"},
+]
+
+[package.dependencies]
+coloredlogs = "*"
+flatbuffers = "*"
+numpy = ">=1.21.6"
+packaging = "*"
+protobuf = "*"
+sympy = "*"
+
+[package.source]
+type = "legacy"
+url = "https://mirrors.aliyun.com/pypi/simple"
+reference = "aliyun"
+
+[[package]]
+name = "onnxruntime-gpu"
+version = "1.22.0"
+description = "ONNX Runtime is a runtime accelerator for Machine Learning models"
+optional = false
+python-versions = ">=3.10"
+groups = ["main"]
+files = [
+    {file = "onnxruntime_gpu-1.22.0-cp310-cp310-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:965da7d33a54917e8e5176f292cc22640819f328370f4fb86087908745b03708"},
+    {file = "onnxruntime_gpu-1.22.0-cp310-cp310-win_amd64.whl", hash = "sha256:6db51c375ffe3887fe5cce61a0ae054e5e9c1eaf0603f8a106589a819976e4b2"},
+    {file = "onnxruntime_gpu-1.22.0-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:d30c1512f22b1f01bacb4f177d49cbefd23e0f4bef56066f1282992d133e6ff8"},
+    {file = "onnxruntime_gpu-1.22.0-cp311-cp311-win_amd64.whl", hash = "sha256:0f1719f7cca76075b398a7d0466ead62d78fd2b8c0ea053dcf65d80c813103e8"},
+    {file = "onnxruntime_gpu-1.22.0-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:86b064c8f6cbe6da03f51f46351237d985f8fd5eb907d3f9997ea91881131a13"},
+    {file = "onnxruntime_gpu-1.22.0-cp312-cp312-win_amd64.whl", hash = "sha256:89cfd71e1ba17a4668e8770e344f22cde64bfd70b2ad3d03b8a390d4414b5995"},
+    {file = "onnxruntime_gpu-1.22.0-cp313-cp313-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:c3e635792931c5edf48a6a44b8daf4f74a9458e2d60245d24d91e29b6c1c7aa5"},
+    {file = "onnxruntime_gpu-1.22.0-cp313-cp313-win_amd64.whl", hash = "sha256:082c9744b0470448a7d814babe058d0b5074380f32839aa655e5e5f9975f6d94"},
+    {file = "onnxruntime_gpu-1.22.0-cp313-cp313t-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:d1559033601d71023d72a8e279b2575a104de5f46e136f87534206aa2044eb1c"},
+]
+
+[package.dependencies]
+coloredlogs = "*"
+flatbuffers = "*"
+numpy = ">=1.21.6"
+packaging = "*"
+protobuf = "*"
+sympy = "*"
+
+[package.extras]
+cuda = ["nvidia-cuda-nvrtc-cu12 (>=12.0,<13.0)", "nvidia-cuda-runtime-cu12 (>=12.0,<13.0)", "nvidia-cufft-cu12 (>=11.0,<12.0)", "nvidia-curand-cu12 (>=10.0,<11.0)"]
+cudnn = ["nvidia-cudnn-cu12 (>=9.0,<10.0)"]
+
+[package.source]
+type = "legacy"
+url = "https://mirrors.aliyun.com/pypi/simple"
+reference = "aliyun"
+
+[[package]]
 name = "opuslib"
 version = "3.0.1"
 description = "Python bindings to the libopus, IETF low-delay audio codec"
@@ -3787,6 +4056,27 @@ files = [
 
 [package.extras]
 diagrams = ["jinja2", "railroad-diagrams"]
+
+[package.source]
+type = "legacy"
+url = "https://mirrors.aliyun.com/pypi/simple"
+reference = "aliyun"
+
+[[package]]
+name = "pyreadline3"
+version = "3.5.4"
+description = "A python implementation of GNU readline."
+optional = false
+python-versions = ">=3.8"
+groups = ["main"]
+markers = "sys_platform == \"win32\""
+files = [
+    {file = "pyreadline3-3.5.4-py3-none-any.whl", hash = "sha256:eaf8e6cc3c49bcccf145fc6067ba8643d1df34d604a1ec0eccbf7a18e6d3fae6"},
+    {file = "pyreadline3-3.5.4.tar.gz", hash = "sha256:8d57d53039a1c75adba8e50dd3d992b28143480816187ea5efbd5c78e6c885b7"},
+]
+
+[package.extras]
+dev = ["build", "flake8", "mypy", "pytest", "twine"]
 
 [package.source]
 type = "legacy"
@@ -5953,4 +6243,4 @@ reference = "aliyun"
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.10,<4.0"
-content-hash = "2cebb7a187a8769ca78f6f2818c74718bef6d470238bb56117d6536c347bbd72"
+content-hash = "a4f486c530ec3694fe521321c30831fefe03b12252693690deabceff66e8ddd5"
