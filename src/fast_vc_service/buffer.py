@@ -4,6 +4,8 @@ import resampy  # For high-quality resampling
 import opuslib  # For opus encoding/decoding
 import traceback
 
+from fast_vc_service.session import EventType
+
 
 class AudioStreamBuffer:
     """Real-time audio stream buffer for voice conversion
@@ -100,7 +102,7 @@ class AudioStreamBuffer:
         # 计算音频时长并记录 send 事件
         if self.session and audio_chunk:
             chunk_duration_ms = self._calculate_chunk_duration_ms(audio_chunk)
-            self.session.record_send_event(chunk_duration_ms)
+            self.session.record_event(EventType.SEND, chunk_duration_ms)
         
         self.buffer.extend(audio_chunk)
     

@@ -8,7 +8,7 @@ import asyncio
 from typing import Dict, Set
 
 from fast_vc_service.buffer import AudioStreamBuffer, OpusAudioStreamBuffer
-from fast_vc_service.session import Session
+from fast_vc_service.session import Session, EventType
 from fast_vc_service.adapters.protocol_detector import ProtocolDetector
 from fast_vc_service.adapters.protocol_adapter import ProtocolAdapter
 
@@ -198,7 +198,7 @@ async def process_chunk(websocket: WebSocket,
         
         # record output event
         output_duration_ms = len(result) / 16000 * 1000
-        session.record_recv_event(output_duration_ms)
+        session.record_event(EventType.RECV, output_duration_ms)
         
         # Record processing metrics
         e2e_time = (time.perf_counter() - t0) * 1000  # in ms

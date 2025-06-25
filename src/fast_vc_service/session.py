@@ -9,8 +9,15 @@ import json
 import traceback
 import asyncio
 import concurrent.futures
+from enum import Enum
 
 from fast_vc_service.tools.timeline_analyzer import TimelineAnalyzer
+
+
+class EventType(Enum):
+    """事件类型枚举"""
+    SEND = "send"
+    RECV = "recv"
 
 
 class Session:
@@ -30,9 +37,8 @@ class Session:
         self.is_saved = False  # flag to indicate if the session has been saved
         self.is_first_chunk = True 
         
-        # Timeline tracking
-        self.send_timeline = []  # 记录发送音频的时间线
-        self.recv_timeline = []  # 记录接收音频的时间线
+        # Timeline tracking - 统一的timeline格式
+        self.timeline = []  # 统一记录所有事件的时间线
         self.sent_audio_ms = 0.0  # 累计发送的音频时长
         self.recv_audio_ms = 0.0  # 累计接收的音频时长
         self.stats = None  # 分析统计结果
@@ -86,51 +92,32 @@ class Session:
         """
         self.output_wav_record.append(chunk.copy())  # out_data是同一片段内存，不能直接append，必须copy
 
-    def record_send_event(self, chunk_duration_ms):
-        """记录发送事件到时间线
+    def record_event(self, event_type: EventType, chunk_duration_ms):
+        """记录事件到统一时间线
         
         Args:
+            event_type: 事件类型 (EventType.SEND 或 EventType.RECV)
             chunk_duration_ms: 音频块的时长（毫秒）
         """
-        self.sent_audio_ms += chunk_duration_ms
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
-        self.send_timeline.append({
-            'timestamp': timestamp,
-            'cumulative_ms': self.sent_audio_ms
-        })
-        logger.debug(f"{self.session_id} | send | {self.sent_audio_ms:.1f}ms")
         
-    def record_recv_event(self, chunk_duration_ms):
-        """记录接收事件到时间线
+        if event_type == EventType.SEND:
+            self.sent_audio_ms += chunk_duration_ms
+            cumulative_ms = self.sent_audio_ms
+        elif event_type == EventType.RECV:
+            self.recv_audio_ms += chunk_duration_ms
+            cumulative_ms = self.recv_audio_ms
+        else:
+            raise ValueError(f"Unknown event type: {event_type}")
         
-        Args:
-            chunk_duration_ms: 音频块的时长（毫秒）
-        """
-        self.recv_audio_ms += chunk_duration_ms
-        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
-        self.recv_timeline.append({
+        self.timeline.append({
             'timestamp': timestamp,
-            'cumulative_ms': self.recv_audio_ms
+            'cumulative_ms': cumulative_ms,
+            'event_type': event_type.value,
+            'session_id': self.session_id
         })
-        logger.debug(f"{self.session_id} | recv | {self.recv_audio_ms:.1f}ms")
-
-    def analyze_timeline(self):
-        """分析时间线数据并生成统计信息"""
-        if not self.send_timeline or not self.recv_timeline:
-            logger.warning(f"{self.session_id} | Cannot analyze timeline: empty data")
-            return
-            
-        try:
-            self.stats = TimelineAnalyzer.calculate_latency_stats(
-                session_id=self.session_id,
-                send_timeline=self.send_timeline,
-                recv_timeline=self.recv_timeline,
-                output_dir=None  # 在save方法中统一保存
-            )
-            logger.info(f"{self.session_id} | Timeline analysis completed")
-        except Exception as e:
-            logger.error(f"{self.session_id} | Timeline analysis failed: {e}")
-            self.stats = {"error": str(e)}
+        
+        logger.debug(f"{self.session_id} | {event_type.value} | {cumulative_ms:.1f}ms")
 
     async def async_save_and_cleanup(self):
         """异步版本的保存和清理方法"""
@@ -182,18 +169,12 @@ class Session:
             sf.write(str(output_path), np.concatenate(self.output_wav_record), self.sampelrate)
             logger.info(f"{self.session_id} | Output audio saved to : {output_path}")
         
-        # Analyze timeline and save
-        self.analyze_timeline()
         
-        # Save timeline data
-        if self.send_timeline or self.recv_timeline:
+        # Save timeline data (simplified format)
+        if self.timeline:
             timeline_data = {
                 'session_id': self.session_id,
-                'send_timeline': self.send_timeline,
-                'recv_timeline': self.recv_timeline,
-                'merged_timeline': TimelineAnalyzer.merge_timeline(
-                    self.send_timeline, self.recv_timeline, self.session_id
-                )
+                'merged_timeline': self.timeline
             }
             
             timeline_path = daily_save_dir / f"{self.session_id}_timeline.json"
@@ -229,8 +210,7 @@ class Session:
         self.output_wav_record.clear()
         
         # Clear timeline data
-        self.send_timeline.clear()
-        self.recv_timeline.clear()
+        self.timeline.clear()
         self.stats = None
         
         # Force GPU memory cleanup
