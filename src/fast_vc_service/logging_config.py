@@ -95,7 +95,7 @@ class LoggingSetup:
         # 添加 Uvicorn 日志文件 - 包含实例名
         logger.add(
             str(log_dir / f"uvicorn-{instance_name}.log"),
-            rotation="1 MB",
+            rotation="5 MB",
             level="INFO",
             enqueue=True,
             backtrace=True,
@@ -107,7 +107,7 @@ class LoggingSetup:
         # 添加应用日志文件 - 包含实例名
         logger.add(
             str(log_dir / f"app-{instance_name}.log"),
-            rotation="1 MB", 
+            rotation="5 MB", 
             level="INFO",
             enqueue=True,
             backtrace=True,
