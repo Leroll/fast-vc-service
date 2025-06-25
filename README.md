@@ -93,6 +93,12 @@ python examples/websocket/ws_client.py \
 # 📝 Version Updates
 <!-- don't forget to change version in __init__ and toml -->
 
+**2025-06-26 - v0.1.2**: Persistent Storage Optimization   
+
+  - Optimized session persistent storage module with asynchronous processing
+  - Separated time-consuming timeline statistical analysis module to improve response speed
+  - Optimized timeline recording mechanism to reduce storage overhead
+
 **2025-06-19 - v0.1.1**: First Packet Performance Optimization   
 
   - Added performance monitoring API endpoint /tools/performance-report for real-time performance metrics
@@ -111,8 +117,6 @@ python examples/websocket/ws_client.py \
   - Concurrent performance testing framework
 
 # 🚧 TODO
-- [ ] tag - v0.1.2 - Optimize persistent storage module - v2025-06
-    - [ ] Fix blocking issues in session data saving and analysis modules
 - [ ] tag - v0.1.3 - Add adaptive pitch extraction in streaming scenarios - v2025-07-10
     - [ ] Create Docker images for easy deployment
     - [ ] Change VAD to use ONNX-GPU to improve inference speed

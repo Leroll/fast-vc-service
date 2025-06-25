@@ -92,6 +92,12 @@ python examples/websocket/ws_client.py \
 # 📝 版本更新 
 <!-- don't forget to change version in __init__ and toml -->
 
+**2025-06-26 - v0.1.2**: 持久化存储优化   
+
+  - 优化session持久化存储模块，改为异步处理
+  - 分离耗时的时间线统计分析模块，提升响应速度
+  - 优化时间线记录机制，减少存储开销
+
 **2025-06-19 - v0.1.1**: 首包性能优化   
 
   - 新增查询性能监控接口 /tools/performance-report，支持查询实时性能指标
@@ -110,8 +116,6 @@ python examples/websocket/ws_client.py \
   - 并发性能测试框架
 
 # 🚧 TODO 
-- [ ] tag - v0.1.2 - 优化持久化存储模块 -  v2025-06-26
-    - [ ] 解决session数据保存与分析模块的阻塞问题
 - [ ] tag - v0.1.3 - 添加流式场景下，音高自适应提取功能 - v2025-07-10
     - [ ] 制作镜像，方便部署
     - [ ] vad 改用 onnx-gpu, 以提升推理速度
