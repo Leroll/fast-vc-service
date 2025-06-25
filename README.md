@@ -111,7 +111,9 @@ python examples/websocket/ws_client.py \
   - Concurrent performance testing framework
 
 # 🚧 TODO
-- [ ] tag - v0.1.2 - Add adaptive pitch extraction in streaming scenarios - v2025-06-26
+- [ ] tag - v0.1.2 - Optimize persistent storage module - v2025-06
+    - [ ] Fix blocking issues in session data saving and analysis modules
+- [ ] tag - v0.1.3 - Add adaptive pitch extraction in streaming scenarios - v2025-07-10
     - [ ] Create Docker images for easy deployment
     - [ ] Change VAD to use ONNX-GPU to improve inference speed
     - [ ] Add adaptive pitch extraction functionality with corresponding toggle switch

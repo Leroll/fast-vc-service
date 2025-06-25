@@ -364,7 +364,6 @@ class RealtimeVoiceConversion:
         
         vad_model = self.models["vad_model"]
         res = vad_model.generate(input=indata, cache=session.vad_cache, is_final=False, chunk_size=self.vad_chunk_size)  # ---- 改成优化后的函数
-        logger.info(f"VAD result: {res}")
         res_value = res[0]["value"]
         if len(res_value) % 2 == 1 and not session.vad_speech_detected:
             session.vad_speech_detected = True

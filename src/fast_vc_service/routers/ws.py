@@ -307,10 +307,12 @@ async def websocket_endpoint(websocket: WebSocket):
             
             if buffer:
                 buffer.clear()
+                logger.info(f"{session_log_id} | Audio buffer cleared. ")
+            
             if session:
-                session.save()
-                session.cleanup()
-            logger.info(f"{session_log_id} | Cleanup buffer and session completed. ")
+                # 创建后台任务防止阻塞
+                asyncio.create_task(session.async_save_and_cleanup())
+                logger.info(f"{session_log_id} | Session save and cleanup task created")
                                     
         except Exception as e:
             logger.error(f"{session_log_id} | Error during cleanup: \n{traceback.format_exc()}")

@@ -6,6 +6,9 @@ from loguru import logger
 from pathlib import Path
 from datetime import datetime
 import json
+import traceback
+import asyncio
+import concurrent.futures
 
 from fast_vc_service.tools.timeline_analyzer import TimelineAnalyzer
 
@@ -128,6 +131,29 @@ class Session:
         except Exception as e:
             logger.error(f"{self.session_id} | Timeline analysis failed: {e}")
             self.stats = {"error": str(e)}
+
+    async def async_save_and_cleanup(self):
+        """异步版本的保存和清理方法"""
+        try:
+            loop = asyncio.get_event_loop()
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                await loop.run_in_executor(executor, self.save_and_cleanup)
+        except Exception as e:
+            logger.error(f"{self.session_id} | Error in async save and cleanup: {traceback.format_exc()}")
+
+    def save_and_cleanup(self):
+        """保存和清理"""
+        try:
+            self.save()
+            logger.info(f"{self.session_id} | Session data saved successfully")
+        except Exception as e:
+            logger.error(f"{self.session_id} | Error saving session data: {e}")
+        finally:
+            try:
+                self.cleanup()
+                logger.info(f"{self.session_id} | Session cleanup completed")
+            except Exception as cleanup_error:
+                logger.error(f"{self.session_id} | Error during cleanup: {traceback.format_exc()}")
 
     def save(self):
         """save the input and output audio to files with hierarchical date structure
