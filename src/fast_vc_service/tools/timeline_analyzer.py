@@ -432,7 +432,7 @@ class TimelineAnalyzer:
         return averaged_stats
     
     @staticmethod
-    def analyze_from_timeline_file(timeline_json_path, prefill_time=None):
+    def analyze_from_timeline_file(timeline_json_path, prefill_time=375):
         """
         从timeline.json文件中读取数据并计算延迟统计信息，保存到timeline文件所在目录
         
@@ -505,7 +505,7 @@ class TimelineAnalyzer:
             logger.error(f"Error analyzing timeline from file {timeline_json_path}: {e}")
 
     @staticmethod
-    def batch_analyze_timeline_files(timeline_dir, file_pattern="*_timeline.json", prefill_time=None):
+    def batch_analyze_timeline_files(timeline_dir, file_pattern="*_timeline.json", prefill_time=375):
         """
         批量分析目录中的timeline文件，保存到各自的timeline文件夹
         
@@ -549,12 +549,10 @@ class TimelineAnalyzer:
 if __name__ == "__main__":
     # 分析单个文件
     stats = TimelineAnalyzer.analyze_from_timeline_file(
-        timeline_json_path="/path/to/session_123_timeline.json",
-        output_dir="/path/to/output"
+        timeline_json_path="/path/to/session_123_timeline.json"
     )
 
     # 批量分析目录中的所有timeline文件
-    results = TimelineAnalyzer.batch_analyze_timeline_files(
-        timeline_dir="/path/to/timeline/files",
-        output_dir="/path/to/output"
-    )
+    # results = TimelineAnalyzer.batch_analyze_timeline_files(
+    #     timeline_dir="/path/to/timeline/files"
+    # )
