@@ -430,3 +430,131 @@ class TimelineAnalyzer:
             }
         
         return averaged_stats
+    
+    @staticmethod
+    def analyze_from_timeline_file(timeline_json_path, prefill_time=None):
+        """
+        从timeline.json文件中读取数据并计算延迟统计信息，保存到timeline文件所在目录
+        
+        Args:
+            timeline_json_path: timeline.json文件路径
+            prefill_time: Prefill时间（毫秒），可选，默认使用配置文件中的值
+        """
+        try:
+            timeline_path = Path(timeline_json_path)
+            if not timeline_path.exists():
+                logger.error(f"Timeline file not found: {timeline_json_path}")
+                return
+            
+            # 读取timeline.json文件
+            with open(timeline_path, 'r') as f:
+                timeline_data = json.load(f)
+            
+            # 检查必要字段
+            if 'merged_timeline' not in timeline_data:
+                logger.error(f"No merged_timeline found in the timeline file: {timeline_json_path}")
+                return
+            
+            if 'session_id' not in timeline_data:
+                logger.error(f"No session_id found in the timeline file: {timeline_json_path}")
+                return
+            
+            session_id = timeline_data['session_id']
+            merged_timeline = timeline_data['merged_timeline']
+            
+            # 从merged_timeline中分离send和recv事件
+            send_timeline = []
+            recv_timeline = []
+            
+            for event in merged_timeline:
+                event_data = {
+                    'timestamp': event['timestamp'],
+                    'cumulative_ms': event['cumulative_ms']
+                }
+                
+                if event['event_type'] == 'send':
+                    send_timeline.append(event_data)
+                elif event['event_type'] == 'recv':
+                    recv_timeline.append(event_data)
+            
+            # 检查是否有足够的数据
+            if not send_timeline or not recv_timeline:
+                logger.error(f"Insufficient timeline data - send events: {len(send_timeline)}, recv events: {len(recv_timeline)}")
+                return
+            
+            logger.info(f"Analyzing timeline for session {session_id} from {timeline_path}")
+            logger.info(f"Found {len(send_timeline)} send events and {len(recv_timeline)} recv events")
+            
+            # 获取timeline文件所在目录作为输出目录
+            output_dir = timeline_path.parent
+            
+            # 调用原有的统计函数，利用其保存功能
+            TimelineAnalyzer.calculate_latency_stats(
+                session_id=session_id,
+                send_timeline=send_timeline,
+                recv_timeline=recv_timeline,
+                prefill_time=prefill_time,
+                output_dir=output_dir
+            )
+            
+            logger.info(f"Timeline analysis completed and saved for session {session_id}")
+            
+        except json.JSONDecodeError as e:
+            logger.error(f"Failed to parse JSON file {timeline_json_path}: {e}")
+        except Exception as e:
+            logger.error(f"Error analyzing timeline from file {timeline_json_path}: {e}")
+
+    @staticmethod
+    def batch_analyze_timeline_files(timeline_dir, file_pattern="*_timeline.json", prefill_time=None):
+        """
+        批量分析目录中的timeline文件，保存到各自的timeline文件夹
+        
+        Args:
+            timeline_dir: 包含timeline文件的目录路径
+            file_pattern: 文件名匹配模式，默认为"*_timeline.json"
+            prefill_time: Prefill时间（毫秒），可选
+        """
+        timeline_dir = Path(timeline_dir)
+        if not timeline_dir.exists():
+            logger.error(f"Directory not found: {timeline_dir}")
+            return
+        
+        timeline_files = list(timeline_dir.glob(file_pattern))
+        if not timeline_files:
+            logger.error(f"No timeline files found in {timeline_dir} with pattern {file_pattern}")
+            return
+        
+        logger.info(f"Found {len(timeline_files)} timeline files to analyze")
+        
+        successful_analyses = 0
+        failed_analyses = 0
+        
+        for timeline_file in timeline_files:
+            logger.info(f"Analyzing {timeline_file.name}")
+            
+            try:
+                TimelineAnalyzer.analyze_from_timeline_file(
+                    timeline_json_path=timeline_file,
+                    prefill_time=prefill_time
+                )
+                successful_analyses += 1
+                logger.info(f"Successfully analyzed {timeline_file.name}")
+            except Exception as e:
+                failed_analyses += 1
+                logger.error(f"Failed to analyze {timeline_file.name}: {e}")
+        
+        logger.info(f"Batch analysis completed: {successful_analyses} successful, {failed_analyses} failed")
+
+    
+if __name__ == "__main__":
+    # 分析单个文件
+    stats = TimelineAnalyzer.analyze_from_timeline_file(
+        timeline_json_path="/path/to/session_123_timeline.json",
+        output_dir="/path/to/output"
+    )
+
+    # 批量分析目录中的所有timeline文件
+    results = TimelineAnalyzer.batch_analyze_timeline_files(
+        timeline_dir="/path/to/timeline/files",
+        output_dir="/path/to/output"
+    )
