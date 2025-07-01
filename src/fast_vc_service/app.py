@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 import uvicorn
+import os
 from loguru import logger
 from pydantic import BaseModel
 import traceback
@@ -15,7 +16,8 @@ def create_app() -> FastAPI:
     
     # Initialize logging
     cfg = Config().get_config()
-    LoggingSetup.setup(cfg.app.log_dir)
+    worker_id = os.getpid()
+    LoggingSetup.setup(cfg.app.log_dir, worker_pid=worker_id)
     logger.info("-" * 21 + "initilizing service" + "-" * 21)
     
     # Create FastAPI application
