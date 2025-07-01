@@ -5,6 +5,9 @@ import numpy as np
 import traceback
 import json
 import asyncio
+import os
+import fcntl
+from pathlib import Path
 from typing import Dict, Set
 
 from fast_vc_service.buffer import AudioStreamBuffer, OpusAudioStreamBuffer
@@ -16,28 +19,122 @@ websocket_router = APIRouter()
 
 
 class ConnectionMonitor:
-    """WebSocket connection monitor."""
-    
+    """WebSocket connection monitor
+    """
     def __init__(self):
         self._active_connections: Set[str] = set()
         self._lock = asyncio.Lock()  # 异步锁，防止并发修改
+        
+        # 跨进程并发监控相关
+        self._worker_id = os.getpid()
+        self._instance_file = Path("temp") / "connections.json"
+        self._init_instance_file()  # 初始化实例文件
     
-    async def add_connection(self, session_id: str) -> int:
-        """add a new connection"""
+    def _init_instance_file(self):
+        try:
+            if not self._instance_file.exists():
+                with open(self._instance_file, 'w') as f:
+                    fcntl.flock(f.fileno(), fcntl.LOCK_EX)
+                    json.dump({}, f)
+                    fcntl.flock(f.fileno(), fcntl.LOCK_UN)
+        except Exception as e:
+            logger.error(f"Failed to initialize instance connection file: {e}")
+    
+    def _update_instance_connections(self, operation: str, session_id: str = None):
+        """更新实例级别的连接信息
+        """
+        try:
+            with open(self._instance_file, 'r+') as f:
+                fcntl.flock(f.fileno(), fcntl.LOCK_EX)
+                try:
+                    data = json.load(f)
+                except json.JSONDecodeError:
+                    data = {}
+                
+                worker_key = str(self._worker_id)
+                
+                if operation == "add":
+                    if worker_key not in data:
+                        data[worker_key] = []
+                    if session_id not in data[worker_key]:
+                        data[worker_key].append(session_id)
+                elif operation == "remove":
+                    if worker_key in data and session_id in data[worker_key]:
+                        data[worker_key].remove(session_id)
+                    # 清理空的worker记录
+                    if worker_key in data and not data[worker_key]:
+                        del data[worker_key]
+                elif operation == "cleanup":
+                    # 清理当前worker的所有连接
+                    if worker_key in data:
+                        del data[worker_key]
+                
+                # 重写文件
+                f.seek(0)
+                f.truncate()
+                json.dump(data, f)
+                fcntl.flock(f.fileno(), fcntl.LOCK_UN)
+                
+        except Exception as e:
+            logger.error(f"Failed to update instance connections: {e}")
+    
+    def _get_instance_connection_count(self) -> int:
+        """获取实例级别的总连接数
+        """
+        try:
+            if not self._instance_file.exists():
+                return 0
+                
+            with open(self._instance_file, 'r') as f:
+                fcntl.flock(f.fileno(), fcntl.LOCK_SH)
+                try:
+                    data = json.load(f)
+                    total_connections = sum(len(connections) for connections in data.values())
+                    return total_connections
+                except json.JSONDecodeError:
+                    return 0
+                finally:
+                    fcntl.flock(f.fileno(), fcntl.LOCK_UN)
+        except Exception as e:
+            logger.error(f"Failed to get instance connection count: {e}")
+            return 0
+
+    async def add_connection(self, session_id: str) -> tuple[int, int]:
+        """add a new connection, returns (worker_count, instance_count)
+        """
         async with self._lock:
             self._active_connections.add(session_id)
-            return len(self._active_connections)
+            worker_count = len(self._active_connections)
+            
+        # 更新实例级别连接
+        self._update_instance_connections("add", session_id)
+        instance_count = self._get_instance_connection_count()
+        
+        return worker_count, instance_count
     
-    async def remove_connection(self, session_id: str) -> int:
-        """remove a connection"""
+    async def remove_connection(self, session_id: str) -> tuple[int, int]:
+        """remove a connection, returns (worker_count, instance_count)"""
         async with self._lock:
             self._active_connections.discard(session_id)
-            return len(self._active_connections)
+            worker_count = len(self._active_connections)
+            
+        # 更新实例级别连接
+        self._update_instance_connections("remove", session_id)
+        instance_count = self._get_instance_connection_count()
+        
+        return worker_count, instance_count
     
-    async def get_connection_count(self) -> int:
-        """Get the current number of active connections."""
+    async def get_connection_count(self) -> tuple[int, int]:
+        """Get the current number of active connections (worker_count, instance_count)."""
         async with self._lock:
-            return len(self._active_connections)
+            worker_count = len(self._active_connections)
+            
+        instance_count = self._get_instance_connection_count()
+        return worker_count, instance_count
+    
+    def cleanup_worker_connections(self):
+        """清理当前worker的所有连接记录（在worker关闭时调用）"""
+        self._update_instance_connections("cleanup")
         
 connection_monitor = ConnectionMonitor()
 
@@ -162,9 +259,9 @@ async def handle_initial_configuration(websocket: WebSocket):
     else:
         logger.info(f"{session_id} | Skipping ready signal for simple protocol")
     
-    current_connections = await connection_monitor.add_connection(session_id)
+    worker_connections, instance_connections = await connection_monitor.add_connection(session_id)
     logger.info(f"{session_id} | Ready with audio format: sample_rate={sample_rate}, bit_depth={bit_depth}, channels={channels}, encoding={encoding}")
-    logger.info(f"{session_id} | Active connections: {current_connections}")
+    logger.info(f"{session_id} | Active connections - Worker: {worker_connections}, Instance: {instance_connections}")
     
     return session, buffer, adapter
 
@@ -302,8 +399,8 @@ async def websocket_endpoint(websocket: WebSocket):
                 logger.info(f"{session_log_id} | WebSocket connection closed in finally. ")
             
             if connection_added and session:
-                remaining_connections = await connection_monitor.remove_connection(session.session_id)
-                logger.info(f"{session_log_id} | Connection removed. Remaining active connections: {remaining_connections}")
+                worker_remaining, instance_remaining = await connection_monitor.remove_connection(session.session_id)
+                logger.info(f"{session_log_id} | Connection removed - Worker: {worker_remaining}, Instance: {instance_remaining}")
             
             if buffer:
                 buffer.clear()

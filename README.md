@@ -119,6 +119,7 @@ python examples/websocket/ws_client.py \
 # 🚧 TODO
 - [ ] tag - v0.1.3 - Add adaptive pitch extraction in streaming scenarios - v2025-07-10
     - [x] Add PID record to logs
+    - [x] Add instance concurrency monitoring feature
     - [ ] Create Docker images for easy deployment
     - [ ] Change VAD to use ONNX-GPU to improve inference speed
     - [ ] Add adaptive pitch extraction functionality with corresponding toggle switch

@@ -19,6 +19,12 @@ def get_pid_file() -> Path:
     temp_dir = PROJECT_ROOT / "temp"
     temp_dir.mkdir(exist_ok=True)
     return temp_dir / "fast_vc_service.json"
+
+def get_connection_file() -> Path:
+    """Get the connection file path in project temp directory."""
+    temp_dir = PROJECT_ROOT / "temp"
+    temp_dir.mkdir(exist_ok=True)
+    return temp_dir / "connections.json"
     
 @click.group()
 def cli():
@@ -75,6 +81,11 @@ def serve(env_profile):
         if pid_file.exists():
             pid_file.unlink()
             click.echo(click.style("🧹 Cleaned up service info file", fg="cyan"))
+        
+        connection_file = get_connection_file()
+        if connection_file.exists():
+            connection_file.unlink()
+            click.echo(click.style("🧹 Cleaned up connection info file", fg="cyan"))
 
 @cli.command()
 @click.option("--force", "-f", is_flag=True, help="Force shutdown using system signal")
