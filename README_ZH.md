@@ -119,15 +119,15 @@ python examples/websocket/ws_client.py \
 - [ ] tag - v0.1.3 - 添加流式场景下，音高自适应提取功能 - v2025-07-10
     - [x] 日志新增PID记录
     - [x] 增加实例并发监控功能
-    - [ ] 制作镜像，方便部署
-    - [ ] vad 改用 onnx-gpu, 以提升推理速度
     - [ ] 增加音高自适应提取功能，并添加对应开关
-    - [ ] 完成对seed-vc V2.0 模型支持
 - [ ] tag - v0.2 - 提升推理时效，降低RTF - v2025-xx
+    - [ ] vad 改用 onnx-gpu, 以提升推理速度
+    - [ ] 完成对seed-vc V2.0 模型支持
     - [ ] 探索降低模型推理时延的方案（比如新的模型架构、量化等）
     - [ ] reference 使用torchaudio 直接读取到GPU中，省去转移的步骤。
     - [ ] file_vc，针对最后一个block的问题
-    - [ ] 制作AutoDL镜像
+    - [ ] 制作镜像，以及AutoDL镜像
+
 
 # 🙏 致谢 
 - [Seed-VC](https://github.com/Plachtaa/seed-vc) - 提供了强大的底层变声模型

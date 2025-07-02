@@ -120,15 +120,14 @@ python examples/websocket/ws_client.py \
 - [ ] tag - v0.1.3 - Add adaptive pitch extraction in streaming scenarios - v2025-07-10
     - [x] Add PID record to logs
     - [x] Add instance concurrency monitoring feature
-    - [ ] Create Docker images for easy deployment
-    - [ ] Change VAD to use ONNX-GPU to improve inference speed
     - [ ] Add adaptive pitch extraction functionality with corresponding toggle switch
-    - [ ] Complete support for seed-vc V2.0 model
 - [ ] tag - v0.2 - Improve inference efficiency, reduce RTF - v2025-xx
+    - [ ] Change VAD to use ONNX-GPU to improve inference speed
+    - [ ] Complete support for seed-vc V2.0 model
     - [ ] Explore solutions to reduce model inference latency (e.g., new model architectures, quantization, etc.)
     - [ ] Use torchaudio to directly read reference audio to GPU, eliminating transfer steps
     - [ ] Fix file_vc issue with the last block
-    - [ ] Create AutoDL images
+    - [ ] Create Docker image, AutoDL image
 
 # 🙏 Acknowledgements
 - [Seed-VC](https://github.com/Plachtaa/seed-vc) - Provides powerful underlying voice conversion model

@@ -54,8 +54,6 @@ class RealtimeVoiceConversion:
         
         self.chunk_time = deque(maxlen=self.cfg.max_tracking_counter)  # time cost of one chunk
         
-        self.tracking_counter = 0  # counter which triggers performance report
-        
     def _performance_report(self):
         """Report module timing statistics"""
         msg = "\n"
@@ -656,11 +654,6 @@ class RealtimeVoiceConversion:
         self.chunk_time.append(chunk_time)
         time_msg = " | ".join([f"{k}: {v*1000:0.1f}" for k, v in time_records.items()])
         time_msg = f"{is_speech_detected} | chunk: {chunk_time*1000:0.1f} | " + time_msg
-        
-        self.tracking_counter += 1  # 每chunk +1 
-        if self.tracking_counter >= self.cfg.max_tracking_counter:
-            self._performance_report()
-            self.tracking_counter = 0
             
         return time_msg
 
