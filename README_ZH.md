@@ -92,7 +92,7 @@ python examples/websocket/ws_client.py \
 # 📝 版本更新 
 <!-- don't forget to change version in __init__ and toml -->
 
-**2025-07-02 - v0.1.3**: 增加进行与实例级别并发监控  
+**2025-07-02 - v0.1.3**: 增加进程与实例级别并发监控  
 
   - 日志新增PID记录，便于追踪实例
   - 增加实例并发监控功能，支持实时查看当前并发量
