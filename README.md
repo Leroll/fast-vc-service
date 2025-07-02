@@ -93,6 +93,12 @@ python examples/websocket/ws_client.py \
 # 📝 Version Updates
 <!-- don't forget to change version in __init__ and toml -->
 
+**2025-07-02 - v0.1.3**: Added Process and Instance Level Concurrency Monitoring  
+
+  - Added PID record to logs for easier instance tracking
+  - Added instance concurrency monitoring feature for real-time concurrency viewing
+  - Optimized performance analysis interface to reduce impact on real-time performance
+
 **2025-06-26 - v0.1.2**: Persistent Storage Optimization   
 
   - Optimized session persistent storage module with asynchronous processing
@@ -105,6 +111,9 @@ python examples/websocket/ws_client.py \
   - Enhanced timing logs for better performance bottleneck analysis
   - Mitigated delay issue caused by first audio packet model invocation
 
+
+<details>
+<summary>View Historical Versions</summary>
 **2025-06-15 - v0.1.0**: Basic Service Framework   
 
   Completed the core framework construction of real-time voice conversion service based on Seed-VC, implementing WebSocket streaming inference, performance monitoring, multi-format audio support and other complete basic functions.   
@@ -115,13 +124,13 @@ python examples/websocket/ws_client.py \
   - Flexible configuration management and environment variable support 
   - Multi-Worker concurrent processing capability
   - Concurrent performance testing framework
+</details>
+
+
 
 # 🚧 TODO
-- [ ] tag - v0.1.3 - Add adaptive pitch extraction in streaming scenarios - v2025-07-10
-    - [x] Add PID record to logs
-    - [x] Add instance concurrency monitoring feature
-    - [ ] Add adaptive pitch extraction functionality with corresponding toggle switch
 - [ ] tag - v0.2 - Improve inference efficiency, reduce RTF - v2025-xx
+    - [ ] Add adaptive pitch extraction functionality with corresponding toggle switch
     - [ ] Change VAD to use ONNX-GPU to improve inference speed
     - [ ] Complete support for seed-vc V2.0 model
     - [ ] Explore solutions to reduce model inference latency (e.g., new model architectures, quantization, etc.)
