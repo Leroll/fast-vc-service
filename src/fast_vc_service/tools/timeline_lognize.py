@@ -9,7 +9,7 @@ from datetime import datetime
 import sys
 
 
-def analyze_timeline(json_path, use_colors=True, prefill_time=375):
+def analyze_timeline(json_path, use_colors=True, prefill_time=375, send_slow_threshold=100, recv_slow_threshold=700, latency_slow_threshold=350):
     """
     Analyze timeline data from JSON file
     
@@ -17,6 +17,9 @@ def analyze_timeline(json_path, use_colors=True, prefill_time=375):
         json_path: Path to the JSON file
         use_colors: Whether to use ANSI color codes for output
         prefill_time: Time correction in ms to apply to recv events (default: 375)
+        send_slow_threshold: Threshold for slow send events in ms (default: 100)
+        recv_slow_threshold: Threshold for slow recv events in ms (default: 700)
+        latency_slow_threshold: Threshold for slow latency in ms (default: 350)
     """
     try:
         # Load JSON data
@@ -90,7 +93,8 @@ def analyze_timeline(json_path, use_colors=True, prefill_time=375):
             if previous_send_time is not None:
                 interval_ms = (current_send_time - previous_send_time).total_seconds() * 1000
                 send_delay_measurements.append(interval_ms)
-                interval_info = f" | {interval_ms:.0f}ms"
+                slow_mark = f" {RED}[SLOW]{RESET}" if interval_ms > send_slow_threshold else ""
+                interval_info = f" | {interval_ms:.0f}ms{slow_mark}"
             else:
                 interval_info = f" | first"
             
@@ -107,7 +111,8 @@ def analyze_timeline(json_path, use_colors=True, prefill_time=375):
             if previous_recv_time is not None:
                 recv_interval_ms = (current_recv_time - previous_recv_time).total_seconds() * 1000
                 recv_delay_measurements.append(recv_interval_ms)
-                recv_interval_info = f" | {GREEN}{recv_interval_ms:.0f}ms{RESET}"
+                slow_mark = f" {RED}[SLOW]{RESET}" if recv_interval_ms > recv_slow_threshold else ""
+                recv_interval_info = f" | {GREEN}{recv_interval_ms:.0f}ms{RESET}{slow_mark}"
             else:
                 recv_interval_info = f" | {GREEN}first{RESET}"
             
@@ -128,7 +133,8 @@ def analyze_timeline(json_path, use_colors=True, prefill_time=375):
                 send_time = datetime.fromisoformat(corresponding_send['timestamp'].replace('Z', '+00:00'))
                 latency_ms = (recv_time - send_time).total_seconds() * 1000
                 latency_measurements.append(latency_ms)
-                latency_info = f" | {GREEN}{latency_ms:.0f}ms{RESET}"
+                slow_mark = f" {RED}[SLOW]{RESET}" if latency_ms > latency_slow_threshold else ""
+                latency_info = f" | {GREEN}{latency_ms:.0f}ms{RESET}{slow_mark}"
             
             # Green color for recv events
             print(f"{GREEN}{row['timestamp']} | {row['event_type']} | {cumulative_ms} | {row['session_id']}{RESET}{recv_interval_info}{latency_info}")
@@ -276,13 +282,31 @@ def main():
         default=375,
         help="Prefill time correction in ms to apply to recv events (default: 375)"
     )
+    parser.add_argument(
+        "--send-slow-threshold", 
+        type=float,
+        default=100,
+        help="Threshold for slow send events in ms (default: 100)"
+    )
+    parser.add_argument(
+        "--recv-slow-threshold", 
+        type=float,
+        default=700,
+        help="Threshold for slow recv events in ms (default: 700)"
+    )
+    parser.add_argument(
+        "--latency-slow-threshold", 
+        type=float,
+        default=350,
+        help="Threshold for slow latency in ms (default: 350)"
+    )
     
     args = parser.parse_args()
     
     # Use colors unless --no-color is specified
     use_colors = not args.no_color
     
-    analyze_timeline(args.json_path, use_colors, args.prefill_time)
+    analyze_timeline(args.json_path, use_colors, args.prefill_time, args.send_slow_threshold, args.recv_slow_threshold, args.latency_slow_threshold)
 
 
 if __name__ == "__main__":
@@ -291,5 +315,6 @@ if __name__ == "__main__":
         python timeline_lognize.py path/to/timeline.json > output.txt
         python timeline_lognize.py path/to/timeline.json --no-color
         python timeline_lognize.py path/to/timeline.json --prefill-time 375
+        python timeline_lognize.py path/to/timeline.json --send-slow-threshold 100 --recv-slow-threshold 700 --latency-slow-threshold 350
     """
     main()
