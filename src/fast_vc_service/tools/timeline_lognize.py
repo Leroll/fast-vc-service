@@ -158,6 +158,19 @@ def analyze_timeline(json_path, use_colors=True, prefill_time=375):
         print(f"{YELLOW}P95: {send_delay_series.quantile(0.95):.2f} ms{RESET}")
         print(f"{YELLOW}P99: {send_delay_series.quantile(0.99):.2f} ms{RESET}")
         
+        # Send event delay distribution
+        print(f"\n{BLUE}Send Event Delay Distribution:{RESET}")
+        bins = [0, 50, 100, 200, 500, 600, 700, 800, 1000, float('inf')]
+        labels = ['0-50ms', '50-100ms', '100-200ms', '200-500ms', '500-600ms', '600-700ms', '700-800ms', '800-1000ms', '>1000ms']
+        
+        for i, (lower, upper) in enumerate(zip(bins[:-1], bins[1:])):
+            if upper == float('inf'):
+                count = sum(1 for x in send_delay_measurements if x >= lower)
+            else:
+                count = sum(1 for x in send_delay_measurements if lower <= x < upper)
+            percentage = (count / len(send_delay_measurements)) * 100
+            print(f"{YELLOW}{labels[i]}: {count} ({percentage:.1f}%){RESET}")
+        
         print(f"{BLUE}{'='*60}{RESET}")
     else:
         print(f"\n{YELLOW}No send event delay measurements found{RESET}")
@@ -183,6 +196,19 @@ def analyze_timeline(json_path, use_colors=True, prefill_time=375):
         print(f"{YELLOW}P90: {recv_delay_series.quantile(0.9):.2f} ms{RESET}")
         print(f"{YELLOW}P95: {recv_delay_series.quantile(0.95):.2f} ms{RESET}")
         print(f"{YELLOW}P99: {recv_delay_series.quantile(0.99):.2f} ms{RESET}")
+        
+        # Recv event delay distribution
+        print(f"\n{BLUE}Recv Event Delay Distribution:{RESET}")
+        bins = [0, 50, 100, 200, 500, 600, 700, 800, 1000, float('inf')]
+        labels = ['0-50ms', '50-100ms', '100-200ms', '200-500ms', '500-600ms', '600-700ms', '700-800ms', '800-1000ms', '>1000ms']
+        
+        for i, (lower, upper) in enumerate(zip(bins[:-1], bins[1:])):
+            if upper == float('inf'):
+                count = sum(1 for x in recv_delay_measurements if x >= lower)
+            else:
+                count = sum(1 for x in recv_delay_measurements if lower <= x < upper)
+            percentage = (count / len(recv_delay_measurements)) * 100
+            print(f"{YELLOW}{labels[i]}: {count} ({percentage:.1f}%){RESET}")
         
         print(f"{BLUE}{'='*60}{RESET}")
     else:
@@ -212,8 +238,8 @@ def analyze_timeline(json_path, use_colors=True, prefill_time=375):
         
         # Latency distribution
         print(f"\n{BLUE}Latency Distribution:{RESET}")
-        bins = [0, 50, 100, 200, 500, 1000, float('inf')]
-        labels = ['0-50ms', '50-100ms', '100-200ms', '200-500ms', '500-1000ms', '>1000ms']
+        bins = [0, 50, 100, 200, 500, 600, 700, 800, 1000, float('inf')]
+        labels = ['0-50ms', '50-100ms', '100-200ms', '200-500ms', '500-600ms', '600-700ms', '700-800ms', '800-1000ms', '>1000ms']
         
         for i, (lower, upper) in enumerate(zip(bins[:-1], bins[1:])):
             if upper == float('inf'):
