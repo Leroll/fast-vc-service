@@ -207,7 +207,7 @@ def analyze_timeline(json_path, use_colors=True, prefill_time=375, send_slow_thr
             else:
                 count = sum(1 for x in send_delay_measurements if lower <= x < upper)
             percentage = (count / len(send_delay_measurements)) * 100
-            print(f"{YELLOW}{labels[i]}: {count} ({percentage:.1f}%){RESET}")
+            print(f"{YELLOW}{labels[i]}: {count} ({percentage:.2f}%){RESET}")
         
         # Send slow events summary
         total_send_events = len(send_delay_measurements)
@@ -217,9 +217,9 @@ def analyze_timeline(json_path, use_colors=True, prefill_time=375, send_slow_thr
         total_send_slow_pct = (total_send_slow / total_send_events) * 100
         
         print(f"\n{BLUE}Send Slow Events Summary:{RESET}")
-        print(f"{YELLOW}[SEND_SLOW_1] (After RECV): {send_slow_1_count} ({send_slow_1_pct:.1f}%){RESET}")
-        print(f"{RED}[SEND_SLOW_2] (After SEND): {send_slow_2_count} ({send_slow_2_pct:.1f}%){RESET}")
-        print(f"{YELLOW}[SEND_SLOW_TOTAL]: {total_send_slow} ({total_send_slow_pct:.1f}%){RESET}")
+        print(f"{YELLOW}[SEND_SLOW_1] (After RECV): {send_slow_1_count} ({send_slow_1_pct:.2f}%){RESET}")
+        print(f"{RED}[SEND_SLOW_2] (After SEND): {send_slow_2_count} ({send_slow_2_pct:.2f}%){RESET}")
+        print(f"{YELLOW}[SEND_SLOW_TOTAL]: {total_send_slow} ({total_send_slow_pct:.2f}%){RESET}")
         
         print(f"{BLUE}{'='*60}{RESET}")
     else:
@@ -259,14 +259,14 @@ def analyze_timeline(json_path, use_colors=True, prefill_time=375, send_slow_thr
             else:
                 count = sum(1 for x in recv_delay_measurements if lower <= x < upper)
             percentage = (count / len(recv_delay_measurements)) * 100
-            print(f"{YELLOW}{labels[i]}: {count} ({percentage:.1f}%){RESET}")
+            print(f"{YELLOW}{labels[i]}: {count} ({percentage:.2f}%){RESET}")
         
         # Recv slow events summary
         total_recv_events = len(recv_delay_measurements)
         recv_slow_pct = (recv_slow_count / total_recv_events) * 100
         
         print(f"\n{BLUE}Recv Slow Events Summary:{RESET}")
-        print(f"{RED}[RECV_SLOW]: {recv_slow_count} ({recv_slow_pct:.1f}%){RESET}")
+        print(f"{RED}[RECV_SLOW]: {recv_slow_count} ({recv_slow_pct:.2f}%){RESET}")
         
         print(f"{BLUE}{'='*60}{RESET}")
     else:
@@ -306,14 +306,14 @@ def analyze_timeline(json_path, use_colors=True, prefill_time=375, send_slow_thr
             else:
                 count = sum(1 for x in latency_measurements if lower <= x < upper)
             percentage = (count / len(latency_measurements)) * 100
-            print(f"{YELLOW}{labels[i]}: {count} ({percentage:.1f}%){RESET}")
+            print(f"{YELLOW}{labels[i]}: {count} ({percentage:.2f}%){RESET}")
         
         # VC slow events summary
         total_latency_events = len(latency_measurements)
         vc_slow_pct = (vc_slow_count / total_latency_events) * 100
         
         print(f"\n{BLUE}Latency Slow Events Summary:{RESET}")
-        print(f"{RED}[VC_SLOW]: {vc_slow_count} ({vc_slow_pct:.1f}%){RESET}")
+        print(f"{RED}[VC_SLOW]: {vc_slow_count} ({vc_slow_pct:.2f}%){RESET}")
         
         print(f"{BLUE}{'='*60}{RESET}")
     else:
