@@ -50,6 +50,12 @@ def analyze_timeline(json_path, use_colors=True, prefill_time=375):
     # List to store latency measurements for statistics
     latency_measurements = []
     
+    # List to store send event delay measurements for statistics
+    send_delay_measurements = []
+    
+    # List to store recv event delay measurements for statistics
+    recv_delay_measurements = []
+    
     # Variable to track previous send event timestamp for interval calculation
     previous_send_time = None
     
@@ -83,6 +89,7 @@ def analyze_timeline(json_path, use_colors=True, prefill_time=375):
             
             if previous_send_time is not None:
                 interval_ms = (current_send_time - previous_send_time).total_seconds() * 1000
+                send_delay_measurements.append(interval_ms)
                 interval_info = f" | {interval_ms:.0f}ms"
             else:
                 interval_info = f" | first"
@@ -99,6 +106,7 @@ def analyze_timeline(json_path, use_colors=True, prefill_time=375):
             
             if previous_recv_time is not None:
                 recv_interval_ms = (current_recv_time - previous_recv_time).total_seconds() * 1000
+                recv_delay_measurements.append(recv_interval_ms)
                 recv_interval_info = f" | {GREEN}{recv_interval_ms:.0f}ms{RESET}"
             else:
                 recv_interval_info = f" | {GREEN}first{RESET}"
@@ -128,6 +136,58 @@ def analyze_timeline(json_path, use_colors=True, prefill_time=375):
             # Default color for other event types
             print(f"{row['timestamp']} | {row['event_type']} | {cumulative_ms} | {row['session_id']}")
     
+    # Calculate and display send event delay statistics
+    if send_delay_measurements:
+        print(f"\n{BLUE}{'='*60}{RESET}")
+        print(f"{BLUE}Send Event Delay Statistics:{RESET}")
+        print(f"{BLUE}{'='*60}{RESET}")
+        
+        # Convert to pandas Series for easier statistics calculation
+        send_delay_series = pd.Series(send_delay_measurements)
+        
+        print(f"{YELLOW}Total measurements: {len(send_delay_measurements)}{RESET}")
+        print(f"{YELLOW}Average delay: {send_delay_series.mean():.2f} ms{RESET}")
+        print(f"{YELLOW}Median delay: {send_delay_series.median():.2f} ms{RESET}")
+        print(f"{YELLOW}Min delay: {send_delay_series.min():.2f} ms{RESET}")
+        print(f"{YELLOW}Max delay: {send_delay_series.max():.2f} ms{RESET}")
+        print(f"{YELLOW}Standard deviation: {send_delay_series.std():.2f} ms{RESET}")
+        
+        # Percentiles
+        print(f"{YELLOW}P50 (median): {send_delay_series.quantile(0.5):.2f} ms{RESET}")
+        print(f"{YELLOW}P90: {send_delay_series.quantile(0.9):.2f} ms{RESET}")
+        print(f"{YELLOW}P95: {send_delay_series.quantile(0.95):.2f} ms{RESET}")
+        print(f"{YELLOW}P99: {send_delay_series.quantile(0.99):.2f} ms{RESET}")
+        
+        print(f"{BLUE}{'='*60}{RESET}")
+    else:
+        print(f"\n{YELLOW}No send event delay measurements found{RESET}")
+    
+    # Calculate and display recv event delay statistics
+    if recv_delay_measurements:
+        print(f"\n{BLUE}{'='*60}{RESET}")
+        print(f"{BLUE}Recv Event Delay Statistics:{RESET}")
+        print(f"{BLUE}{'='*60}{RESET}")
+        
+        # Convert to pandas Series for easier statistics calculation
+        recv_delay_series = pd.Series(recv_delay_measurements)
+        
+        print(f"{YELLOW}Total measurements: {len(recv_delay_measurements)}{RESET}")
+        print(f"{YELLOW}Average delay: {recv_delay_series.mean():.2f} ms{RESET}")
+        print(f"{YELLOW}Median delay: {recv_delay_series.median():.2f} ms{RESET}")
+        print(f"{YELLOW}Min delay: {recv_delay_series.min():.2f} ms{RESET}")
+        print(f"{YELLOW}Max delay: {recv_delay_series.max():.2f} ms{RESET}")
+        print(f"{YELLOW}Standard deviation: {recv_delay_series.std():.2f} ms{RESET}")
+        
+        # Percentiles
+        print(f"{YELLOW}P50 (median): {recv_delay_series.quantile(0.5):.2f} ms{RESET}")
+        print(f"{YELLOW}P90: {recv_delay_series.quantile(0.9):.2f} ms{RESET}")
+        print(f"{YELLOW}P95: {recv_delay_series.quantile(0.95):.2f} ms{RESET}")
+        print(f"{YELLOW}P99: {recv_delay_series.quantile(0.99):.2f} ms{RESET}")
+        
+        print(f"{BLUE}{'='*60}{RESET}")
+    else:
+        print(f"\n{YELLOW}No recv event delay measurements found{RESET}")
+
     # Calculate and display latency statistics
     if latency_measurements:
         print(f"\n{BLUE}{'='*60}{RESET}")
