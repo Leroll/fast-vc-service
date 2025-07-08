@@ -113,6 +113,7 @@ python examples/websocket/ws_client.py \
 
 <details>
 <summary>查看历史版本</summary>
+
 **2025-06-15 - v0.1.0**: 基础服务框架   
 
   完成了基于 Seed-VC 的实时语音转换服务的核心框架搭建，实现了 WebSocket 流式推理、性能监控、多格式音频支持等完整的基础功能。   
@@ -123,12 +124,14 @@ python examples/websocket/ws_client.py \
   - 灵活的配置管理和环境变量支持 
   - 多Worker并发处理能力
   - 并发性能测试框架
+  
 </details>
 
 
 
 # 🚧 TODO 
 - [ ] tag - v0.2 - 提升推理时效，降低RTF - v2025-xx
+    - [x] 优化timeline_lognize, 添加同类event延迟项
     - [ ] 增加音高自适应提取功能，并添加对应开关
     - [ ] vad 改用 onnx-gpu, 以提升推理速度
     - [ ] 完成对seed-vc V2.0 模型支持

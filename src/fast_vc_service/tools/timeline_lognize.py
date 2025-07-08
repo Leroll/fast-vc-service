@@ -39,15 +39,22 @@ def analyze_timeline(json_path, use_colors=True, prefill_time=375):
         GREEN = "\033[92m"
         BLUE = "\033[94m"
         YELLOW = "\033[93m"
+        CYAN = "\033[96m"
         RESET = "\033[0m"
     else:
-        RED = GREEN = BLUE = YELLOW = RESET = ""
+        RED = GREEN = BLUE = YELLOW = CYAN = RESET = ""
 
     # Create a list to store send events with their cumulative times
     send_events = []
     
     # List to store latency measurements for statistics
     latency_measurements = []
+    
+    # Variable to track previous send event timestamp for interval calculation
+    previous_send_time = None
+    
+    # Variable to track previous recv event timestamp for interval calculation
+    previous_recv_time = None
 
     # First pass: collect all send events
     for idx, row in timeline.iterrows():
@@ -70,9 +77,35 @@ def analyze_timeline(json_path, use_colors=True, prefill_time=375):
             cumulative_ms = cumulative_ms - prefill_time
         
         if event_type == 'send':
-            # Red color for send events
-            print(f"{RED}{row['timestamp']} | {row['event_type']} | {cumulative_ms} | {row['session_id']}{RESET}")
+            # Calculate interval from previous send event
+            interval_info = ""
+            current_send_time = datetime.fromisoformat(row['timestamp'].replace('Z', '+00:00'))
+            
+            if previous_send_time is not None:
+                interval_ms = (current_send_time - previous_send_time).total_seconds() * 1000
+                interval_info = f" | {interval_ms:.0f}ms"
+            else:
+                interval_info = f" | first"
+            
+            # Update previous send time
+            previous_send_time = current_send_time
+            
+            # Default color for send events
+            print(f"{row['timestamp']} | {row['event_type']} | {cumulative_ms} | {row['session_id']}{interval_info}")
         elif event_type == 'recv':
+            # Calculate interval from previous recv event
+            recv_interval_info = ""
+            current_recv_time = datetime.fromisoformat(row['timestamp'].replace('Z', '+00:00'))
+            
+            if previous_recv_time is not None:
+                recv_interval_ms = (current_recv_time - previous_recv_time).total_seconds() * 1000
+                recv_interval_info = f" | {GREEN}{recv_interval_ms:.0f}ms{RESET}"
+            else:
+                recv_interval_info = f" | {GREEN}first{RESET}"
+            
+            # Update previous recv time
+            previous_recv_time = current_recv_time
+            
             # Find the first send event with cumulative_ms >= corrected recv time
             latency_info = ""
             corresponding_send = None
@@ -90,7 +123,7 @@ def analyze_timeline(json_path, use_colors=True, prefill_time=375):
                 latency_info = f" | {GREEN}{latency_ms:.0f}ms{RESET}"
             
             # Green color for recv events
-            print(f"{GREEN}{row['timestamp']} | {row['event_type']} | {cumulative_ms} | {row['session_id']}{RESET}{latency_info}")
+            print(f"{GREEN}{row['timestamp']} | {row['event_type']} | {cumulative_ms} | {row['session_id']}{RESET}{recv_interval_info}{latency_info}")
         else:
             # Default color for other event types
             print(f"{row['timestamp']} | {row['event_type']} | {cumulative_ms} | {row['session_id']}")
@@ -166,6 +199,8 @@ def main():
 if __name__ == "__main__":
     """
     example usage:
+        python timeline_lognize.py path/to/timeline.json > output.txt
+        python timeline_lognize.py path/to/timeline.json --no-color
         python timeline_lognize.py path/to/timeline.json --prefill-time 375
     """
     main()

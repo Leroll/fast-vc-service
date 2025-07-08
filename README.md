@@ -114,6 +114,7 @@ python examples/websocket/ws_client.py \
 
 <details>
 <summary>View Historical Versions</summary>
+
 **2025-06-15 - v0.1.0**: Basic Service Framework   
 
   Completed the core framework construction of real-time voice conversion service based on Seed-VC, implementing WebSocket streaming inference, performance monitoring, multi-format audio support and other complete basic functions.   
@@ -124,12 +125,14 @@ python examples/websocket/ws_client.py \
   - Flexible configuration management and environment variable support 
   - Multi-Worker concurrent processing capability
   - Concurrent performance testing framework
+  
 </details>
 
 
 
 # 🚧 TODO
 - [ ] tag - v0.2 - Improve inference efficiency, reduce RTF - v2025-xx
+    - [x] Optimize timeline_lognize, add delay items for same events
     - [ ] Add adaptive pitch extraction functionality with corresponding toggle switch
     - [ ] Change VAD to use ONNX-GPU to improve inference speed
     - [ ] Complete support for seed-vc V2.0 model
