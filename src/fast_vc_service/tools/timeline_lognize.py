@@ -160,8 +160,9 @@ def analyze_timeline(json_path, use_colors=True, prefill_time=375):
         
         # Send event delay distribution
         print(f"\n{BLUE}Send Event Delay Distribution:{RESET}")
-        bins = [0, 50, 100, 200, 500, 600, 700, 800, 1000, float('inf')]
-        labels = ['0-50ms', '50-100ms', '100-200ms', '200-500ms', '500-600ms', '600-700ms', '700-800ms', '800-1000ms', '>1000ms']
+        bins = [0, 50, 100, 200, 300, 400, 500, 600, 700, 800, 1000, float('inf')]
+        labels = ['0-50ms', '50-100ms', '100-200ms', '200-300ms', '300-400ms', 
+                  '400-500ms', '500-600ms', '600-700ms', '700-800ms', '800-1000ms', '>1000ms']
         
         for i, (lower, upper) in enumerate(zip(bins[:-1], bins[1:])):
             if upper == float('inf'):
@@ -199,8 +200,9 @@ def analyze_timeline(json_path, use_colors=True, prefill_time=375):
         
         # Recv event delay distribution
         print(f"\n{BLUE}Recv Event Delay Distribution:{RESET}")
-        bins = [0, 50, 100, 200, 500, 600, 700, 800, 1000, float('inf')]
-        labels = ['0-50ms', '50-100ms', '100-200ms', '200-500ms', '500-600ms', '600-700ms', '700-800ms', '800-1000ms', '>1000ms']
+        bins = [0, 50, 100, 200, 300, 400, 500, 600, 700, 800, 1000, float('inf')]
+        labels = ['0-50ms', '50-100ms', '100-200ms', '200-300ms', '300-400ms', 
+                  '400-500ms', '500-600ms', '600-700ms', '700-800ms', '800-1000ms', '>1000ms']
         
         for i, (lower, upper) in enumerate(zip(bins[:-1], bins[1:])):
             if upper == float('inf'):
@@ -238,8 +240,9 @@ def analyze_timeline(json_path, use_colors=True, prefill_time=375):
         
         # Latency distribution
         print(f"\n{BLUE}Latency Distribution:{RESET}")
-        bins = [0, 50, 100, 200, 500, 600, 700, 800, 1000, float('inf')]
-        labels = ['0-50ms', '50-100ms', '100-200ms', '200-500ms', '500-600ms', '600-700ms', '700-800ms', '800-1000ms', '>1000ms']
+        bins = [0, 50, 100, 200, 300, 400, 500, 600, 700, 800, 1000, float('inf')]
+        labels = ['0-50ms', '50-100ms', '100-200ms', '200-300ms', '300-400ms', 
+                  '400-500ms', '500-600ms', '600-700ms', '700-800ms', '800-1000ms', '>1000ms']
         
         for i, (lower, upper) in enumerate(zip(bins[:-1], bins[1:])):
             if upper == float('inf'):
