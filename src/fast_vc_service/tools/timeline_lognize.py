@@ -59,11 +59,20 @@ def analyze_timeline(json_path, use_colors=True, prefill_time=375, send_slow_thr
     # List to store recv event delay measurements for statistics
     recv_delay_measurements = []
     
+    # Counters for slow events
+    send_slow_1_count = 0  # SEND_SLOW_1 count
+    send_slow_2_count = 0  # SEND_SLOW_2 count
+    recv_slow_count = 0    # RECV_SLOW count
+    vc_slow_count = 0      # VC_SLOW count
+    
     # Variable to track previous send event timestamp for interval calculation
     previous_send_time = None
     
     # Variable to track previous recv event timestamp for interval calculation
     previous_recv_time = None
+    
+    # Variable to track previous event type for send slow marking
+    previous_event_type = None
 
     # First pass: collect all send events
     for idx, row in timeline.iterrows():
@@ -93,7 +102,18 @@ def analyze_timeline(json_path, use_colors=True, prefill_time=375, send_slow_thr
             if previous_send_time is not None:
                 interval_ms = (current_send_time - previous_send_time).total_seconds() * 1000
                 send_delay_measurements.append(interval_ms)
-                slow_mark = f" {RED}[SLOW]{RESET}" if interval_ms > send_slow_threshold else ""
+                
+                # Different slow marks based on previous event type
+                if interval_ms > send_slow_threshold:
+                    if previous_event_type == 'recv':
+                        slow_mark = f" {CYAN}[SEND_SLOW_1]{RESET}"
+                        send_slow_1_count += 1
+                    else:  # previous_event_type == 'send'
+                        slow_mark = f" {RED}[SEND_SLOW_2]{RESET}"
+                        send_slow_2_count += 1
+                else:
+                    slow_mark = ""
+                
                 interval_info = f" | {interval_ms:.0f}ms{slow_mark}"
             else:
                 interval_info = f" | first"
@@ -111,7 +131,11 @@ def analyze_timeline(json_path, use_colors=True, prefill_time=375, send_slow_thr
             if previous_recv_time is not None:
                 recv_interval_ms = (current_recv_time - previous_recv_time).total_seconds() * 1000
                 recv_delay_measurements.append(recv_interval_ms)
-                slow_mark = f" {RED}[SLOW]{RESET}" if recv_interval_ms > recv_slow_threshold else ""
+                if recv_interval_ms > recv_slow_threshold:
+                    slow_mark = f" {RED}[RECV_SLOW]{RESET}"
+                    recv_slow_count += 1
+                else:
+                    slow_mark = ""
                 recv_interval_info = f" | {GREEN}{recv_interval_ms:.0f}ms{RESET}{slow_mark}"
             else:
                 recv_interval_info = f" | {GREEN}first{RESET}"
@@ -133,7 +157,11 @@ def analyze_timeline(json_path, use_colors=True, prefill_time=375, send_slow_thr
                 send_time = datetime.fromisoformat(corresponding_send['timestamp'].replace('Z', '+00:00'))
                 latency_ms = (recv_time - send_time).total_seconds() * 1000
                 latency_measurements.append(latency_ms)
-                slow_mark = f" {RED}[SLOW]{RESET}" if latency_ms > latency_slow_threshold else ""
+                if latency_ms > latency_slow_threshold:
+                    slow_mark = f" {RED}[VC_SLOW]{RESET}"
+                    vc_slow_count += 1
+                else:
+                    slow_mark = ""
                 latency_info = f" | {GREEN}{latency_ms:.0f}ms{RESET}{slow_mark}"
             
             # Green color for recv events
@@ -141,6 +169,9 @@ def analyze_timeline(json_path, use_colors=True, prefill_time=375, send_slow_thr
         else:
             # Default color for other event types
             print(f"{row['timestamp']} | {row['event_type']} | {cumulative_ms} | {row['session_id']}")
+        
+        # Update previous event type
+        previous_event_type = event_type
     
     # Calculate and display send event delay statistics
     if send_delay_measurements:
@@ -177,6 +208,18 @@ def analyze_timeline(json_path, use_colors=True, prefill_time=375, send_slow_thr
                 count = sum(1 for x in send_delay_measurements if lower <= x < upper)
             percentage = (count / len(send_delay_measurements)) * 100
             print(f"{YELLOW}{labels[i]}: {count} ({percentage:.1f}%){RESET}")
+        
+        # Send slow events summary
+        total_send_events = len(send_delay_measurements)
+        send_slow_1_pct = (send_slow_1_count / total_send_events) * 100
+        send_slow_2_pct = (send_slow_2_count / total_send_events) * 100
+        total_send_slow = send_slow_1_count + send_slow_2_count
+        total_send_slow_pct = (total_send_slow / total_send_events) * 100
+        
+        print(f"\n{BLUE}Send Slow Events Summary:{RESET}")
+        print(f"{YELLOW}[SEND_SLOW_1] (After RECV): {send_slow_1_count} ({send_slow_1_pct:.1f}%){RESET}")
+        print(f"{RED}[SEND_SLOW_2] (After SEND): {send_slow_2_count} ({send_slow_2_pct:.1f}%){RESET}")
+        print(f"{YELLOW}[SEND_SLOW_TOTAL]: {total_send_slow} ({total_send_slow_pct:.1f}%){RESET}")
         
         print(f"{BLUE}{'='*60}{RESET}")
     else:
@@ -218,6 +261,13 @@ def analyze_timeline(json_path, use_colors=True, prefill_time=375, send_slow_thr
             percentage = (count / len(recv_delay_measurements)) * 100
             print(f"{YELLOW}{labels[i]}: {count} ({percentage:.1f}%){RESET}")
         
+        # Recv slow events summary
+        total_recv_events = len(recv_delay_measurements)
+        recv_slow_pct = (recv_slow_count / total_recv_events) * 100
+        
+        print(f"\n{BLUE}Recv Slow Events Summary:{RESET}")
+        print(f"{RED}[RECV_SLOW]: {recv_slow_count} ({recv_slow_pct:.1f}%){RESET}")
+        
         print(f"{BLUE}{'='*60}{RESET}")
     else:
         print(f"\n{YELLOW}No recv event delay measurements found{RESET}")
@@ -257,6 +307,13 @@ def analyze_timeline(json_path, use_colors=True, prefill_time=375, send_slow_thr
                 count = sum(1 for x in latency_measurements if lower <= x < upper)
             percentage = (count / len(latency_measurements)) * 100
             print(f"{YELLOW}{labels[i]}: {count} ({percentage:.1f}%){RESET}")
+        
+        # VC slow events summary
+        total_latency_events = len(latency_measurements)
+        vc_slow_pct = (vc_slow_count / total_latency_events) * 100
+        
+        print(f"\n{BLUE}Latency Slow Events Summary:{RESET}")
+        print(f"{RED}[VC_SLOW]: {vc_slow_count} ({vc_slow_pct:.1f}%){RESET}")
         
         print(f"{BLUE}{'='*60}{RESET}")
     else:
