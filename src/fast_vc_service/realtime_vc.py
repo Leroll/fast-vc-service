@@ -171,7 +171,9 @@ class RealtimeVoiceConversion:
                        sola_buffer_frame=self.sola_buffer_frame,
                        samplerate=self.cfg.SAMPLERATE,
                        save_dir=self.cfg.save_dir,
-                       device=self.cfg.device)
+                       device=self.cfg.device,
+                       send_slow_threshold=self.cfg.send_slow_threshold,
+                       recv_slow_threshold=self.cfg.recv_slow_threshold)
     
     def _update_reference(self):
         """读取reference音频，并计算相关的模型输入

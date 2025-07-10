@@ -51,6 +51,14 @@ realtime_vc:
   # 辅助参数
   max_tracking_counter: 10000  # 用于记录单chunk推理时间损耗的最大记录数量
 
+  # SLOW 监测
+  send_slow_threshold: 100 # 100ms, 两个客户段发送过来的音频包之间的间隔，认定SLOW的阈值
+                           # 一般客户端发送过来的音频包间隔是 20ms 或者 10ms
+  recv_slow_threshold: 700 # 700ms，两个客户段收到服务端发送回去的音频包之间的时间间隔，认定SLOW的阈值
+                           # 服务端发送回去的包，即 block_time，默认是500ms
+  vc_slow_threshold: 300  # 从累计到一个chunk开始，到完成vc并推送给客户段之间的耗时，500ms一个chunk的话，
+                          # 这里认为vc时间超过300就算SLOW
+
 
 models:
   device: "cuda"

@@ -69,6 +69,14 @@ class RealtimeVoiceConversionConfig(BaseModel):
     max_tracking_counter: int = 10_000  # 用于记录单chunk推理时间损耗的最大记录数量
                                         # record audio duration = max_tracking_counter * block_time
                                         # default: 10_000 * 0.5 = 5000s = 83min
+                                        
+    # SLOW 参数, 包-包之间延迟认定为SLOW的阈值
+    send_slow_threshold: int = 100  # 100ms, 两个客户段发送过来的音频包之间的间隔，认定SLOW的阈值
+                                    # 一般客户端发送过来的音频包间隔是 20ms 或者 10ms
+    recv_slow_threshold: int = 700  # 700ms，两个客户段收到服务端发送回去的音频包之间的时间间隔，认定SLOW的阈值
+                                    # 服务端发送回去的包，即 block_time，默认是500ms，所以超过700ms认为是SLOW
+    vc_slow_threshold: int = 300  # 从累计到一个chunk开始，到完成vc并推送给客户段之间的耗时
+                                  # 500ms一个chunk的话，认为vc时间超过300就算SLOW
 
 
 class ModelConfig(BaseModel):

@@ -10,6 +10,7 @@ import traceback
 import asyncio
 import concurrent.futures
 from enum import Enum
+import time
 
 from fast_vc_service.tools.timeline_analyzer import TimelineAnalyzer
 
@@ -27,7 +28,8 @@ class Session:
                  block_frame, extra_frame_right, zc, 
                  sola_buffer_frame, samplerate,
                  save_dir,
-                 device):
+                 device,
+                 send_slow_threshold, recv_slow_threshold):
         torch.cuda.empty_cache()  
         self.sampelrate = samplerate  # 后续存储输入、输出音频用，对应common_sr
         self.session_id = session_id  # 唯一标识符
@@ -37,11 +39,16 @@ class Session:
         self.is_saved = False  # flag to indicate if the session has been saved
         self.is_first_chunk = True 
         
-        # Timeline tracking - 统一的timeline格式
+        # SLOW tracking
+        self.sent_slow_threshold = send_slow_threshold  # 两个客户段发送过来的音频包之间的间隔，认定SLOW的阈值， 单位ms
+        self.recv_slow_threshold = recv_slow_threshold  # 两个客户段收到的音频包之间的间隔，认定SLOW的阈值， 单位ms
+        self.last_send_time = None  # 服务侧上一个接受到客户端发送的包的时间 （send是基于客户端角度来讲的）
+        self.last_recv_time = None  # 服务侧上一个换声后的chunk发送给客户段的时间 （recv是基于客户端角度来讲的）
+        
+        # Timeline tracking 
         self.timeline = []  # 统一记录所有事件的时间线
-        self.sent_audio_ms = 0.0  # 累计发送的音频时长
-        self.recv_audio_ms = 0.0  # 累计接收的音频时长
-        self.stats = None  # 分析统计结果
+        self.sent_audio_ms = 0.0  # 累计发送的音频时长，这里的发送接受是基于客户端的角色来定的，客户端发送了多少
+        self.recv_audio_ms = 0.0  # 累计接收的音频时长，这里的发送接受是基于客户端的角色来定的，服务端换声了多少
         
         # wav 相关
         self.input_wav: torch.Tensor = torch.zeros( 
@@ -100,13 +107,26 @@ class Session:
             chunk_duration_ms: 音频块的时长（毫秒）
         """
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
+        cur_time = time.perf_counter()
         
         if event_type == EventType.SEND:
             self.sent_audio_ms += chunk_duration_ms
             cumulative_ms = self.sent_audio_ms
+            
+            interval = (cur_time - self.last_send_time) * 1000 if self.last_send_time is not None else 0
+            self.last_send_time = cur_time 
+            if interval > self.sent_slow_threshold:
+                logger.warning(f"{self.session_id} | [SEND_SLOW]: {interval:.2f} ms")
+            
         elif event_type == EventType.RECV:
             self.recv_audio_ms += chunk_duration_ms
             cumulative_ms = self.recv_audio_ms
+            
+            interval = (cur_time - self.last_recv_time) * 1000 if self.last_recv_time is not None else 0
+            self.last_recv_time = cur_time
+            if interval > self.recv_slow_threshold:
+                logger.warning(f"{self.session_id} | [RECV_SLOW]: {interval:.2f} ms")
+            
         else:
             raise ValueError(f"Unknown event type: {event_type}")
         
@@ -116,8 +136,6 @@ class Session:
             'event_type': event_type.value,
             'session_id': self.session_id
         })
-        
-        logger.debug(f"{self.session_id} | {event_type.value} | {cumulative_ms:.1f}ms")
 
     async def async_save_and_cleanup(self):
         """异步版本的保存和清理方法"""
@@ -181,13 +199,6 @@ class Session:
             with open(timeline_path, 'w') as f:
                 json.dump(timeline_data, f, indent=2, default=str)
             logger.info(f"{self.session_id} | Timeline data saved to: {timeline_path}")
-        
-        # Save stats
-        if self.stats:
-            stats_path = daily_save_dir / f"{self.session_id}_stats.json"
-            with open(stats_path, 'w') as f:
-                json.dump(self.stats, f, indent=2, default=str)
-            logger.info(f"{self.session_id} | Statistics saved to: {stats_path}")
             
         self.is_saved = True
             
@@ -211,7 +222,6 @@ class Session:
         
         # Clear timeline data
         self.timeline.clear()
-        self.stats = None
         
         # Force GPU memory cleanup
         torch.cuda.empty_cache()
