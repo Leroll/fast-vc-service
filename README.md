@@ -133,6 +133,7 @@ python examples/websocket/ws_client.py \
 # 🚧 TODO
 - [ ] tag - v0.2 - Improve inference efficiency, reduce RTF - v2025-xx
     - [x] Optimize timeline_lognize, add delay items for same events
+    - [x] Add SLOW tags in logs for monitoring receive interval, send interval, and VC-E2E latency
     - [ ] Add adaptive pitch extraction functionality with corresponding toggle switch
     - [ ] Change VAD to use ONNX-GPU to improve inference speed
     - [ ] Complete support for seed-vc V2.0 model
