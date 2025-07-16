@@ -44,7 +44,7 @@ realtime_vc:
   ce_dit_difference: 2  # 2 seconds， content encoder ?
   
   # rms_mix
-  rms_mix_rate: 0    # 0.25； 这个参数是用来控制 RMS 混合的比例，
+  rms_mix_rate: 0.3    # 0.25； 这个参数是用来控制 RMS 混合的比例，
                               # 范围是 0 到 1。
                               # 0 表示完全使用 Input 的包络，1 表示完全使用 Infer 包络。
                               
