@@ -74,6 +74,7 @@ class ModelFactory:
         self.semantic_fn = self._load_semantic_fn() 
         self.to_mel, self.mel_fn_args = self._load_mel()
         self.vad_model = self._load_vad_model()
+        self.f0_fn = self._load_f0_fn()
         
         if self.is_torch_compile:  # if using torch compile to accelerate
             self._torch_compile()
@@ -88,6 +89,7 @@ class ModelFactory:
             "vocoder_fn": self.vocoder_fn,
             "to_mel": self.to_mel,
             "mel_fn_args": self.mel_fn_args,
+            "f0_fn": self.f0_fn,
             
             # additional models
             "vad_model": self.vad_model,
@@ -376,6 +378,16 @@ class ModelFactory:
         self.logger.info(f"VAD model has parameters: {total_params / 1_000_000:.2f}M")
         
         return vad_model
+    
+    @timer_decorator
+    def _load_f0_fn(self):
+        # f0 extractor
+        from externals.seed_vc.modules.rmvpe import RMVPE
+        model_path = load_custom_model_from_hf("lj1995/VoiceConversionWebUI", "rmvpe.pt", None)
+        rmvpe = RMVPE(model_path, is_half=False, device=self.device)
+        f0_fn = rmvpe.infer_from_audio
+        
+        return f0_fn
     
       
 if __name__ == "__main__":

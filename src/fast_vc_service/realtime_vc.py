@@ -197,7 +197,7 @@ class RealtimeVoiceConversion:
         """calculate model inputs which are related to reference wav
         
         # pipleline:
-            rf_wav_16k -> [ fbank, cam++ -> prompt_style
+            rf_wav_16k -> [ fbank, cam++ ] -> prompt_style
             rf_wav_22050 -> [ to_mel ] -> prompt_mel
             rf_wav_16k -> [ semantic_fn, length_regulator, mel_size ] -> prompt_condition
         """
