@@ -133,6 +133,7 @@ python examples/websocket/ws_client.py \
 - [ ] tag - v0.2 - 提升推理时效，降低RTF - v2025-xx
     - [x] 优化timeline_lognize, 添加同类event延迟项
     - [x] 日志新增SLOW标签，分别针对收包间隔，发包间隔以及VC-E2E耗时
+    - [x] 优化session tool的文件命名。
     - [ ] 增加音高自适应提取功能，并添加对应开关
     - [ ] vad 改用 onnx-gpu, 以提升推理速度
     - [ ] 完成对seed-vc V2.0 模型支持

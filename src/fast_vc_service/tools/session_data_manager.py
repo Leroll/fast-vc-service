@@ -73,7 +73,7 @@ class SessionDataManager:
         with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED, compresslevel=9) as zip_file:
             for file_path in session_files:
                 if file_path.exists():
-                    archive_name = f"{session_id}_{file_path.name}"
+                    archive_name = f"{file_path.name}"
                     zip_file.write(file_path, archive_name)
         
         zip_data = zip_buffer.getvalue()
@@ -138,7 +138,7 @@ if __name__ == "__main__":
     # print(encoded_data)
         
     # decode
-    encoded_data_path = "/root/autodl-tmp/fast-vc-service/dd"
+    encoded_data_path = "encoded.md"
     with open(encoded_data_path, "r") as f:
         encoded_data = f.read().strip()
     saved_files = manager.decode(encoded_data, "outputs/decoded_session")
