@@ -134,7 +134,12 @@ python examples/websocket/ws_client.py \
     - [x] 优化timeline_lognize, 添加同类event延迟项
     - [x] 日志新增SLOW标签，分别针对收包间隔，发包间隔以及VC-E2E耗时
     - [x] 优化session tool的文件命名。
+    - [x] 更改uid生成方式，改成时间的
     - [ ] 增加音高自适应提取功能，并添加对应开关
+    - [ ] 优化prefill的长度，连带的其他使用到prefill的模块要保持一致
+    - [ ] 增加config，model路径选项，支持nas配置文件，支持更简洁的云主机部署
+    - [ ] 增加conda环境配置
+    - [ ] realtime-vc 改成独立的服务，防止阻塞fastapi的异步
     - [ ] vad 改用 onnx-gpu, 以提升推理速度
     - [ ] 完成对seed-vc V2.0 模型支持
     - [ ] 探索降低模型推理时延的方案（比如新的模型架构、量化等）
