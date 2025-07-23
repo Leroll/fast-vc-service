@@ -368,10 +368,45 @@ def main():
 
 if __name__ == "__main__":
     """
-    example usage:
-        python timeline_lognize.py path/to/timeline.json > output.txt
-        python timeline_lognize.py path/to/timeline.json --no-color
-        python timeline_lognize.py path/to/timeline.json --prefill-time 375
-        python timeline_lognize.py path/to/timeline.json --send-slow-threshold 100 --recv-slow-threshold 700 --latency-slow-threshold 350
+    Usage Examples:
+        # Change to the project root directory
+        cd fast-vc-service
+        
+        1. Basic usage - analyze timeline with default settings
+        python src/fast_vc_service/tools/timeline_lognize.py path/to/timeline.json
+        
+        2. Save output to file
+        python src/fast_vc_service/tools/timeline_lognize.py path/to/timeline.json > output.txt
+        
+        3. Disable colored output (useful for file output or terminals without color support)
+        python src/fast_vc_service/tools/timeline_lognize.py path/to/timeline.json --no-color
+        
+        4. Adjust prefill time correction (default: 375ms)
+        python src/fast_vc_service/tools/timeline_lognize.py path/to/timeline.json --prefill-time 400
+        
+        5. Customize slow event thresholds
+        python src/fast_vc_service/tools/timeline_lognize.py path/to/timeline.json \
+            --send-slow-threshold 120 \
+            --recv-slow-threshold 800 \
+            --latency-slow-threshold 300
+        
+        6. Full customization example
+        python src/fast_vc_service/tools/timeline_lognize.py path/to/timeline.json \
+            --no-color \
+            --prefill-time 350 \
+            --send-slow-threshold 100 \
+            --recv-slow-threshold 700 \
+            --latency-slow-threshold 350 \
+            > analysis_report.txt
+        
+        7. Quick analysis with specific session data
+        python src/fast_vc_service/tools/timeline_lognize.py outputs/2025/07/23/timeline_client0_abc123.json
+        
+        Note: The tool analyzes send/recv events with latency calculations and provides:
+        - Color-coded event timeline
+        - Send event delay statistics and distribution
+        - Recv event delay statistics and distribution  
+        - Latency statistics and distribution
+        - Slow event detection and counting
     """
     main()

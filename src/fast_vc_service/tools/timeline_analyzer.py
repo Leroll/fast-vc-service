@@ -547,12 +547,60 @@ class TimelineAnalyzer:
 
     
 if __name__ == "__main__":
-    # 分析单个文件
-    stats = TimelineAnalyzer.analyze_from_timeline_file(
-        timeline_json_path="/path/to/session_123_timeline.json"
-    )
-
-    # 批量分析目录中的所有timeline文件
-    # results = TimelineAnalyzer.batch_analyze_timeline_files(
-    #     timeline_dir="/path/to/timeline/files"
-    # )
+    """
+    Analyze timeline files using command line interface.
+    outputs stats.json
+    outputs will be saved in the same directory as the timeline files.
+    
+    Usage Examples:
+        # Change to the project root directory
+        cd fast-vc-service
+        
+        1. Analyze a single timeline file
+        python src/fast_vc_service/tools/timeline_analyzer.py analyze \
+            --timeline-file outputs/2025/07/23/session_123_timeline.json
+        
+        python src/fast_vc_service/tools/timeline_analyzer.py analyze \
+            --timeline-file outputs/2025/07/23/session_123_timeline.json --prefill-time 400
+        
+        2. Batch analyze all timeline files in a directory
+        python src/fast_vc_service/tools/timeline_analyzer.py batch \
+            --timeline-dir outputs/2025/07/23
+        
+        python src/fast_vc_service/tools/timeline_analyzer.py batch \
+            --timeline-dir outputs/2025/07/23 --file-pattern "*timeline.json" --prefill-time 350
+        
+        3. Analyze all timeline files recursively in outputs directory
+        python src/fast_vc_service/tools/timeline_analyzer.py batch \
+            --timeline-dir outputs --file-pattern "**/*timeline.json"
+    """
+    import fire
+    
+    def analyze_file(timeline_file: str, prefill_time: int = 375):
+        """Analyze a single timeline file"""
+        logger.info(f"Starting analysis for timeline file: {timeline_file}")
+        TimelineAnalyzer.analyze_from_timeline_file(
+            timeline_json_path=timeline_file,
+            prefill_time=prefill_time
+        )
+        logger.info(f"Analysis completed for: {timeline_file}")
+        return f"Analysis completed for {timeline_file}"
+    
+    def batch_analyze(timeline_dir: str, file_pattern: str = "*_timeline.json", prefill_time: int = 375):
+        """Batch analyze timeline files in a directory"""
+        logger.info(f"Starting batch analysis for directory: {timeline_dir}")
+        TimelineAnalyzer.batch_analyze_timeline_files(
+            timeline_dir=timeline_dir,
+            file_pattern=file_pattern,
+            prefill_time=prefill_time
+        )
+        logger.info(f"Batch analysis completed for directory: {timeline_dir}")
+        return f"Batch analysis completed for {timeline_dir}"
+    
+    # Create a command dispatcher
+    commands = {
+        'analyze': analyze_file,
+        'batch': batch_analyze
+    }
+    
+    fire.Fire(commands)
