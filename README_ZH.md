@@ -45,6 +45,13 @@ Fast-VC-Service 旨在打造一款专为生产环境设计的，高性能实时�
 
 ## 📦 一键安装
 ```bash
+# 安装系统依赖（Ubuntu/Debian）
+sudo apt-get update
+sudo apt-get install -y libopus-dev libopus0 opus-tools
+
+# 对于 CentOS/RHEL/Rocky Linux
+# sudo yum install -y opus-devel opus opus-tools
+
 # 克隆项目
 git clone --recursive https://github.com/Leroll/fast-vc-service.git
 cd fast-vc-service

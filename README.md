@@ -45,6 +45,13 @@ Fast-VC-Service aims to build a high-performance real-time streaming voice conve
 
 ## 📦 One-click Installation
 ```bash
+# Install system dependencies (Ubuntu/Debian)
+sudo apt-get update
+sudo apt-get install -y libopus-dev libopus0 opus-tools
+
+# For CentOS/RHEL/Rocky Linux
+# sudo yum install -y opus-devel opus opus-tools
+
 # Clone project
 git clone --recursive https://github.com/Leroll/fast-vc-service.git
 cd fast-vc-service
