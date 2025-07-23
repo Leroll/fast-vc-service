@@ -134,7 +134,8 @@ python examples/websocket/ws_client.py \
     - [x] 优化timeline_lognize, 添加同类event延迟项
     - [x] 日志新增SLOW标签，分别针对收包间隔，发包间隔以及VC-E2E耗时
     - [x] 优化session tool的文件命名。
-    - [x] 更改uid生成方式，改成时间的
+    - [x] 更改uid生成方式，改成时间的, 方便实验与测试。
+    - [x] 新增音高分析脚本
     - [ ] 增加音高自适应提取功能，并添加对应开关
     - [ ] 优化prefill的长度，连带的其他使用到prefill的模块要保持一致
     - [ ] 增加config，model路径选项，支持nas配置文件，支持更简洁的云主机部署

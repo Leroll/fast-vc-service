@@ -136,6 +136,7 @@ python examples/websocket/ws_client.py \
     - [x] Add SLOW tags in logs for monitoring receive interval, send interval, and VC-E2E latency
     - [x] Optimize session tool's file naming
     - [x] Change UID generation method to time-based
+    - [x] Add pitch analysis script
     - [ ] Add adaptive pitch extraction functionality with corresponding toggle switch
     - [ ] Optimize prefill length, ensuring consistency with other modules using prefill
     - [ ] Add config and model path options, support NAS configuration files, and simplify cloud host deployment
