@@ -14,8 +14,11 @@ class SessionDataManager:
     including searching, zipping, and encoding.
     """
     
-    def __init__(self, outputs_dir: str = "outputs"):
-        self.outputs_dir = Path(outputs_dir)
+    def __init__(self, search_dir: str = "outputs"):
+        """
+        search_dir: Directory where session files are stored. defaults to 'outputs'.
+        """
+        self.search_dir = Path(search_dir)
     
     def find_session_files(self, 
                            session_id: str, 
@@ -31,9 +34,9 @@ class SessionDataManager:
         
         if date_hint:
             folder_date = self._convert_date_to_folder_path(date_hint)
-            search_path = self.outputs_dir / folder_date if folder_date else self.outputs_dir
+            search_path = self.search_dir / folder_date if folder_date else self.search_dir
         else:
-            search_path = self.outputs_dir
+            search_path = self.search_dir
         logger.info(f"{session_id} | Searching path: {search_path}")
         
         if not search_path.exists():
@@ -128,18 +131,50 @@ class SessionDataManager:
             raise
         
 if __name__ == "__main__":
-    # Example usage
-    manager = SessionDataManager()
-    
-    # encode
-    # session_id = "client0_5ad8c298"
-    # # date_hint = "2025-06-11"
-    # encoded_data = manager.encode(session_id)    
-    # print(encoded_data)
+    """
+    Usage Examples:
+        # Change to the project root directory
+        cd fast-vc-service
         
-    # decode
-    encoded_data_path = "encoded.md"
-    with open(encoded_data_path, "r") as f:
-        encoded_data = f.read().strip()
-    saved_files = manager.decode(encoded_data, "outputs/decoded_session")
-    print(f"Saved files: {saved_files}")
+        1. Encode the session data
+        --data-hint is optional, it can be used to narrow down the search
+        
+        python src/fast_vc_service/tools/session_data_manager.py encode \
+            --session-id client0_abc123 > outputs/session_encoded.b64
+        
+        python src/fast_vc_service/tools/session_data_manager.py encode \
+            --session-id client0_abc123 --date-hint 2025-07-23 > session_encoded.b64
+        
+        
+        2. Decode the session data
+        --output-path is optional, it defaults to 'outputs/session_decoded'
+        
+        python src/fast_vc_service/tools/session_data_manager.py decode \
+            --encoded-file outputs/session_encoded.b64
+        
+        python src/fast_vc_service/tools/session_data_manager.py decode \
+            --encoded-file session_encoded.b64 --output-path path/to/session_decoded
+    """
+    import fire
+    
+    def encode_session(session_id: str, date_hint: str = None, search_dir: str = "outputs"):
+        """Encode session data to base64 string"""
+        manager = SessionDataManager(search_dir)
+        encoded_data = manager.encode(session_id, date_hint)
+        return encoded_data
+    
+    def decode_session(encoded_file: str, output_path: str = "outputs/session_decoded"):
+        """Decode session data from file"""
+        manager = SessionDataManager()
+        with open(encoded_file, "r") as f:
+            encoded_data = f.read().strip()
+        saved_files = manager.decode(encoded_data, output_path)
+        return saved_files
+    
+    # Create a command dispatcher
+    commands = {
+        'encode': encode_session,
+        'decode': decode_session
+    }
+    
+    fire.Fire(commands)
