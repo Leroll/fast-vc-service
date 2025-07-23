@@ -31,7 +31,7 @@ def create_app() -> FastAPI:
     
     logger.info("initializing SessionDataManager...")
     app.state.session_data_manager = SessionDataManager(
-        outputs_dir=cfg.realtime_vc.save_dir
+        search_dir=cfg.realtime_vc.save_dir
     )
     
     logger.info("initializing class: RealtimeVoiceConversion ...")
