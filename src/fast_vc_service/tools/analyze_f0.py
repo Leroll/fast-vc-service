@@ -54,13 +54,18 @@ def load_audio(audio_path, target_sr=16000):
     return audio, target_sr
 
 
-def extract_f0(audio, sr, rmvpe, hop_length=512):
+def extract_f0(audio, sr, rmvpe):
     """Extract F0 using RMVPE"""
     print("Extracting F0...")
     
     # RMVPE expects audio as numpy array
     if isinstance(audio, torch.Tensor):
         audio = audio.cpu().numpy()
+    
+    # Get hop_length from RMVPE model
+    # RMVPE uses hop_length=160 in its mel_extractor
+    hop_length = rmvpe.mel_extractor.hop_length
+    print(f"Using RMVPE model's hop_length: {hop_length}")
     
     # Extract F0
     f0 = rmvpe.infer_from_audio(audio, thred=0.03)
@@ -186,7 +191,6 @@ def analyze_f0(f0, time_axis, f0_threshold=30):
 def main(
     audio_path: str,
     device: str = "auto",
-    hop_length: int = 512,
     f0_threshold: float = 30.0,
     save_f0_data: bool = False
 ):
@@ -195,7 +199,6 @@ def main(
     Args:
         audio_path: Path to input audio file
         device: Device to use (cuda/cpu/auto)
-        hop_length: Hop length for F0 extraction
         f0_threshold: F0 threshold for voiced frame detection (Hz)
         save_f0_data: Save F0 data to CSV file
     """
@@ -211,7 +214,7 @@ def main(
         audio, sr = load_audio(audio_path)
         
         # Extract F0
-        f0, time_axis = extract_f0(audio, sr, rmvpe, hop_length)
+        f0, time_axis = extract_f0(audio, sr, rmvpe)
         
         # Analyze F0
         stats = analyze_f0(f0, time_axis, f0_threshold)
@@ -251,22 +254,22 @@ if __name__ == "__main__":
         
         # Basic F0 analysis (default behavior)
         # Saves plot as: audio_f0_plot.png and stats as: audio_f0_stats.json
-        python analyze_f0.py audio.wav
+        python src/fast_vc_service/tools/analyze_f0.py audio.wav
         
         # Custom F0 threshold for voice detection
-        python analyze_f0.py audio.wav --f0-threshold 50
+        python src/fast_vc_service/tools/analyze_f0.py audio.wav --f0-threshold 50
         
         # Save F0 data to CSV file
-        python analyze_f0.py audio.wav --save-f0-data
+        python src/fast_vc_service/tools/analyze_f0.py audio.wav --save-f0-data
         
         # Use CPU device with custom threshold
-        python analyze_f0.py audio.wav --device cpu --f0-threshold 40
+        python src/fast_vc_service/tools/analyze_f0.py audio.wav --device cpu --f0-threshold 40
         
         # Custom hop length
-        python analyze_f0.py audio.wav --hop-length 256
+        python src/fast_vc_service/tools/analyze_f0.py audio.wav --hop-length 256
         
         # Combine options: save F0 data with custom parameters
-        python analyze_f0.py audio.wav --save-f0-data --f0-threshold 35 --hop-length 256
+        python src/fast_vc_service/tools/analyze_f0.py audio.wav --save-f0-data --f0-threshold 35 --hop-length 256
     """
     fire.Fire(main)
 
