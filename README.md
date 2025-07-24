@@ -100,6 +100,19 @@ python examples/websocket/ws_client.py \
 # 📝 Version Updates
 <!-- don't forget to change version in __init__ and toml -->
 
+**2025-07-24 - v0.1.5**: Pitch Adaptive Matching Support and Real-time Monitoring Optimization
+
+  - Real-time monitoring optimization:
+    - Optimized timeline_lognize, added delay items statistics for same event types
+    - Added SLOW tags to logs for monitoring receive intervals, send intervals, and VC-E2E latency
+  - Support for pitch adaptive matching with reference audio to improve conversion quality
+    - Added pitch analysis script providing audio analysis tools
+    - Added pitch adaptive matching functionality with corresponding toggle configuration
+  - Other optimizations
+    - Changed UID generation method to time-based generation for easier experimentation and testing
+    - Optimized session tool's file naming mechanism
+    - Added config and model path options, support NAS configuration files, enable simpler cloud host deployment
+
 **2025-07-02 - v0.1.3**: Added Process and Instance Level Concurrency Monitoring  
 
   - Added PID record to logs for easier instance tracking
@@ -139,13 +152,6 @@ python examples/websocket/ws_client.py \
 
 # 🚧 TODO
 - [ ] tag - v0.2 - Improve inference efficiency, reduce RTF - v2025-xx
-    - [x] Optimize timeline_lognize, add delay items for same events
-    - [x] Add SLOW tags in logs for monitoring receive interval, send interval, and VC-E2E latency
-    - [x] Optimize session tool's file naming
-    - [x] Change UID generation method to time-based
-    - [x] Add pitch analysis script
-    - [x] Add adaptive pitch extraction functionality with corresponding toggle switch
-    - [x] Add config and model path options, support NAS configuration files, and simplify cloud host deployment
     - [ ] support conda environment configuration
     - [ ] Change realtime-vc to an independent service to prevent blocking FastAPI's async
     - [ ] Change VAD to use ONNX-GPU to improve inference speed

@@ -99,6 +99,19 @@ python examples/websocket/ws_client.py \
 # 📝 版本更新 
 <!-- don't forget to change version in __init__ and toml -->
 
+**2025-07-24 - v0.1.5**: 支持音高自适应匹配与实时性监控优化
+
+  - 实时性监控优化:
+    - 优化timeline_lognize，添加同类event延迟项统计
+    - 日志新增SLOW标签，针对收包间隔、发包间隔以及VC-E2E耗时进行标记
+  - 支持音高自适应匹配参考音频，提升转换效果
+    - 新增音高分析脚本，提供音频分析工具
+    - 增加音高自适应匹配功能，并添加对应开关配置
+  - 其他优化
+    - 更改uid生成方式，改为基于时间的生成方式，便于实验与测试
+    - 优化session tool的文件命名机制
+    - 增加config与model路径选项，支持nas配置文件，支持更简洁的云主机部署
+
 **2025-07-02 - v0.1.3**: 增加进程与实例级别并发监控  
 
   - 日志新增PID记录，便于追踪实例
@@ -111,15 +124,15 @@ python examples/websocket/ws_client.py \
   - 分离耗时的时间线统计分析模块，提升响应速度
   - 优化时间线记录机制，减少存储开销
 
+
+<details>
+<summary>查看历史版本</summary>
+
 **2025-06-19 - v0.1.1**: 首包性能优化   
 
   - 新增查询性能监控接口 /tools/performance-report，支持查询实时性能指标
   - 细化耗时日志，便于分析性能瓶颈
   - 缓解人声首包调用模型导致的延迟问题
-
-
-<details>
-<summary>查看历史版本</summary>
 
 **2025-06-15 - v0.1.0**: 基础服务框架   
 
@@ -138,13 +151,6 @@ python examples/websocket/ws_client.py \
 
 # 🚧 TODO 
 - [ ] tag - v0.2 - 提升推理时效，降低RTF - v2025-xx
-    - [x] 优化timeline_lognize, 添加同类event延迟项
-    - [x] 日志新增SLOW标签，分别针对收包间隔，发包间隔以及VC-E2E耗时
-    - [x] 优化session tool的文件命名。
-    - [x] 更改uid生成方式，改成时间的, 方便实验与测试。
-    - [x] 新增音高分析脚本
-    - [x] 增加音高自适应提取功能，并添加对应开关
-    - [x] 增加config，model路径选项，支持nas配置文件，支持更简洁的云主机部署
     - [ ] 增加conda环境配置
     - [ ] realtime-vc 改成独立的服务，防止阻塞fastapi的异步
     - [ ] vad 改用 onnx-gpu, 以提升推理速度
