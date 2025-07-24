@@ -141,9 +141,9 @@ async def send_audio_file(websocket_url,
         # Generate session ID if not provided
         if session_id is None:
             # 生成带时间戳前缀的session ID
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            unique_suffix = uuid.uuid4().hex[:6]  # 取UUID的前6位保证唯一性
-            session_id = f"F{timestamp}_{unique_suffix}"
+            timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+            unique_suffix = uuid.uuid4().hex[:4]  # 取UUID的前4位保证唯一性
+            session_id = f"F{timestamp}{unique_suffix}"
             logger.info(f"Generated session ID: {session_id}")
         result['session_id'] = session_id
         
