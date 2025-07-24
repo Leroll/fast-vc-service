@@ -151,6 +151,7 @@ python examples/websocket/ws_client.py \
 
 # 🚧 TODO 
 - [ ] tag - v0.2 - 提升推理时效，降低RTF - v2025-xx
+    - [ ] 包管理换成uv
     - [ ] 增加conda环境配置
     - [ ] realtime-vc 改成独立的服务，防止阻塞fastapi的异步
     - [ ] vad 改用 onnx-gpu, 以提升推理速度
