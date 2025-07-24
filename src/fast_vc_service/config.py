@@ -46,7 +46,7 @@ class RealtimeVoiceConversionConfig(BaseModel):
     
     zc_framerate: int = 50  # zc = samplerate // zc_framerate, rvc:100, seed-vc: 50
     block_time: float = 0.5  # 0.5 ；这里的 block time 是 0.5s                    
-    crossfade_time: float = 0.04  # 0.04 ；用于平滑过渡的交叉渐变长度，这里设定为 0.04 秒。交叉渐变通常用于避免声音中断或“断层”现象。
+    crossfade_time: float = 0.04  # 0.04 ；用于平滑过渡的交叉渐变长度，这里设定为 0.04 秒。交叉渐变通常用于避免声音中断或"断层"现象。
     extra_time: float = 2.5  # 2.5；  附加时间，设置为 0.5秒。可能用于在处理音频时延长或平滑过渡的时间。
                              # 原本默认0.5，后面更新成2.5了，放在音频的前面
     extra_time_right: float = 0.02  # 0.02；
@@ -114,57 +114,74 @@ class ConfigData(BaseModel):
 
 @Singleton
 class Config(object):
-    def __init__(self, conf_dir : Path = 'configs'):
-        self.env_profile = self.__get_env_profile()
-        self.config = self.__init_config(conf_dir)
+    def __init__(self, config_path: str = None):
+        """
+        初始化配置
+        
+        Args:
+            config_path: 配置文件路径，如果为None则从环境变量CONFIG_PATH获取，
+                        如果环境变量也没有则使用默认配置
+        """
+        self.config_path = config_path or os.getenv("CONFIG_PATH")
+        self.config = self._load_config()
         self.config_id = str(uuid.uuid4().hex)
         logger.info(f"Config ID: {self.config_id}")
+        if self.config_path:
+            logger.info(f"Loaded config from: {self.config_path}")
+        else:
+            logger.info("Using default configuration")
 
-    def yaml_load(self, path):
+    def _load_config(self) -> ConfigData:
+        """加载配置文件"""
+        if not self.config_path:
+            logger.info("No config path specified, using default values")
+            return ConfigData()
+            
+        config_path = Path(self.config_path)
+        
+        try:
+            if not config_path.exists():
+                logger.warning(f"Config file {config_path} not found, using default values")
+                return ConfigData()
+                
+            config_dict = self._yaml_load(config_path)
+            config = ConfigData(**config_dict)
+            logger.info(f"Successfully loaded config from {config_path}")
+            return config
+            
+        except yaml.YAMLError as e:
+            logger.error(f"YAML parsing error in {config_path}: {e}, using default values")
+            return ConfigData()
+        except Exception as e:
+            logger.error(f"Unexpected error loading config from {config_path}, using default values:\n{traceback.format_exc()}")
+            return ConfigData()
+
+    def _yaml_load(self, path: Path):
+        """加载YAML文件"""
         with open(path, "r", encoding="utf-8") as fin:
             return yaml.safe_load(fin)
 
-    def __get_env_profile(self) -> str:
-        env_profile = os.getenv("env_profile", "prod")
-        logger.info(f"Environment profile: {env_profile}")
-        return env_profile
-
-    def __init_config(self, conf_dir: Path) -> ConfigData:
-        """从环境变量 env_profile 中获取环境名称并加载配置
-
-        Args:
-            conf_path (str): 配置文件夹路径
-
-        Returns:
-            ConfigData: Pydantic 验证后的配置对象
-        """
-        config_path = Path(conf_dir) / f"{self.env_profile}.yaml"
-        try:
-            config_dict = self.yaml_load(config_path)
-            config = ConfigData(**config_dict)
-        except FileNotFoundError:
-            logger.error(f"Config file {config_path} not found, using default values")
-            config = ConfigData()
-        except yaml.YAMLError as e:
-            logger.error(f"YAML parsing error: {e}, using default values")
-            config = ConfigData()
-        except Exception as e:
-            logger.error(f"Unexpected error loading config, using default values:\n{traceback.format_exc()}")
-            config = ConfigData()
-        return config
-
-    def get_config(self):
+    def get_config(self) -> ConfigData:
+        """获取配置对象"""
         return self.config
 
+
 if __name__ == "__main__":
-    cfg = Config()
-    cfg_id, cfg = cfg.config_id, cfg.get_config()
-    logger.info(f"Config ID: {cfg_id} \n, Configuration: {cfg}")
-    logger.info('-'*42)
-    cfg_id_1 = Config().config_id
-    cfg_id_2 = Config().config_id
-    logger.info(f"Config ID 1: {cfg_id_1}")
-    logger.info(f"Config ID 2: {cfg_id_2}")
+    # 测试不同的配置加载方式
+    print("=== Testing config loading ===")
     
+    # 1. 默认方式（无配置文件）
+    cfg1 = Config()
+    print(f"Default config ID: {cfg1.config_id}")
     
+    # 2. 指定配置文件
+    cfg2 = Config("configs/prod.yaml")
+    print(f"Specific file config ID: {cfg2.config_id}")
     
+    # 3. 测试单例模式
+    cfg3 = Config()
+    cfg4 = Config()
+    print(f"Singleton test - cfg3 ID: {cfg3.config_id}, cfg4 ID: {cfg4.config_id}")
+    print(f"Are they the same instance? {cfg3 is cfg4}")
+
+

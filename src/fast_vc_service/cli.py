@@ -32,17 +32,16 @@ def cli():
     pass
 
 @cli.command()
-@click.option('--env', '--env-profile', 'env_profile', 
-              help='Environment profile (dev, test, prod)')
-def serve(env_profile):
+@click.option('--config', '-c', 'config_path', 
+              help='Path to configuration file')
+def serve(config_path):
     """Start the FastAPI server."""
-    # 直接设置环境变量
-    if env_profile:
-        os.environ["env_profile"] = env_profile
-        click.echo(click.style(f"🌍 Environment set to: {env_profile}", fg="cyan"))
+    # 如果指定了配置文件路径，设置环境变量
+    if config_path:
+        os.environ["CONFIG_PATH"] = config_path
+        click.echo(click.style(f"📄 Using config file: {config_path}", fg="cyan"))
     
     cfg = Config()
-    env_profile = cfg.env_profile
     app_config = cfg.get_config().app
     pid_file = get_pid_file()
     
@@ -67,7 +66,7 @@ def serve(env_profile):
         "port": app_config.port,
         "workers": app_config.workers,
         "start_time": time.time(),
-        "env_profile": env_profile  # 记录使用的环境
+        "config_path": cfg.config_path  # 记录使用的配置文件路径
     }
     with open(pid_file, "w") as f:
         json.dump(service_info, f)
@@ -211,7 +210,7 @@ def status():
         host = service_info["host"]
         port = service_info["port"]
         workers = service_info.get("workers", 1)
-        env_profile = service_info.get("env_profile", "default")  # 获取环境配置
+        config_path = service_info.get("config_path")  # 获取配置文件路径
         
         if psutil.pid_exists(master_pid):
             # 检查所有相关进程
@@ -220,7 +219,10 @@ def status():
                 all_processes = [master_process] + master_process.children(recursive=True)
                 
                 click.echo(click.style(f"✅ Service running on {host}:{port}", fg="green"))
-                click.echo(click.style(f"🌍 Environment: {env_profile}", fg="magenta"))  # 显示环境配置
+                if config_path:
+                    click.echo(click.style(f"📄 Config file: {config_path}", fg="magenta"))
+                else:
+                    click.echo(click.style(f"📄 Using default configuration", fg="magenta"))
                 click.echo(click.style(f"📊 Master PID: {master_pid}, Workers: {workers}", fg="cyan"))
                 click.echo(click.style(f"🔧 Active processes: {len(all_processes)}", fg="cyan"))
                 

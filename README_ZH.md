@@ -144,8 +144,7 @@ python examples/websocket/ws_client.py \
     - [x] 更改uid生成方式，改成时间的, 方便实验与测试。
     - [x] 新增音高分析脚本
     - [x] 增加音高自适应提取功能，并添加对应开关
-    - [ ] 优化prefill的长度，连带的其他使用到prefill的模块要保持一致
-    - [ ] 增加config，model路径选项，支持nas配置文件，支持更简洁的云主机部署
+    - [x] 增加config，model路径选项，支持nas配置文件，支持更简洁的云主机部署
     - [ ] 增加conda环境配置
     - [ ] realtime-vc 改成独立的服务，防止阻塞fastapi的异步
     - [ ] vad 改用 onnx-gpu, 以提升推理速度

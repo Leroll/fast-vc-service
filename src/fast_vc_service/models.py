@@ -8,6 +8,7 @@ from pydantic import BaseModel
 import sys
 from pathlib import Path
 import os
+from huggingface_hub import hf_hub_download
 
 # add seed-vc path to sys.path
 SEED_VC_PATH = Path(__file__).resolve().parent.parent.parent / "externals" / "seed_vc"
@@ -16,10 +17,22 @@ if str(SEED_VC_PATH) not in sys.path:
 from externals.seed_vc.modules.commons import (
     recursive_munch, load_checkpoint, build_model
 )
-from externals.seed_vc.hf_utils import load_custom_model_from_hf
 
+# import custom modules
 from fast_vc_service.utils import timer_decorator
 from fast_vc_service.config import ModelConfig
+
+
+def load_custom_model_from_hf(repo_id, model_filename="pytorch_model.bin", config_filename="config.yml"):
+    """
+    根据.env中配置的HF_HUB_CACHE路径下载模型和配置文件
+    """ 
+    model_path = hf_hub_download(repo_id=repo_id, filename=model_filename)
+    if config_filename is None:
+        return model_path
+    config_path = hf_hub_download(repo_id=repo_id, filename=config_filename)
+
+    return model_path, config_path
 
 
 class ModelFactory:
@@ -43,28 +56,28 @@ class ModelFactory:
         """set up cache paths for HF and ModelScope"""
         project_root = Path(__file__).resolve().parent.parent.parent
         
-        hf_cache = os.environ.get('HF_HUB_CACHE', 'checkpoints/hf_cache')
+        hf_hub_cache = os.environ.get('HF_HUB_CACHE', 'checkpoints/hf_cache')
         modelscope_cache = os.environ.get('MODELSCOPE_CACHE', 'checkpoints/modelscope_cache')
         
-        hf_cache_path = Path(hf_cache)
-        modelscope_cache_path = Path(modelscope_cache)
+        hf_hub_cache = Path(hf_hub_cache)
+        modelscope_cache = Path(modelscope_cache)
         
-        if not hf_cache_path.is_absolute():
-            hf_cache_path = project_root / hf_cache_path
-        if not modelscope_cache_path.is_absolute():
-            modelscope_cache_path = project_root / modelscope_cache_path
+        if not hf_hub_cache.is_absolute():
+            hf_hub_cache = project_root / hf_hub_cache
+        if not modelscope_cache.is_absolute():
+            modelscope_cache = project_root / modelscope_cache
         
         # set absolute paths to environment variables
-        os.environ['HF_HUB_CACHE'] = str(hf_cache_path)
-        os.environ['MODELSCOPE_CACHE'] = str(modelscope_cache_path)
+        os.environ['HF_HUB_CACHE'] = str(hf_hub_cache)
+        os.environ['MODELSCOPE_CACHE'] = str(modelscope_cache)
         
-        hf_cache_path.mkdir(parents=True, exist_ok=True)
-        modelscope_cache_path.mkdir(parents=True, exist_ok=True)
+        hf_hub_cache.mkdir(parents=True, exist_ok=True)
+        modelscope_cache.mkdir(parents=True, exist_ok=True)
         
-        self.logger.info(f"HF_HUB_CACHE set to: {hf_cache_path}")
-        self.logger.info(f"MODELSCOPE_CACHE set to: {modelscope_cache_path}")
+        self.logger.info(f"HF_HUB_CACHE set to: {hf_hub_cache}")
+        self.logger.info(f"MODELSCOPE_CACHE set to: {modelscope_cache}")
         
-        return hf_cache_path, modelscope_cache_path
+        return hf_hub_cache, modelscope_cache
 
     @timer_decorator
     def _load_models(self):

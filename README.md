@@ -145,8 +145,7 @@ python examples/websocket/ws_client.py \
     - [x] Change UID generation method to time-based
     - [x] Add pitch analysis script
     - [x] Add adaptive pitch extraction functionality with corresponding toggle switch
-    - [ ] Optimize prefill length, ensuring consistency with other modules using prefill
-    - [ ] Add config and model path options, support NAS configuration files, and simplify cloud host deployment
+    - [x] Add config and model path options, support NAS configuration files, and simplify cloud host deployment
     - [ ] support conda environment configuration
     - [ ] Change realtime-vc to an independent service to prevent blocking FastAPI's async
     - [ ] Change VAD to use ONNX-GPU to improve inference speed
