@@ -144,13 +144,12 @@ python examples/websocket/ws_client.py \
     - [x] Optimize session tool's file naming
     - [x] Change UID generation method to time-based
     - [x] Add pitch analysis script
-    - [ ] Add adaptive pitch extraction functionality with corresponding toggle switch
+    - [x] Add adaptive pitch extraction functionality with corresponding toggle switch
     - [ ] Optimize prefill length, ensuring consistency with other modules using prefill
     - [ ] Add config and model path options, support NAS configuration files, and simplify cloud host deployment
     - [ ] support conda environment configuration
     - [ ] Change realtime-vc to an independent service to prevent blocking FastAPI's async
     - [ ] Change VAD to use ONNX-GPU to improve inference speed
-    - [ ] Complete support for seed-vc V2.0 model
     - [ ] Explore solutions to reduce model inference latency (e.g., new model architectures, quantization, etc.)
     - [ ] Use torchaudio to directly read reference audio to GPU, eliminating transfer steps
     - [ ] Fix file_vc issue with the last block

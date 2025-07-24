@@ -37,7 +37,13 @@ class Session:
         self.output_wav_record = []
         self.save_dir = save_dir
         self.is_saved = False  # flag to indicate if the session has been saved
-        self.is_first_chunk = True 
+        self.is_first_chunk = True  # 是否是第一个chunk，第一次收到音频包会调用模型，把延迟放在这里
+        
+        # f0 extractor
+        self.voiced_log_f0_alt = []  # 存储用于计算median_log_f0_alt的音高
+        self.current_num_f0_blocks = 0  # 当前累计的音高块数
+        self.median_log_f0_alt = None  # 最终用于计算的中位数音高
+        self.shifted_f0_alt = None  # 当前chunk的input_wav对应转换音高
         
         # SLOW tracking
         self.sent_slow_threshold = send_slow_threshold  # 两个客户段发送过来的音频包之间的间隔，认定SLOW的阈值， 单位ms

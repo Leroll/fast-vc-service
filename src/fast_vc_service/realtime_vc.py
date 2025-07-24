@@ -28,7 +28,7 @@ class RealtimeVoiceConversion:
 
     def __init__(self, cfg:RealtimeVoiceConversionConfig, model_cfg: ModelConfig) -> None:
         self.cfg = cfg 
-        self.models = ModelFactory(model_config=model_cfg).get_models()  # initialize models
+        self.models = ModelFactory(model_config=model_cfg, is_f0=self.cfg.is_f0).get_models()  # initialize models
         self._init_performance_tracking() 
         self._init_realtime_parameters()  # init realtime parameters
         self.reference = self._update_reference()
@@ -41,6 +41,7 @@ class RealtimeVoiceConversion:
         1. time cost in every module        
         """
         self.vad_time = deque(maxlen=self.cfg.max_tracking_counter)  
+        self.f0_extractor_time = deque(maxlen=self.cfg.max_tracking_counter)
         self.noise_gate_time = deque(maxlen=self.cfg.max_tracking_counter)  
         self.preprocessing_time = deque(maxlen=self.cfg.max_tracking_counter)  
         
@@ -59,6 +60,7 @@ class RealtimeVoiceConversion:
         msg = "\n"
         time_records = {
             "VAD": self.vad_time,
+            "F0 Extractor": self.f0_extractor_time,
             "Noise Gate": self.noise_gate_time,
             "Preprocessing": self.preprocessing_time,
             "Semantic Extraction": self.senmantic_time,
@@ -113,6 +115,10 @@ class RealtimeVoiceConversion:
         
         # vad
         self.vad_chunk_size = 1000 * self.cfg.block_time  # 转换成ms
+        
+        # f0_extractor
+        rmvpe_hop_length = 160  # 这个在RMVPE模型设置里面，hop_length设置的160，没有取，而是写死了。
+        self.f0_chunk_size = self.block_frame // rmvpe_hop_length + 1
         
         # sola
         self.sola_buffer_frame = min( self.crossfade_frame, 4 * self.zc ) # 80ms帧 和 crossfade帧(默认40ms)中的小数
@@ -213,21 +219,36 @@ class RealtimeVoiceConversion:
         sr = mel_fn_args["sampling_rate"]  # sr of reference_wav is determined by mel_fn_args
         reference_wav = reference_wav[:int(sr * self.cfg.max_prompt_length)]  # Truncate reference_wav if it exceeds max_prompt_length
         reference_wav_tensor = torch.from_numpy(reference_wav).to(self.cfg.device)
-
         ori_waves_16k = torchaudio.functional.resample(reference_wav_tensor, sr, 16000)  
+        
+        # f0 extraction
+        if self.cfg.is_f0:
+            f0_ori = self.models['f0_fn'](ori_waves_16k, thred=0.03)
+            f0_ori = torch.from_numpy(f0_ori).to(self.cfg.device)[None]
+            
+            voiced_f0_ori = f0_ori[f0_ori > 1]
+            voiced_log_f0_ori = torch.log(voiced_f0_ori + 1e-5)
+            median_log_f0_ori = torch.median(voiced_log_f0_ori)
+        else:
+            f0_ori = None  # 获取 prompt_condition 时需要
+            median_log_f0_ori = None  # 后续实时过程中chunk数据需要用
+        
+        # semantic
         S_ori = semantic_fn(ori_waves_16k.unsqueeze(0))  # Whisper, Wav2Vec, and HuBERT all have a downsampling factor of 320x
                                                          # equivalent to 50 frames per second
+        # timbre 
         feat2 = torchaudio.compliance.kaldi.fbank(
             ori_waves_16k.unsqueeze(0), num_mel_bins=80, dither=0, sample_frequency=16000
         )  # 16k mel
         feat2 = feat2 - feat2.mean(dim=0, keepdim=True)  # mean normalization
         prompt_style = campplus_model(feat2.unsqueeze(0))  # cam++ using fbank feature
 
+        # mel & prompt_condition
         prompt_mel = to_mel(reference_wav_tensor.unsqueeze(0))  # using 22.05k sr, hop_length=256, means 256x downsampling
                                                           # equivalent to 86 frames per second
         target2_lengths = torch.LongTensor([prompt_mel.size(2)]).to(prompt_mel.device)
         prompt_condition = model.length_regulator(
-            S_ori, ylens=target2_lengths, n_quantizers=3, f0=None
+            S_ori, ylens=target2_lengths, n_quantizers=3, f0=f0_ori
         )[0]  # samplerate aligned to mel
 
         reference = {
@@ -236,6 +257,8 @@ class RealtimeVoiceConversion:
             "prompt_mel": prompt_mel,  # need 22.05k sr, related to hop_length, win_length
                            # parameter of it is complicated, let it be for now  
             "prompt_style": prompt_style, 
+            "median_log_f0_ori": median_log_f0_ori,  # median log f0 of reference wav
+                                                     # has value only when is_f0 is True
         }
         return reference
 
@@ -247,6 +270,7 @@ class RealtimeVoiceConversion:
                   return_length,
                   diffusion_steps,
                   inference_cfg_rate,
+                  shifted_f0_alt=None
                 ):
         """vc inference
         
@@ -289,7 +313,7 @@ class RealtimeVoiceConversion:
         # using mel's sr and hop_length to make target_length consistent with the reference part
         target_lengths = torch.LongTensor([(skip_head + return_length + skip_tail - ce_dit_difference * 50) / 50 * sr // hop_length]).to(S_alt.device)
         cond = model.length_regulator(
-            S_alt, ylens=target_lengths , n_quantizers=3, f0=None
+            S_alt, ylens=target_lengths , n_quantizers=3, f0=shifted_f0_alt
         )[0]
         cat_condition = torch.cat([prompt_condition, cond], dim=1)
         
@@ -412,6 +436,34 @@ class RealtimeVoiceConversion:
             self.cfg.device
         )
         
+    def _f0_extractor(self, session:Session):
+        """音高提取函数
+        
+        1. 提取音高
+        2. 更新 median_log_f0_alt
+        3. 更新 shifted_f0_alt
+        """
+        if session.vad_speech_detected:  # only extract f0 when vad detected
+            f0_alt = self.models['f0_fn'](session.input_wav, thred=0.03)  # 计算当前音频片段的f0
+            
+            if session.current_num_f0_blocks < self.cfg.total_block_for_f0:  # 累计计算当前通话的 median_log_f0_alt
+                # median_log_f0_alt
+                chunk_f0_alt = f0_alt[ -self.f0_chunk_size: ]  # 只累计当前chunk，而不加入上下文，以免重复加入
+                chunk_voiced_f0_alt = chunk_f0_alt[ chunk_f0_alt > 1 ]
+                chunk_voiced_log_f0_alt = np.log(chunk_voiced_f0_alt + 1e-5)
+                session.voiced_log_f0_alt.extend(chunk_voiced_log_f0_alt)
+                session.current_num_f0_blocks += 1
+                session.median_log_f0_alt = torch.tensor(np.median(session.voiced_log_f0_alt)).to(self.cfg.device)
+                logger.info(f"{session.session_id} | median_log_f0_alt: {session.median_log_f0_alt.item():.2f} | current_num_f0_blocks: {session.current_num_f0_blocks}")
+                
+            # shifted_f0_alt
+            f0_alt = torch.from_numpy(f0_alt).to(self.cfg.device)[None]
+            log_f0_alt = torch.log(f0_alt + 1e-5)
+            shifted_log_f0_alt = log_f0_alt.clone()
+            shifted_log_f0_alt[f0_alt > 1] = log_f0_alt[f0_alt > 1] - session.median_log_f0_alt + self.reference['median_log_f0_ori']
+            session.shifted_f0_alt = torch.exp(shifted_log_f0_alt)
+            
+        
     def _voice_conversion(self, session) -> torch.Tensor:
         """vc inference 
         
@@ -426,6 +478,7 @@ class RealtimeVoiceConversion:
                 self.return_length,
                 int(self.cfg.diffusion_steps),
                 self.cfg.inference_cfg_rate,
+                session.shifted_f0_alt  # 默认是 None，兼容不取音高的模式
             )
             
             # model sr != common sr 的话，会 resample 到 common sr
@@ -599,6 +652,14 @@ class RealtimeVoiceConversion:
         self.preprocessing_time.append(preprocess_time) 
         time_records["pre"] = preprocess_time
         
+        # F0 extraction
+        if self.cfg.is_f0:  # only extract f0 when vad detected
+            t0 = time.perf_counter()
+            self._f0_extractor(session)  # 更新 median_log_f0_alt 和 shifted_f0_alt
+            f0_extractor_time = time.perf_counter() - t0
+            self.f0_extractor_time.append(f0_extractor_time)
+            time_records["f0"] = f0_extractor_time
+    
         # 4. voice conversion
         t0 = time.perf_counter()
         infer_wav = self._voice_conversion(session) 

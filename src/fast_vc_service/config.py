@@ -41,6 +41,7 @@ class RealtimeVoiceConversionConfig(BaseModel):
                                 # 音频流在vc过程中基础采样率
                                 # 不可修改，需要保证为 16k，vad，senmantic 都是 16k 模型
                                 # 某些环节采样率会改变，比如dit model会更改为22050，需要再次转换回来
+                                # rmvpe 也需要 16000
     BIT_DEPTH: int = 16  # 音频流的位深度，16位
     
     zc_framerate: int = 50  # zc = samplerate // zc_framerate, rvc:100, seed-vc: 50
@@ -49,6 +50,10 @@ class RealtimeVoiceConversionConfig(BaseModel):
     extra_time: float = 2.5  # 2.5；  附加时间，设置为 0.5秒。可能用于在处理音频时延长或平滑过渡的时间。
                              # 原本默认0.5，后面更新成2.5了，放在音频的前面
     extra_time_right: float = 0.02  # 0.02；
+    
+    # auto_f0 
+    is_f0: bool =  True  # 是否使用自适应音高
+    total_block_for_f0: int = 6  # 6； 用于计算中位数音高的总块数，只有探测到人声的才会包含，6块对应 3s
 
     # noise_gata
     noise_gate: bool = True  # 是否使用噪声门
