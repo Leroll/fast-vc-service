@@ -12,6 +12,7 @@ from pathlib import Path
 import librosa
 import torch
 import fire
+import glob
 
 # Add project paths
 SCRIPT_DIR = Path(__file__).resolve().parent
@@ -188,62 +189,188 @@ def analyze_f0(f0, time_axis, f0_threshold=30):
     return stats
 
 
-def main(
-    audio_path: str,
+def process_folder(
+    folder_path: str,
     device: str = "auto",
     f0_threshold: float = 30.0,
-    save_f0_data: bool = False
+    save_f0_data: bool = False,
+    recursive: bool = False
 ):
-    """Analyze F0 using RMVPE
+    """Batch process all WAV files in a folder
     
     Args:
-        audio_path: Path to input audio file
+        folder_path: Path to folder containing WAV files
         device: Device to use (cuda/cpu/auto)
         f0_threshold: F0 threshold for voiced frame detection (Hz)
         save_f0_data: Save F0 data to CSV file
+        recursive: Search WAV files recursively in subfolders
     """
     # Determine device
     if device == "auto":
         device = "cuda" if torch.cuda.is_available() else "cpu"
     
+    folder_path = Path(folder_path)
+    if not folder_path.exists():
+        raise FileNotFoundError(f"Folder not found: {folder_path}")
+    
+    # Find all WAV files
+    if recursive:
+        wav_files = list(folder_path.rglob("*.wav")) + list(folder_path.rglob("*.WAV"))
+    else:
+        wav_files = list(folder_path.glob("*.wav")) + list(folder_path.glob("*.WAV"))
+    
+    if not wav_files:
+        print(f"No WAV files found in {folder_path}")
+        return
+    
+    print(f"Found {len(wav_files)} WAV files")
+    print("="*60)
+    
     try:
-        # Load RMVPE model
+        # Load RMVPE model once for all files
         rmvpe = load_rmvpe_model(device)
         
-        # Load audio
-        audio, sr = load_audio(audio_path)
+        # Process each WAV file
+        successful_count = 0
+        failed_files = []
         
-        # Extract F0
-        f0, time_axis = extract_f0(audio, sr, rmvpe)
+        for i, audio_path in enumerate(wav_files, 1):
+            print(f"\nProcessing [{i}/{len(wav_files)}]: {audio_path.name}")
+            print("-" * 50)
+            
+            try:
+                # Load audio
+                audio, sr = load_audio(str(audio_path))
+                
+                # Extract F0
+                f0, time_axis = extract_f0(audio, sr, rmvpe)
+                
+                # Analyze F0
+                stats = analyze_f0(f0, time_axis, f0_threshold)
+                
+                # Generate file paths
+                audio_stem = audio_path.stem
+                audio_dir = audio_path.parent
+                
+                # Save outputs
+                plot_path = audio_dir / f"{audio_stem}_f0_plot.png"
+                stats_path = audio_dir / f"{audio_stem}_f0_stats.json"
+                
+                # Save plot and stats
+                plot_f0(f0, time_axis, plot_path)
+                
+                if stats is not None:
+                    save_f0_stats(stats, stats_path)
+                
+                # Save F0 data if requested
+                if save_f0_data:
+                    csv_path = audio_dir / f"{audio_stem}_f0_data.csv"
+                    save_f0_data(f0, time_axis, csv_path)
+                
+                successful_count += 1
+                print(f"✓ Successfully processed: {audio_path.name}")
+                
+            except Exception as e:
+                print(f"✗ Failed to process {audio_path.name}: {e}")
+                failed_files.append(str(audio_path))
         
-        # Analyze F0
-        stats = analyze_f0(f0, time_axis, f0_threshold)
+        # Summary
+        print("\n" + "="*60)
+        print("BATCH PROCESSING SUMMARY")
+        print("="*60)
+        print(f"Total files: {len(wav_files)}")
+        print(f"Successfully processed: {successful_count}")
+        print(f"Failed: {len(failed_files)}")
         
-        # Generate default file paths
-        audio_path_obj = Path(audio_path)
-        audio_stem = audio_path_obj.stem  # filename without extension
-        audio_dir = audio_path_obj.parent
+        if failed_files:
+            print("\nFailed files:")
+            for file in failed_files:
+                print(f"  - {file}")
         
-        # Default paths
-        plot_path = audio_dir / f"{audio_stem}_f0_plot.png"
-        stats_path = audio_dir / f"{audio_stem}_f0_stats.json"
-        
-        # Always save plot and stats
-        plot_f0(f0, time_axis, plot_path)
-        
-        if stats is not None:
-            save_f0_stats(stats, stats_path)
-        
-        # Save F0 data only if explicitly requested
-        if save_f0_data:
-            csv_path = audio_dir / f"{audio_stem}_f0_data.csv"
-            save_f0_data(f0, time_axis, csv_path)
-        
-        print("\nF0 analysis completed successfully!")
+        print(f"\nBatch processing completed!")
         
     except Exception as e:
-        print(f"Error: {e}")
+        print(f"Error during batch processing: {e}")
         sys.exit(1)
+
+
+def main(
+    input_path: str,
+    device: str = "auto",
+    f0_threshold: float = 30.0,
+    save_f0_data: bool = False,
+    batch_mode: bool = False,
+    recursive: bool = False
+):
+    """Analyze F0 using RMVPE
+    
+    Args:
+        input_path: Path to input audio file or folder (for batch processing)
+        device: Device to use (cuda/cpu/auto)
+        f0_threshold: F0 threshold for voiced frame detection (Hz)
+        save_f0_data: Save F0 data to CSV file
+        batch_mode: Enable batch processing mode for folders
+        recursive: Search WAV files recursively in subfolders (only for batch mode)
+    """
+    input_path_obj = Path(input_path)
+    
+    # Auto-detect if input is a folder
+    if input_path_obj.is_dir():
+        if not batch_mode:
+            print("Input is a folder. Enabling batch mode automatically.")
+        process_folder(
+            input_path,
+            device=device,
+            f0_threshold=f0_threshold,
+            save_f0_data=save_f0_data,
+            recursive=recursive
+        )
+    elif batch_mode:
+        raise ValueError("Batch mode enabled but input is not a folder")
+    else:
+        # Single file processing (existing functionality)
+        # Determine device
+        if device == "auto":
+            device = "cuda" if torch.cuda.is_available() else "cpu"
+        
+        try:
+            # Load RMVPE model
+            rmvpe = load_rmvpe_model(device)
+            
+            # Load audio
+            audio, sr = load_audio(input_path)
+            
+            # Extract F0
+            f0, time_axis = extract_f0(audio, sr, rmvpe)
+            
+            # Analyze F0
+            stats = analyze_f0(f0, time_axis, f0_threshold)
+            
+            # Generate default file paths
+            audio_path_obj = Path(input_path)
+            audio_stem = audio_path_obj.stem
+            audio_dir = audio_path_obj.parent
+            
+            # Default paths
+            plot_path = audio_dir / f"{audio_stem}_f0_plot.png"
+            stats_path = audio_dir / f"{audio_stem}_f0_stats.json"
+            
+            # Always save plot and stats
+            plot_f0(f0, time_axis, plot_path)
+            
+            if stats is not None:
+                save_f0_stats(stats, stats_path)
+            
+            # Save F0 data only if explicitly requested
+            if save_f0_data:
+                csv_path = audio_dir / f"{audio_stem}_f0_data.csv"
+                save_f0_data(f0, time_axis, csv_path)
+            
+            print("\nF0 analysis completed successfully!")
+            
+        except Exception as e:
+            print(f"Error: {e}")
+            sys.exit(1)
 
 
 if __name__ == "__main__":
@@ -252,24 +379,23 @@ if __name__ == "__main__":
         # Change to the project root directory
         cd fast-vc-service 
         
-        # Basic F0 analysis (default behavior)
-        # Saves plot as: audio_f0_plot.png and stats as: audio_f0_stats.json
+        # Single file processing (existing functionality)
         python src/fast_vc_service/tools/analyze_f0.py audio.wav
         
-        # Custom F0 threshold for voice detection
-        python src/fast_vc_service/tools/analyze_f0.py audio.wav --f0-threshold 50
+        # Batch process all WAV files in a folder
+        python src/fast_vc_service/tools/analyze_f0.py /path/to/folder
         
-        # Save F0 data to CSV file
-        python src/fast_vc_service/tools/analyze_f0.py audio.wav --save-f0-data
+        # Batch process with custom parameters
+        python src/fast_vc_service/tools/analyze_f0.py /path/to/folder --f0-threshold 50 --save-f0-data
         
-        # Use CPU device with custom threshold
-        python src/fast_vc_service/tools/analyze_f0.py audio.wav --device cpu --f0-threshold 40
+        # Recursive batch processing (include subfolders)
+        python src/fast_vc_service/tools/analyze_f0.py /path/to/folder --recursive
         
-        # Custom hop length
-        python src/fast_vc_service/tools/analyze_f0.py audio.wav --hop-length 256
+        # Explicit batch mode (optional, auto-detected for folders)
+        python src/fast_vc_service/tools/analyze_f0.py /path/to/folder --batch-mode
         
-        # Combine options: save F0 data with custom parameters
-        python src/fast_vc_service/tools/analyze_f0.py audio.wav --save-f0-data --f0-threshold 35 --hop-length 256
+        # Single file with custom parameters
+        python src/fast_vc_service/tools/analyze_f0.py audio.wav --f0-threshold 35 --save-f0-data
     """
     fire.Fire(main)
 
