@@ -125,15 +125,15 @@ python examples/websocket/ws_client.py \
   - Separated time-consuming timeline statistical analysis module to improve response speed
   - Optimized timeline recording mechanism to reduce storage overhead
 
+
+<details>
+<summary>View Historical Versions</summary>
+
 **2025-06-19 - v0.1.1**: First Packet Performance Optimization   
 
   - Added performance monitoring API endpoint /tools/performance-report for real-time performance metrics
   - Enhanced timing logs for better performance bottleneck analysis
   - Mitigated delay issue caused by first audio packet model invocation
-
-
-<details>
-<summary>View Historical Versions</summary>
 
 **2025-06-15 - v0.1.0**: Basic Service Framework   
 
