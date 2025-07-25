@@ -2,7 +2,28 @@
 
 ## Installation
 
-### Method 1: Using Poetry
+### Using uv (Recommended)
+```bash
+# Install system dependencies (Ubuntu/Debian)
+sudo apt-get update
+sudo apt-get install -y libopus-dev libopus0 opus-tools
+
+# Clone project
+git clone --recursive https://github.com/Leroll/fast-vc-service.git
+cd fast-vc-service
+cp .env.example .env  # Configure environment variables
+
+# Install uv (if not already installed)
+pip install uv
+
+# Sync dependencies and create virtual environment
+uv sync
+```
+
+When running for the first time, models will be automatically downloaded to the model path configured in .env (default checkpoints).  
+If you encounter network issues, you can uncomment the `HF_ENDPOINT` variable in the `.env` file to use domestic mirror sources for accelerated model downloads.
+
+### Method 2: Using Poetry
 ```bash
 git clone --recursive https://github.com/Leroll/fast-vc-service.git
 cd fast-vc-service
@@ -10,7 +31,7 @@ cp .env.example .env  # Configure environment variables
 poetry install  # Install dependencies
 ```
 
-### Method 2: Using Existing Conda Environment
+### Method 3: Using Existing Conda Environment
 ```bash
 git clone --recursive https://github.com/Leroll/fast-vc-service.git
 cd fast-vc-service
@@ -23,9 +44,6 @@ conda activate your_env_name
 poetry config virtualenvs.create false
 poetry install
 ```
-
-When running for the first time, models will be automatically downloaded to the checkpoint folder.  
-If you encounter network issues, you can uncomment the `HF_ENDPOINT` variable in the `.env` file to use domestic mirror sources for accelerated model downloads.
 
 ### Replace Poetry Source (if needed)
 ```
@@ -40,11 +58,10 @@ poetry install
 ```bash
 # Start service
 fast-vc serve  # Default startup using env_profile in .env
-fast-vc serve --env prod  # Specify environment configuration
 nohup fast-vc serve > /dev/null 2>&1 &  # Run service in background
 
-# Using Poetry
-poetry run fast-vc serve
+# Using uv
+uv run fast-vc serve
 ```
 
 <!-- Add service startup demonstration -->

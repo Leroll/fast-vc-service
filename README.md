@@ -49,9 +49,6 @@ Fast-VC-Service aims to build a high-performance real-time streaming voice conve
 sudo apt-get update
 sudo apt-get install -y libopus-dev libopus0 opus-tools
 
-# For CentOS/RHEL/Rocky Linux
-# sudo yum install -y opus-devel opus opus-tools
-
 # Clone project
 git clone --recursive https://github.com/Leroll/fast-vc-service.git
 cd fast-vc-service
@@ -59,8 +56,8 @@ cd fast-vc-service
 # Configure environment
 cp .env.example .env
 
-# Install dependencies (Poetry recommended)
-poetry install
+# Install dependencies (using uv)
+uv sync
 
 # Start service
 fast-vc serve
@@ -152,13 +149,14 @@ python examples/websocket/ws_client.py \
 
 # 🚧 TODO
 - [ ] tag - v0.2 - Improve inference efficiency, reduce RTF - v2025-xx
-    - [ ] support conda environment configuration
+    - [x] Switch project management to uv
+    - [ ] Server send/recv event definitions should match roles
     - [ ] Change realtime-vc to an independent service to prevent blocking FastAPI's async
     - [ ] Change VAD to use ONNX-GPU to improve inference speed
     - [ ] Explore solutions to reduce model inference latency (e.g., new model architectures, quantization, etc.)
     - [ ] Use torchaudio to directly read reference audio to GPU, eliminating transfer steps
     - [ ] Fix file_vc issue with the last block
-    - [ ] Create Docker image, AutoDL image
+    - [ ] Create Docker image and AutoDL image
 
 # 🙏 Acknowledgements
 - [Seed-VC](https://github.com/Plachtaa/seed-vc) - Provides powerful underlying voice conversion model

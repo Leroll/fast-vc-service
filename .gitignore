@@ -65,3 +65,6 @@ temp/*
 
 # cases
 cases
+
+# uv
+.venv*

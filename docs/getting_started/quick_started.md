@@ -2,51 +2,36 @@
 
 ## 安装
 
-### 方式一：使用 Poetry
+### 使用 uv（推荐）
 ```bash
+# 安装系统依赖（Ubuntu/Debian）
+sudo apt-get update
+sudo apt-get install -y libopus-dev libopus0 opus-tools
+
+# 克隆项目
 git clone --recursive https://github.com/Leroll/fast-vc-service.git
 cd fast-vc-service
 cp .env.example .env  # 配置环境变量
-poetry install  # 安装依赖
+
+# 安装 uv（如果尚未安装）
+pip install uv
+
+# 同步依赖并创建虚拟环境
+uv sync
 ```
 
-### 方式二：使用现有 Conda 环境
-```bash
-git clone --recursive https://github.com/Leroll/fast-vc-service.git
-cd fast-vc-service
-cp .env.example .env  # 配置环境变量
-
-# 激活现有的conda环境（Python 3.10+）
-conda activate your_env_name
-
-# 使用 Poetry（禁用虚拟环境）
-poetry config virtualenvs.create false
-poetry install
-```
-
-当第一次运行时，模型会自动下载到checkpoint文件夹下。  
+当第一次运行时，模型会自动下载到.env里面配置的模型路径下(默认 checkpoints)。  
 如果有网络问题，可取消注 `.env` 文件中的 `HF_ENDPOINT` 变量，使用国内镜像源加速模型下载。
-
-
-### 替换poetry源（如果有需要）
-```
-poetry source remove aliyun
-poetry source add new_name https://xx/pypi/simple --priority=primary
-rm poetry.lock  # 删除锁文件，重新生成
-poetry lock 
-poetry install  
-```
 
 
 ## 启动服务
 ```bash
 # 启动服务
 fast-vc serve  # 默认启动使用 .env 中的 env_profile
-fast-vc serve --env prod  # 指定环境配置
 nohup fast-vc serve > /dev/null 2>&1 &  # 后台运行服务
 
-# 使用 Poetry
-poetry run fast-vc serve
+# 使用 uv 运行
+uv run fast-vc serve
 ```
 
 <!-- 添加服务启动演示 -->
@@ -107,7 +92,7 @@ python examples/websocket/ws_client.py \
 ## 批量文件测试, 用于验证语音转换效果, 不需要启动服务
 ```bash
 python examples/file_conversion/file_vc.py \
-    --source-wav-path "wavs/sources/low-pitched-male-24k.wav" \
+    --source-wav-path "wavs/sources/low-pitched-male-24k.wav"
 ```
 
 ## 并发性能测试

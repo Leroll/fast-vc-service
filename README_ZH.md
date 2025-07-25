@@ -49,9 +49,6 @@ Fast-VC-Service 旨在打造一款专为生产环境设计的，高性能实时�
 sudo apt-get update
 sudo apt-get install -y libopus-dev libopus0 opus-tools
 
-# 对于 CentOS/RHEL/Rocky Linux
-# sudo yum install -y opus-devel opus opus-tools
-
 # 克隆项目
 git clone --recursive https://github.com/Leroll/fast-vc-service.git
 cd fast-vc-service
@@ -59,8 +56,8 @@ cd fast-vc-service
 # 配置环境
 cp .env.example .env
 
-# 安装依赖（推荐使用 Poetry）
-poetry install
+# 安装依赖（使用 uv）
+uv sync
 
 # 启动服务
 fast-vc serve
@@ -151,8 +148,8 @@ python examples/websocket/ws_client.py \
 
 # 🚧 TODO 
 - [ ] tag - v0.2 - 提升推理时效，降低RTF - v2025-xx
-    - [ ] 包管理换成uv
-    - [ ] 增加conda环境配置
+    - [x] 项目管理换成uv
+    - [ ] 服务器的send recv 等事件定义应该符合角色
     - [ ] realtime-vc 改成独立的服务，防止阻塞fastapi的异步
     - [ ] vad 改用 onnx-gpu, 以提升推理速度
     - [ ] 探索降低模型推理时延的方案（比如新的模型架构、量化等）
