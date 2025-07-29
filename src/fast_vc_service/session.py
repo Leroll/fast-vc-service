@@ -120,9 +120,12 @@ class Session:
             cumulative_ms = self.sent_audio_ms
             
             interval = (cur_time - self.last_send_time) * 1000 if self.last_send_time is not None else 0
-            self.last_send_time = cur_time 
-            if interval > self.sent_slow_threshold:
+            c1 = interval > self.sent_slow_threshold
+            c2 = self.last_send_time >= self.last_recv_time  # last_send_time 晚于 last_recv_time
+                                                             # 排除受vc阻塞而导致的假延迟
+            if c1 and c2:
                 logger.warning(f"{self.session_id} | [SEND_SLOW]: {interval:.2f} ms")
+            self.last_send_time = cur_time 
             
         elif event_type == EventType.RECV:
             self.recv_audio_ms += chunk_duration_ms

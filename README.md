@@ -150,8 +150,8 @@ python examples/websocket/ws_client.py \
 # 🚧 TODO
 - [ ] tag - v0.2 - Improve inference efficiency, reduce RTF - v2025-xx
     - [x] Switch project management to uv
+    - [x] Fix send_slow false delay Warning
     - [ ] Server send/recv event definitions should match roles
-    - [ ] Change realtime-vc to an independent service to prevent blocking FastAPI's async
     - [ ] Change VAD to use ONNX-GPU to improve inference speed
     - [ ] Explore solutions to reduce model inference latency (e.g., new model architectures, quantization, etc.)
     - [ ] Use torchaudio to directly read reference audio to GPU, eliminating transfer steps

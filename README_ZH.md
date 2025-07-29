@@ -148,9 +148,9 @@ python examples/websocket/ws_client.py \
 
 # 🚧 TODO 
 - [ ] tag - v0.2 - 提升推理时效，降低RTF - v2025-xx
-    - [x] 项目管理换成uv
+    - [x] 项目管理工具换成uv
+    - [x] fix send_slow 假延迟 Warning
     - [ ] 服务器的send recv 等事件定义应该符合角色
-    - [ ] realtime-vc 改成独立的服务，防止阻塞fastapi的异步
     - [ ] vad 改用 onnx-gpu, 以提升推理速度
     - [ ] 探索降低模型推理时延的方案（比如新的模型架构、量化等）
     - [ ] reference 使用torchaudio 直接读取到GPU中，省去转移的步骤。
