@@ -211,7 +211,9 @@ class ModelFactory:
             from externals.seed_vc.modules.hifigan.f0_predictor import ConvRNNF0Predictor
             hift_config = yaml.safe_load(open(SEED_VC_PATH / 'configs/hifigan.yml', 'r'))
             hift_gen = HiFTGenerator(**hift_config['hift'], f0_predictor=ConvRNNF0Predictor(**hift_config['f0_predictor']))
-            hift_path = load_custom_model_from_hf("FunAudioLLM/CosyVoice-300M", 'hift.pt', None)
+            # hift_path = load_custom_model_from_hf("FunAudioLLM/CosyVoice-300M", 'hift.pt', None)
+            # 原 FunAudioLLM/CosyVoice-300M 仓库被清空 -2025-07-29
+            hift_path = load_custom_model_from_hf("model-scope/CosyVoice-300M", 'hift.pt', None)  
             hift_gen.load_state_dict(torch.load(hift_path, map_location='cpu'))
             hift_gen.eval()
             hift_gen.to(self.device)
