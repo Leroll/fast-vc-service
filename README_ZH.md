@@ -150,12 +150,14 @@ python examples/websocket/ws_client.py \
 - [ ] tag - v0.2 - 提升推理时效，降低RTF - v2025-xx
     - [x] 项目管理工具换成uv
     - [x] fix send_slow 假延迟 Warning
+    - [ ] 训练模型，优化换声品质
+    - [ ] 提升针对噪声数据的模型效果
+        - 区分不同的噪声类型
     - [ ] 服务器的send recv 等事件定义应该符合角色
-    - [ ] vad 改用 onnx-gpu, 以提升推理速度
-    - [ ] 探索降低模型推理时延的方案（比如新的模型架构、量化等）
-    - [ ] reference 使用torchaudio 直接读取到GPU中，省去转移的步骤。
-    - [ ] file_vc，针对最后一个block的问题
-    - [ ] 制作镜像，以及AutoDL镜像
+    - [ ] 模型加速优化: 
+        - [ ] vad 改用 onnx-gpu, 以提升推理速度
+        - [ ] 探索降低模型推理时延的方案（比如新的模型架构、量化等）
+    - [ ] 制作镜像，以及AutoDL镜像，一键可用。
 
 
 # 🙏 致谢 

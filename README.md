@@ -151,12 +151,14 @@ python examples/websocket/ws_client.py \
 - [ ] tag - v0.2 - Improve inference efficiency, reduce RTF - v2025-xx
     - [x] Switch project management to uv
     - [x] Fix send_slow false delay Warning
+    - [ ] Train models to optimize voice conversion quality
+    - [ ] Improve model effectiveness for noisy data
+        - Distinguish different noise types
     - [ ] Server send/recv event definitions should match roles
-    - [ ] Change VAD to use ONNX-GPU to improve inference speed
-    - [ ] Explore solutions to reduce model inference latency (e.g., new model architectures, quantization, etc.)
-    - [ ] Use torchaudio to directly read reference audio to GPU, eliminating transfer steps
-    - [ ] Fix file_vc issue with the last block
-    - [ ] Create Docker image and AutoDL image
+    - [ ] Model acceleration optimization:
+        - [ ] Change VAD to use ONNX-GPU to improve inference speed
+        - [ ] Explore solutions to reduce model inference latency (e.g., new model architectures, quantization, etc.)
+    - [ ] Create Docker image and AutoDL image for one-click deployment
 
 # 🙏 Acknowledgements
 - [Seed-VC](https://github.com/Plachtaa/seed-vc) - Provides powerful underlying voice conversion model
