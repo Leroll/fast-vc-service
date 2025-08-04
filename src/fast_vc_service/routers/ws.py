@@ -293,10 +293,6 @@ async def process_chunk(websocket: WebSocket,
         
         await websocket.send_bytes(converted_bytes)
         
-        # record output event
-        output_duration_ms = len(result) / 16000 * 1000
-        session.record_event(EventType.RECV, output_duration_ms)
-        
         # Record processing metrics
         e2e_time = time.perf_counter() - t0
         time_msg = f"E2E: {e2e_time*1000:.1f} | " + time_msg if time_msg else ""
@@ -305,6 +301,10 @@ async def process_chunk(websocket: WebSocket,
             logger.warning(f"{session.session_id} | {time_msg} | [VC_SLOW]")
         else:
             logger.info(f"{session.session_id} | {time_msg}")
+            
+        # record output event
+        output_duration_ms = len(result) / 16000 * 1000
+        session.record_event(EventType.RECV, output_duration_ms)
             
     except Exception as e:
         logger.error(f"Error processing audio chunk: \n{traceback.format_exc()}")

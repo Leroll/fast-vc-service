@@ -164,7 +164,7 @@ class AudioStreamBuffer:
             padding = self.silence_frame * ((padding_bytes_needed // len(self.silence_frame)) + 1)
             chunk = chunk + padding[:padding_bytes_needed]
             
-            logger.debug(f"{self.session_id} | Padded audio chunk with {padding_bytes_needed} bytes of silence")
+            logger.info(f"{self.session_id} | Padded audio chunk with {padding_bytes_needed} bytes of silence")
     
         # Convert bytes to numpy array based on input bit depth
         if self.input_bit_depth == 16:
