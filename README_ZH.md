@@ -150,7 +150,7 @@ python examples/websocket/ws_client.py \
 - [ ] tag - v0.2 - 提升推理时效，降低RTF - v2025-xx
     - [x] 项目管理工具换成uv
     - [x] fix send_slow 假延迟 Warning
-    - [ ] 修正 assets 错误
+    - [ ] 修正 assets 错误, 拿掉 toml 和 init 中的email信息
     - [ ] 训练模型，优化换声品质
     - [ ] 提升针对噪声数据的模型效果
         - 区分不同的噪声类型
