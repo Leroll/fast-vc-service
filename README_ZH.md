@@ -57,7 +57,7 @@ cd fast-vc-service
 cp .env.example .env
 
 # 安装依赖（使用 uv）
-uv sync
+uv sync --no-cache
 
 # 启动服务
 fast-vc serve

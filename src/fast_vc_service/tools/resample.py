@@ -30,6 +30,7 @@ def resample_audio(input_path, target_sr=16000):
 if __name__ == "__main__":
     """
     usage: 
-        python resample.py test.wav -t 16000
+        cd fast-vc-service
+        python -m fast_vc_service.tools.resample test.wav -t 16000
     """
     fire.Fire(resample_audio)
