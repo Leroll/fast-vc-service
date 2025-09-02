@@ -1,5 +1,5 @@
 <p align="center">
-    <img src="https://raw.githubusercontent.com/Leroll/fast-vc-service/main/asserts/cover.PNG" alt="repo cover" width=80%>
+    <img src="https://raw.githubusercontent.com/Leroll/fast-vc-service/main/assets/cover.PNG" alt="repo cover" width=80%>
 </p>
 
 <div align="center">
@@ -150,7 +150,7 @@ python examples/websocket/ws_client.py \
 - [ ] tag - v0.2 - 提升推理时效，降低RTF - v2025-xx
     - [x] 项目管理工具换成uv
     - [x] fix send_slow 假延迟 Warning
-    - [ ] 修正 assets 错误, 拿掉 toml 和 init 中的email信息
+    - [x] 新增vc效果评测工具 tools/eval.py
     - [ ] 训练模型，优化换声品质
     - [ ] 提升针对噪声数据的模型效果
         - 区分不同的噪声类型

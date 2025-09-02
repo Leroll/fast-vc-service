@@ -1,5 +1,5 @@
 <p align="center">
-    <img src="https://raw.githubusercontent.com/Leroll/fast-vc-service/main/asserts/cover.PNG" alt="repo cover" width=80%>
+    <img src="https://raw.githubusercontent.com/Leroll/fast-vc-service/main/assets/cover.PNG" alt="repo cover" width=80%>
 </p>
 
 <div align="center">
@@ -151,6 +151,7 @@ python examples/websocket/ws_client.py \
 - [ ] tag - v0.2 - Improve inference efficiency, reduce RTF - v2025-xx
     - [x] Switch project management to uv
     - [x] Fix send_slow false delay Warning
+    - [x] Add VC evaluation tool tools/eval.py
     - [ ] Train models to optimize voice conversion quality
     - [ ] Improve model effectiveness for noisy data
         - Distinguish different noise types

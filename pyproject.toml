@@ -3,7 +3,7 @@ name = "fast-vc-service"
 version = "0.1.5"
 description = "Real-time voice conversion service based on Seed-VC, providing WebSocket voice conversion with PCM and Opus audio format support"
 authors = [
-    {name = "Leroll", email = "senjaer1919@gmail.com"}
+    {name = "Leroll"}
 ]
 license = {text = "GPL-3.0"}
 readme = "README.md"
@@ -39,6 +39,7 @@ dependencies = [
     "python-dotenv==1.1.0",
     "psutil==7.0.0",
     "fire==0.7.0",
+    "onnxruntime-gpu>=1.22.0",
 ]
 
 [project.optional-dependencies]
