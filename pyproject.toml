@@ -54,7 +54,6 @@ fast-vc = "fast_vc_service.cli:cli"
 [tool.uv]
 index-url = "https://mirrors.aliyun.com/pypi/simple/"
 package = true
-no-cache = true
 
 [build-system]
 requires = ["hatchling"]
