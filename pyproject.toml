@@ -40,6 +40,7 @@ dependencies = [
     "psutil==7.0.0",
     "fire==0.7.0",
     "onnxruntime-gpu>=1.22.0",
+    "openpyxl>=3.1.5",
 ]
 
 [project.optional-dependencies]
