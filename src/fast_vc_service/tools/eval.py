@@ -87,12 +87,13 @@ if __name__ == "__main__":
         cd fast-vc-service
         python -m fast_vc_service.tools.eval
         
-    outputs will be saved to output_dir/ref-{ref_name}__model-{model_name}.md
+    outputs will be saved to output_dir/ref-{ref_name}__source-{source_name}__model-{model_name}.md
     """
     # Configs
     vc_dir = Path("/path/to/vc_wavs/")  #  vc wavs to be evaluated
     ref_path = Path("/path/to/ref.wav")  # reference wav  
     ref_name = "ref-name"  
+    source_name = "source-name"
     model_name = "model-name"
     output_dir = Path("/path/to/output/")
     
@@ -106,6 +107,6 @@ if __name__ == "__main__":
     
     # make output dir and path    
     output_dir.mkdir(exist_ok=True)  
-    output_path = output_dir / f"ref-{ref_name}__model-{model_name}.md"  
+    output_path = output_dir / f"ref-{ref_name}__source-{source_name}__model-{model_name}.md"  
     
     main(ref_vc_pairs, str(output_path))
