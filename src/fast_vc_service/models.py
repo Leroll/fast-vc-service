@@ -125,16 +125,24 @@ class ModelFactory:
         
         self.logger.info("===> Loading DiT model")
         
-        dit_checkpoint_path, dit_config_path = load_custom_model_from_hf(self.cfg.dit_repo_id,
-                                                                         self.cfg.dit_model_filename,
-                                                                         self.cfg.dit_config_filename)
-        
-        # 这里尝试load fintune之后的模型看看
-        # dit_checkpoint_path = "/root/autodl-tmp/seed-vc-cus/runs/csmsc_fintune_10/ft_model.pth"
-        # dit_config_path = "/root/autodl-tmp/seed-vc-cus/runs/csmsc_fintune_10/config_dit_mel_seed_uvit_xlsr_tiny.yml"
-        
-        # dit_checkpoint_path = "/root/autodl-tmp/seed-vc-cus/runs/csmsc_fintune_10_bigvgan/ft_model.pth"
-        # dit_config_path = "/root/autodl-tmp/seed-vc-cus/runs/csmsc_fintune_10_bigvgan/config_dit_mel_seed_uvit_xlsr_tiny_bigvgan.yml"
+        if self.cfg.dit_checkpoint_path and self.cfg.dit_config_path:
+            # use custom paths if provided
+            dit_checkpoint_path = self.cfg.dit_checkpoint_path
+            dit_config_path = self.cfg.dit_config_path
+        else:
+            # or download original model from HF
+            if self.cfg.defalut_original_model not in ["tiny", "small", "base"]:
+                raise ValueError(f"Unknown defalut_original_model: {self.cfg.defalut_original_model}, should be 'tiny', 'small' or 'base'")
+            
+            dit_model_filename, dit_config_filename = {
+                "tiny": ("DiT_uvit_tat_xlsr_ema.pth", "config_dit_mel_seed_uvit_xlsr_tiny.yml"),
+                "small": ("DiT_seed_v2_uvit_whisper_small_wavenet_bigvgan_pruned.pth", "config_dit_mel_seed_uvit_whisper_small_wavenet.yml"),
+                "base": ("DiT_seed_v2_uvit_whisper_base_f0_44k_bigvgan_pruned_ft_ema_v2.pth", "config_dit_mel_seed_uvit_whisper_base_f0_44k.yml"),
+            }[self.cfg.defalut_original_model]
+            
+            dit_checkpoint_path, dit_config_path = load_custom_model_from_hf("Plachta/Seed-VC",
+                                                                             dit_model_filename,
+                                                                             dit_config_filename)
         
         self.logger.info(f"Dit_checkpoint_path: {dit_checkpoint_path}")
         self.logger.info(f"Dit_config_path: {dit_config_path}")

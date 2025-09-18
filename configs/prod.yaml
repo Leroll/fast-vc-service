@@ -14,7 +14,7 @@ realtime_vc:
   device: "cuda"
   
   # wav 相关
-  reference_wav_path: "wavs/references/ref-44k.wav"
+  reference_wav_path: "wavs/references/ref-azuma-0.wav"  
   save_dir: "outputs/"  # save
   save_input: True  # is to save input wav
   save_output: True  # is to save output wav
@@ -68,19 +68,12 @@ models:
   device: "cuda"
   is_torch_compile: False  # use torch.compile to accelerate
   
-  # dit model
-  dit_repo_id: "Plachta/Seed-VC"
-  
-  # tiny version
-  dit_model_filename: "DiT_uvit_tat_xlsr_ema.pth"  
-  dit_config_filename: "config_dit_mel_seed_uvit_xlsr_tiny.yml"  
+  # 自定义模型路径，比如训练后的模型
+  dit_checkpoint_path: null
+  dit_config_path: null
 
-  # small version
-  # dit_model_filename: "DiT_seed_v2_uvit_whisper_small_wavenet_bigvgan_pruned.pth"  
-  # dit_config_filename: "config_dit_mel_seed_uvit_whisper_small_wavenet.yml"
-
-  # base version
-  # dit_model_filename: "DiT_seed_v2_uvit_whisper_base_f0_44k_bigvgan_pruned_ft_ema_v2.pth"
-  # dit_config_filename: "config_dit_mel_seed_uvit_whisper_base_f0_44k.yml"
+  defalut_original_model: "tiny"  # "tiny", "small", "base"  
+                                  # 如果没有指定自定义的模型路径：dit_checkpoint_path， dit_config_path。
+                                  # 则使用seed-vc原始模型
 
 
