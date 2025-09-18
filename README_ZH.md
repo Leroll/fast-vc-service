@@ -152,6 +152,7 @@ python examples/websocket/ws_client.py \
     - [x] fix send_slow 假延迟 Warning
     - [x] 新增vc效果评测工具 tools/eval.py
     - [x] 允许同时启动多个实例，使用不同的配置文件，启动在不同的端口
+    - [x] 支持自定义model地址配置
     - [ ] 训练模型，优化换声品质
     - [ ] 提升针对噪声数据的模型效果
         - 区分不同的噪声类型

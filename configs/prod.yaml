@@ -65,7 +65,6 @@ realtime_vc:
 
 
 models:
-  device: "cuda"
   is_torch_compile: False  # use torch.compile to accelerate
   
   # 自定义模型路径，比如训练后的模型

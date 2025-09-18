@@ -86,7 +86,6 @@ class RealtimeVoiceConversionConfig(BaseModel):
 
 class ModelConfig(BaseModel):
     """model config"""
-    device: str = "cuda"
     is_torch_compile: bool = False  # use torch.compile to accelerate
     
     # 自定义模型路径，比如训练后的模型

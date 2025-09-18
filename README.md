@@ -153,6 +153,7 @@ python examples/websocket/ws_client.py \
     - [x] Fix send_slow false delay Warning
     - [x] Add VC evaluation tool tools/eval.py
     - [x] Allow multiple instances to start simultaneously with different configuration files on different ports
+    - [x] Support custom model address configuration
     - [ ] Train models to optimize voice conversion quality
     - [ ] Improve model effectiveness for noisy data
         - Distinguish different noise types

@@ -37,14 +37,14 @@ def load_custom_model_from_hf(repo_id, model_filename="pytorch_model.bin", confi
 
 class ModelFactory:
     
-    def __init__(self,model_config:ModelConfig=ModelConfig(), is_f0=False):
+    def __init__(self,model_config:ModelConfig=ModelConfig(), is_f0=False, device="cuda:0"):
         """model factory, all models are loaded here"""
         self.logger = logger.bind(name="app")
         self.logger.info("initializing ModelFactory...")
         self.cfg = model_config
         self.is_f0 = is_f0
         self.hf_cache_path, self.modelscope_cache_path = self._setup_cache_paths()
-        self.device = self.cfg.device
+        self.device = device
         self.is_torch_compile = self.cfg.is_torch_compile
         self.logger.info(f"HF_ENDPOINT: {os.environ.get('HF_ENDPOINT', 'default')}")
         self.logger.info(f"Using device: {self.device}")

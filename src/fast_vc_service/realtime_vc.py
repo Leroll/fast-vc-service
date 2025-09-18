@@ -28,7 +28,9 @@ class RealtimeVoiceConversion:
 
     def __init__(self, cfg:RealtimeVoiceConversionConfig, model_cfg: ModelConfig) -> None:
         self.cfg = cfg 
-        self.models = ModelFactory(model_config=model_cfg, is_f0=self.cfg.is_f0).get_models()  # initialize models
+        self.models = ModelFactory(model_config=model_cfg, 
+                                   is_f0=self.cfg.is_f0, 
+                                   device=self.cfg.device).get_models()  # initialize models
         self._init_performance_tracking() 
         self._init_realtime_parameters()  # init realtime parameters
         self.reference = self._update_reference()
