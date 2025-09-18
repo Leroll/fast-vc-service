@@ -379,11 +379,16 @@ async def send_audio_file(websocket_url,
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="WebSocket client for voice conversion")
-    
+
     parser.add_argument("--source-wav-path", 
-                        default="wavs/sources/low-pitched-male-24k.wav", 
+                        default="wavs/sources/rough-male-0.wav", 
                         help="Path to source audio file")
-    
+
+    parser.add_argument("--session-id",
+                        type=str,
+                        default=None,
+                        help="Custom session ID for tracking the conversion session (if not provided, will be auto-generated)")
+
     parser.add_argument("--output-wav-dir", 
                         default="outputs/ws_client", 
                         help="Directory to save output audio files")
@@ -449,6 +454,7 @@ if __name__ == "__main__":
         bitrate=args.bitrate,
         frame_duration_ms=args.frame_duration,
         save_output=not args.no_save_output,
+        session_id=args.session_id,  # 传入用户指定的session_id
     ))
     
     # Print the result
