@@ -313,6 +313,8 @@ class RealtimeVoiceConversion:
         
         # skip_head, return_length and skip_tail are unrelated to common_sr
         # using mel's sr and hop_length to make target_length consistent with the reference part
+        # the second  50 = 16000 / self.zc = 16000 / 320
+        # skip_head 这些是 16khz 下的，然后 * self.zc 还原为采样点数，再除以 16000 得到对应的时间， * sr 得到 22050 对应的长度, //hop_length 得到 mel 长度
         target_lengths = torch.LongTensor([(skip_head + return_length + skip_tail - ce_dit_difference * 50) / 50 * sr // hop_length]).to(S_alt.device)
         cond = model.length_regulator(
             S_alt, ylens=target_lengths , n_quantizers=3, f0=shifted_f0_alt
