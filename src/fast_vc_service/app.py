@@ -4,6 +4,7 @@ import os
 from loguru import logger
 from pydantic import BaseModel
 import traceback
+import multiprocessing
 
 from fast_vc_service.config import Config
 from fast_vc_service.routers import base_router, websocket_router, tools_router
@@ -11,12 +12,28 @@ from fast_vc_service.logging_config import LoggingSetup
 from fast_vc_service.realtime_vc import RealtimeVoiceConversion
 from fast_vc_service.tools.session_data_manager import SessionDataManager
 
+def _get_work_id() -> str:
+    """获取当前worker的index，从1开始的计数
+    
+    在多卡部署多实例的场景下，会使用该 wid
+    """
+    process_name = multiprocessing.current_process().name
+    logger.info(f"process_name: {process_name}")
+    if "SpawnProcess" in process_name:
+        wid = int(process_name.split('-')[-1])
+        return wid
+    
+    # pid 兜底
+    wid = os.getpid()
+    logger.info(f"faild to get wid, use pid instead. process_name:{process_name}, pid: {wid}")
+    return str(wid)
+    
 def create_app() -> FastAPI:
     """Create and configure the FastAPI application."""
     
     # Initialize logging
     cfg = Config().get_config()
-    worker_id = os.getpid()
+    worker_id = _get_work_id()
     LoggingSetup.setup(cfg.app.log_dir, worker_pid=worker_id)
     logger.info("-" * 21 + "initilizing service" + "-" * 21)
     
@@ -36,6 +53,8 @@ def create_app() -> FastAPI:
     
     logger.info("initializing class: RealtimeVoiceConversion ...")
     try:
+        cfg.realtime_vc.device = cfg.realtime_vc.device[ (int(worker_id)-1) % len(cfg.realtime_vc.device) ]
+        
         app.state.realtime_vc = RealtimeVoiceConversion(
             cfg.realtime_vc,
             cfg.models,

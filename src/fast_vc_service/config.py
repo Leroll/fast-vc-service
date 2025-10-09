@@ -28,7 +28,8 @@ class RealtimeVoiceConversionConfig(BaseModel):
     """语音转换服务配置类"""
     
     # 设备
-    device: str = str(torch.device("cuda" if torch.cuda.is_available() else "cpu"))
+    device: list = ["cuda" if torch.cuda.is_available() else "cpu"]  # 支持多卡，比如 ["cuda:0", "cuda:1"]
+                                                                     # 在多卡场景下，worker会循环依次部署到各个卡上
     
     # wav 相关
     reference_wav_path: str = "wavs/references/ref-24k.wav"

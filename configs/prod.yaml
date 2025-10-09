@@ -11,7 +11,8 @@ buffer:
   
 realtime_vc:
   # 设备
-  device: "cuda"
+  device: ["cuda:0", "cuda:0"]  # 支持多卡，比如 ["cuda:0", "cuda:1"]
+                                # 在多卡场景下，worker会循环依次部署到各个卡上
   
   # wav 相关
   reference_wav_path: "wavs/references/ref-azuma-0.wav"  

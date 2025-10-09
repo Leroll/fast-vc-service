@@ -154,6 +154,7 @@ python examples/websocket/ws_client.py \
     - [x] Add VC evaluation tool tools/eval.py
     - [x] Allow multiple instances to start simultaneously with different configuration files on different ports
     - [x] Support custom model address configuration
+    - [x] Support multi-GPU multi-instance deployment
     - [ ] Train models to optimize voice conversion quality
     - [ ] Improve model effectiveness for noisy data
         - Distinguish different noise types
