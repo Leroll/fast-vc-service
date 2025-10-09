@@ -390,11 +390,11 @@ class ModelFactory:
         self.logger.info("===> Loading VAD model")
         from funasr import AutoModel
         try: 
-            vad_model = AutoModel(model="fsmn-vad", model_revision="v2.0.4")
+            vad_model = AutoModel(model="fsmn-vad", model_revision="v2.0.4", device=self.device)
         except:
             # try loading from local path
             vad_model_path = self.modelscope_cache_path / "hub/iic/speech_fsmn_vad_zh-cn-16k-common-pytorch"
-            vad_model = AutoModel(model=vad_model_path) 
+            vad_model = AutoModel(model=vad_model_path, device=self.device) 
         
         
         # 计算vad_model的参数量
