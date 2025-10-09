@@ -607,6 +607,7 @@ dependencies = [
     { name = "funasr" },
     { name = "gradio" },
     { name = "huggingface-hub" },
+    { name = "ipykernel" },
     { name = "jiwer" },
     { name = "librosa" },
     { name = "loguru" },
@@ -616,6 +617,7 @@ dependencies = [
     { name = "onnxruntime-gpu" },
     { name = "openpyxl" },
     { name = "opuslib" },
+    { name = "pandas" },
     { name = "psutil" },
     { name = "pydantic" },
     { name = "pydub" },
@@ -633,12 +635,6 @@ dependencies = [
     { name = "uvicorn" },
 ]
 
-[package.optional-dependencies]
-dev = [
-    { name = "ipykernel" },
-    { name = "pandas" },
-]
-
 [package.metadata]
 requires-dist = [
     { name = "descript-audio-codec", specifier = "==1.0.0" },
@@ -648,7 +644,7 @@ requires-dist = [
     { name = "funasr", specifier = "==1.1.5" },
     { name = "gradio", specifier = "==4.44.0" },
     { name = "huggingface-hub", specifier = "==0.23.4" },
-    { name = "ipykernel", marker = "extra == 'dev'", specifier = "==6.29.5" },
+    { name = "ipykernel", specifier = "==6.29.5" },
     { name = "jiwer", specifier = "==3.0.3" },
     { name = "librosa", specifier = "==0.10.2" },
     { name = "loguru", specifier = "==0.7.3" },
@@ -658,7 +654,7 @@ requires-dist = [
     { name = "onnxruntime-gpu", specifier = ">=1.22.0" },
     { name = "openpyxl", specifier = ">=3.1.5" },
     { name = "opuslib", specifier = "==3.0.1" },
-    { name = "pandas", marker = "extra == 'dev'", specifier = "==2.3.0" },
+    { name = "pandas", specifier = "==2.3.0" },
     { name = "psutil", specifier = "==7.0.0" },
     { name = "pydantic", specifier = "==2.11.5" },
     { name = "pydub", specifier = "==0.25.1" },
@@ -675,7 +671,6 @@ requires-dist = [
     { name = "transformers", specifier = "==4.46.3" },
     { name = "uvicorn", specifier = "==0.34.3" },
 ]
-provides-extras = ["dev"]
 
 [[package]]
 name = "fastapi"

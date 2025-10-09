@@ -44,7 +44,7 @@ realtime_vc:
   # vc models
   diffusion_steps: 10  # 10；                    
   inference_cfg_rate: 0.7  # 0.7
-  max_prompt_length: 3.0 # 3； 
+  max_prompt_length: 10.0 # 3； 
   ce_dit_difference: 2  # 2 seconds， content encoder ?
   
   # rms_mix
