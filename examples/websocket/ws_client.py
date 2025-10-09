@@ -12,6 +12,51 @@ import opuslib  # For opus encoding
 import uuid
 from loguru import logger
 from datetime import datetime
+from pydantic import BaseModel
+from enum import Enum
+from concurrent.futures import ProcessPoolExecutor
+
+class EncodingEnum(Enum):
+    PCM = "PCM"
+    OPUS = "OPUS"
+    
+class SampleRateEnum(Enum):
+    SR_8000 = 8000
+    SR_12000 = 12000
+    SR_16000 = 16000
+    SR_24000 = 24000
+    SR_48000 = 48000
+
+class Inputs(BaseModel):
+    # server params
+    url: str = "ws://localhost:8042/ws"  # WebSocket URL
+    api_key: str = "test-key"  # API key for authentication
+    
+    # concurrency params
+    max_workers: int = 2  # Maximum number of parallel websocket clients
+    
+    # wav params
+    src_wavs: list = ["wavs/sources/rough-male-0.wav"]   # List of source wav file paths
+    session_gen: bool = False  # Whether to auto-generate session IDs, if False, using src_wav.name as session_id
+    session_ids: list = [] # List of custom session IDs, used if session_gen is False
+    output_wav_dir: str = "outputs/ws_client"  # Directory to save output audio files
+    real_time: bool = True  # Simulate real-time audio sending, if False, send as fast as possible
+    
+    # encoding params
+    encoding: EncodingEnum = EncodingEnum.PCM  # Audio encoding format (PCM or OPUS)
+    samplerate: SampleRateEnum = SampleRateEnum.SR_16000  # Target sample rate in Hz (must be Opus compatible: 8000, 12000, 16000, 24000, 48000)
+    # pcm params
+    chunk_time: int = 20  # Chunk time in ms for sending audio (default: 20ms)
+    # opus params
+    bitrate: int = 128000  # Bitrate for OPUS encoding (default: 128000)
+    frame_duration: int = 20  # Frame duration in ms for OPUS encoding (default: 20)
+    
+    # results params
+    save_timeline: bool = False  # Save send/receive timeline to JSON file
+    
+    def model_post_init(self, context):
+        if not self.session_gen:
+            self.session_ids = [ Path(wav).stem for wav in self.src_wavs ]
 
 
 def read_audio_file(audio_path, encoding, target_sample_rate):
@@ -377,86 +422,30 @@ async def send_audio_file(websocket_url,
         return result
 
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="WebSocket client for voice conversion")
+def run_ws_client(inputs, idx):
+    src_wav = inputs.src_wavs[idx]
+    session_id = inputs.session_ids[idx] if not inputs.session_gen else None
 
-    parser.add_argument("--source-wav-path", 
-                        default="wavs/sources/rough-male-0.wav", 
-                        help="Path to source audio file")
-
-    parser.add_argument("--session-id",
-                        type=str,
-                        default=None,
-                        help="Custom session ID for tracking the conversion session (if not provided, will be auto-generated)")
-
-    parser.add_argument("--output-wav-dir", 
-                        default="outputs/ws_client", 
-                        help="Directory to save output audio files")
-    
-    parser.add_argument("--encoding",
-                       choices=["PCM", "OPUS"],
-                       default="PCM",
-                       help="Audio encoding format (PCM or OPUS)")
-    
-    parser.add_argument("--samplerate", "--sr",
-                       type=int,
-                       choices=[8000, 12000, 16000, 24000, 48000],
-                       default=16000,
-                       help="Target sample rate in Hz (must be Opus compatible: 8000, 12000, 16000, 24000, 48000)")
-    
-    parser.add_argument("--url", 
-                        default="ws://localhost:8042/ws", 
-                        help="WebSocket URL")
-    
-    parser.add_argument("--api-key", 
-                        default="test-key", 
-                        help="API key for authentication")
-    
-    parser.add_argument("--chunk-time", 
-                        type=int, 
-                        default=20, 
-                        help="Chunk time in ms for sending audio (default: 20ms)")
-    
-    parser.add_argument("--real-time", 
-                        action="store_true", 
-                        help="Simulate real-time audio sending")
-    
-    parser.add_argument("--no-real-time", 
-                        action="store_true", 
-                        help="Disable real-time simulation (send audio as fast as possible)")
-    
-    parser.add_argument("--bitrate",
-                       type=int,
-                       default=128000,
-                       help="Bitrate for OPUS encoding (default: 128000)")
-    
-    parser.add_argument("--frame-duration",
-                       type=int,
-                       default=20,
-                       help="Frame duration in ms for OPUS encoding (default: 20)")
-    
-    parser.add_argument("--no-save-output",
-                        action="store_true",
-                        help="Disable Save the output audio file after conversion")
-    
-    args = parser.parse_args()
-    
-    # Run the async function and get result
     result = asyncio.run(send_audio_file(
-        websocket_url=args.url,
-        api_key=args.api_key,
-        real_time_simulation=not args.no_real_time,
-        audio_path=args.source_wav_path,
-        output_wav_dir=args.output_wav_dir,
-        encoding=args.encoding,
-        target_sample_rate=args.samplerate,
-        chunk_time_ms=args.chunk_time,
-        bitrate=args.bitrate,
-        frame_duration_ms=args.frame_duration,
-        save_output=not args.no_save_output,
-        session_id=args.session_id,  # 传入用户指定的session_id
+        websocket_url=inputs.url,
+        api_key=inputs.api_key,
+
+        audio_path=src_wav,
+        session_id=session_id,  # 传入用户指定的session_id
+        output_wav_dir=inputs.output_wav_dir,
+        real_time_simulation=inputs.real_time,
+        
+        encoding=inputs.encoding.value,
+        target_sample_rate=inputs.samplerate.value,
+        chunk_time_ms=inputs.chunk_time,
+        bitrate=inputs.bitrate,
+        frame_duration_ms=inputs.frame_duration,
     ))
     
+    return result
+    
+
+def process_result(result, save_timeline=False, output_wav_dir="outputs/ws_client"):
     # Print the result
     print("\n" + "="*60)
     print("WEBSOCKET CLIENT RESULT")
@@ -479,13 +468,47 @@ if __name__ == "__main__":
     
     if result['error']:
         print(f"Error: {result['error']}")
-    
     print("="*60)
     
     # Save result to JSON for inspection
-    import json
-    result_file = Path(args.output_wav_dir) / f"{result['session_id']}_timeline.json"
-    result_file.parent.mkdir(parents=True, exist_ok=True)
-    with open(result_file, 'w') as f:
-        json.dump(result, f, indent=2, default=str)
-    print(f"Full result saved to: {result_file}")
+    if save_timeline:
+        result_file = Path(output_wav_dir) / f"{result['session_id']}_timeline.json"
+        result_file.parent.mkdir(parents=True, exist_ok=True)
+        with open(result_file, 'w') as f:
+            json.dump(result, f, indent=2, default=str)
+        print(f"Full result saved to: {result_file}")
+        
+
+def multi_ws_clients(inputs: Inputs):
+    
+    with ProcessPoolExecutor(max_workers=inputs.max_workers) as executor:
+        futures = []
+        for idx in range(len(inputs.src_wavs)):
+            futures.append(executor.submit(run_ws_client, inputs, idx))
+        
+        for future in futures:
+            result = future.result()
+            process_result(result, inputs.save_timeline, inputs.output_wav_dir)
+            
+
+def get_inputs():
+    """
+    Customer your own input parameters here.
+    """    
+    src_dir = "/root/autodl-tmp/speech-processing/datasets/lex__div42/raw"
+    scr_wavs = [ str(p) for p in Path(src_dir).glob("*.wav") ]
+    max_workers = min(4, len(scr_wavs))
+    realtime = False
+    return Inputs(src_wavs=scr_wavs, max_workers=max_workers, real_time=realtime)
+
+
+if __name__ == "__main__":
+    """
+    Usage:
+        cd fast-vc-service
+        uv run examples/websocket/ws_client.py
+        
+    you can also modify the get_inputs() function to customize your own input parameters.
+    """
+    inputs = get_inputs()
+    multi_ws_clients(inputs)
