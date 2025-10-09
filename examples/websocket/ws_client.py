@@ -495,11 +495,10 @@ def get_inputs():
     """
     Customer your own input parameters here.
     """    
-    src_dir = "/root/autodl-tmp/speech-processing/datasets/lex__div42/raw"
+    src_dir = "wavs/sources"
     scr_wavs = [ str(p) for p in Path(src_dir).glob("*.wav") ]
     max_workers = min(4, len(scr_wavs))
-    realtime = False
-    return Inputs(src_wavs=scr_wavs, max_workers=max_workers, real_time=realtime)
+    return Inputs(src_wavs=scr_wavs, max_workers=max_workers)
 
 
 if __name__ == "__main__":
