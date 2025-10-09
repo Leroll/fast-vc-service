@@ -34,6 +34,7 @@ class Inputs(BaseModel):
     
     # concurrency params
     max_workers: int = 2  # Maximum number of parallel websocket clients
+    worker_delay: float = 1.0  # Delay in seconds between starting each worker
     
     # wav params
     src_wavs: list = ["wavs/sources/rough-male-0.wav"]   # List of source wav file paths
@@ -485,6 +486,7 @@ def multi_ws_clients(inputs: Inputs):
         futures = []
         for idx in range(len(inputs.src_wavs)):
             futures.append(executor.submit(run_ws_client, inputs, idx))
+            time.sleep(inputs.worker_delay)  # Stagger the start of each worker
         
         for future in futures:
             result = future.result()
