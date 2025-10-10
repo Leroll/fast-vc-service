@@ -389,12 +389,15 @@ class ModelFactory:
         
         self.logger.info("===> Loading VAD model")
         from funasr import AutoModel
+        vad_config = {
+            "speech_noise_thres": 0.8,
+        }
         try: 
-            vad_model = AutoModel(model="fsmn-vad", model_revision="v2.0.4", device=self.device)
+            vad_model = AutoModel(model="fsmn-vad", model_revision="v2.0.4", device=self.device, **vad_config)
         except:
             # try loading from local path
             vad_model_path = self.modelscope_cache_path / "hub/iic/speech_fsmn_vad_zh-cn-16k-common-pytorch"
-            vad_model = AutoModel(model=vad_model_path, device=self.device) 
+            vad_model = AutoModel(model=vad_model_path, device=self.device, **vad_config) 
         
         
         # 计算vad_model的参数量

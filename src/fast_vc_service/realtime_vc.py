@@ -391,7 +391,7 @@ class RealtimeVoiceConversion:
         # vad 放在前面就正常了，应该是zc级别的精度置0给vad造成了很大的困惑
         
         vad_model = self.models["vad_model"]
-        res = vad_model.generate(input=indata, cache=session.vad_cache, is_final=False, chunk_size=self.vad_chunk_size)  # ---- 改成优化后的函数
+        res = vad_model.generate(input=indata, cache=session.vad_cache, is_final=False, chunk_size=self.vad_chunk_size, disable_pbar=True)  # ---- 改成优化后的函数
         res_value = res[0]["value"]
         if len(res_value) % 2 == 1 and not session.vad_speech_detected:
             session.vad_speech_detected = True

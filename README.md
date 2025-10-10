@@ -155,6 +155,7 @@ python examples/websocket/ws_client.py \
     - [x] Allow multiple instances to start simultaneously with different configuration files on different ports
     - [x] Support custom model address configuration
     - [x] Support multi-GPU multi-instance deployment
+    - [x] Optimize VAD model parameters for better noise filtering
     - [ ] Train models to optimize voice conversion quality
     - [ ] Improve model effectiveness for noisy data
         - Distinguish different noise types
