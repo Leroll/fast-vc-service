@@ -14,7 +14,6 @@ from loguru import logger
 from datetime import datetime
 from pydantic import BaseModel
 from enum import Enum
-from concurrent.futures import ProcessPoolExecutor
 
 class EncodingEnum(Enum):
     PCM = "PCM"
@@ -228,7 +227,13 @@ async def send_audio_file(websocket_url,
         # 2. connect to websocket server and send audio in chunks
         # Prepare output buffer for received audio
         output_audio = []
-        async with websockets.connect(websocket_url) as websocket:
+        async with websockets.connect(
+            websocket_url,
+            ping_interval=None,   # 关闭定时 ping（可选）
+            ping_timeout=None,    # 不因 pong 超时而断开（可选）
+            close_timeout=None,   # 关闭时也不设超时（可选）
+            max_size=None,
+        ) as websocket:
             # 2.1. Send config
             config = {
                 "type": "config",
@@ -248,16 +253,13 @@ async def send_audio_file(websocket_url,
             logger.info(f"Sent configuration to server: {json.dumps(config)}")
             
             # 2.2. Wait for ready signal
-            try:
-                response = await asyncio.wait_for(websocket.recv(), timeout=10.0)
-                response_data = json.loads(response)
-                if response_data["type"] != "ready":
-                    logger.info(f"Error: Unexpected response: {response_data}")
-                    return
-                logger.info(f"Server ready: {response_data['message']}")
-            except asyncio.TimeoutError:
-                logger.info("Timeout waiting for server ready signal")
-                return
+            # 取消 10 秒超时，改为无限等待
+            response = await websocket.recv()
+            response_data = json.loads(response)
+            if response_data.get("type") != "ready":
+                logger.info(f"Error: Unexpected response: {response_data}")
+                return result
+            logger.info(f"Server ready: {response_data.get('message')}")
             
             # 2.3 receive and process task
             async def receive_and_process_messages():
@@ -364,14 +366,14 @@ async def send_audio_file(websocket_url,
                 if not sender_result:
                     logger.error("Failed to send audio chunks")
                 
-                # Then wait for processing to complete
-                completion = await asyncio.wait_for(receiver_processor_task, timeout=10.0)
+                # 取消动态超时，改为无限等待接收完成
+                completion = await receiver_processor_task
                 if completion:
                     logger.info("Successfully completed voice conversion")
                 else:
                     logger.info("Voice conversion completed with errors")
-            except asyncio.TimeoutError:
-                logger.info("Timeout waiting for completion")
+            except asyncio.CancelledError:
+                logger.info("Cancelled while waiting for completion.")
             
             # Clean up tasks
             receiver_processor_task.cancel()
@@ -423,11 +425,11 @@ async def send_audio_file(websocket_url,
         return result
 
 
-def run_ws_client(inputs, idx):
+async def run_ws_client_async(inputs, idx):
     src_wav = inputs.src_wavs[idx]
     session_id = inputs.session_ids[idx] if not inputs.session_gen else None
 
-    result = asyncio.run(send_audio_file(
+    result = await send_audio_file(
         websocket_url=inputs.url,
         api_key=inputs.api_key,
 
@@ -441,8 +443,7 @@ def run_ws_client(inputs, idx):
         chunk_time_ms=inputs.chunk_time,
         bitrate=inputs.bitrate,
         frame_duration_ms=inputs.frame_duration,
-    ))
-    
+    )
     return result
     
 
@@ -480,27 +481,55 @@ def process_result(result, save_timeline=False, output_wav_dir="outputs/ws_clien
         print(f"Full result saved to: {result_file}")
         
 
-def multi_ws_clients(inputs: Inputs):
-    
-    with ProcessPoolExecutor(max_workers=inputs.max_workers) as executor:
-        futures = []
-        for idx in range(len(inputs.src_wavs)):
-            futures.append(executor.submit(run_ws_client, inputs, idx))
-            time.sleep(inputs.worker_delay)  # Stagger the start of each worker
-        
-        for future in futures:
-            result = future.result()
-            process_result(result, inputs.save_timeline, inputs.output_wav_dir)
+async def multi_ws_clients(inputs: Inputs):
+    # semaphore controls max concurrent clients
+    sem = asyncio.Semaphore(max(1, inputs.max_workers))
+
+    async def worker(idx: int):
+        async with sem:
+            return await run_ws_client_async(inputs, idx)
+
+    tasks = []
+    for idx in range(len(inputs.src_wavs)):
+        tasks.append(asyncio.create_task(worker(idx)))
+        if inputs.worker_delay > 0:
+            await asyncio.sleep(inputs.worker_delay)  # stagger start
+
+    results = await asyncio.gather(*tasks, return_exceptions=True)
+
+    for idx, res in enumerate(results):
+        if isinstance(res, Exception):
+            logger.error(f"Worker {idx} failed: {res}")
+            # build a minimal error result for printing
+            err_result = {
+                'success': False,
+                'session_id': (inputs.session_ids[idx] if not inputs.session_gen else None),
+                'send_timeline': [],
+                'recv_timeline': [],
+                'output_path': None,
+                'error': str(res),
+            }
+            process_result(err_result, inputs.save_timeline, inputs.output_wav_dir)
+        else:
+            process_result(res, inputs.save_timeline, inputs.output_wav_dir)
             
+def get_inputs_example():
+    """
+    Example
+    """
+    src_dir = "wavs/sources"
+    src_wavs = [ str(p) for p in Path(src_dir).glob("*.wav") ] * 5
+    logger.info(f"Found {len(src_wavs)} source wav files in {src_dir}")
+    
+    max_workers = min(10, len(src_wavs))  # 10并发
+    return Inputs(src_wavs=src_wavs, max_workers=max_workers)
 
 def get_inputs():
     """
     Customer your own input parameters here.
-    """    
-    src_dir = "wavs/sources"
-    scr_wavs = [ str(p) for p in Path(src_dir).glob("*.wav") ]
-    max_workers = min(4, len(scr_wavs))
-    return Inputs(src_wavs=scr_wavs, max_workers=max_workers)
+    """
+    return get_inputs_example()  # demo    
+    
 
 
 if __name__ == "__main__":
@@ -512,4 +541,4 @@ if __name__ == "__main__":
     you can also modify the get_inputs() function to customize your own input parameters.
     """
     inputs = get_inputs()
-    multi_ws_clients(inputs)
+    asyncio.run(multi_ws_clients(inputs))
