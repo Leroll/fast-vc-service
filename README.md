@@ -97,6 +97,19 @@ python examples/websocket/ws_client.py \
 # 📝 Version Updates
 <!-- don't forget to change version in __init__ and toml -->
 
+**2025-10-16 - v0.1.6**: Multi-GPU/Multi-instance deployment, semantic feature retrieval, uv package management
+
+  - Deployment & Concurrency
+    - Support custom model and config file paths, enabling multiple instances with isolated configs and ports
+    - Support single instance using multiple GPUs to improve concurrency
+  - Quality & Effect
+    - Added semantic feature retrieval module to improve voice similarity and robustness
+    - Optimized VAD parameters to reduce noise and silence false triggers
+  - Engineering
+    - Migrated package management to uv for faster install and startup
+    - Fixed send_slow false delay warning
+    - Added VC evaluation tool tools/eval.py
+
 **2025-07-24 - v0.1.5**: Pitch Adaptive Matching Support and Real-time Monitoring Optimization
 
   - Real-time monitoring optimization:
@@ -116,15 +129,15 @@ python examples/websocket/ws_client.py \
   - Added instance concurrency monitoring feature for real-time concurrency viewing
   - Optimized performance analysis interface to reduce impact on real-time performance
 
+
+<details>
+<summary>View Historical Versions</summary>
+
 **2025-06-26 - v0.1.2**: Persistent Storage Optimization   
 
   - Optimized session persistent storage module with asynchronous processing
   - Separated time-consuming timeline statistical analysis module to improve response speed
   - Optimized timeline recording mechanism to reduce storage overhead
-
-
-<details>
-<summary>View Historical Versions</summary>
 
 **2025-06-19 - v0.1.1**: First Packet Performance Optimization   
 
@@ -149,14 +162,6 @@ python examples/websocket/ws_client.py \
 
 # 🚧 TODO
 - [ ] tag - v0.2 - Improve inference efficiency, reduce RTF - v2025-xx
-    - [x] Switch project management to uv
-    - [x] Fix send_slow false delay Warning
-    - [x] Add VC evaluation tool tools/eval.py
-    - [x] Allow multiple instances to start simultaneously with different configuration files on different ports
-    - [x] Support custom model address configuration
-    - [x] Support multi-GPU multi-instance deployment
-    - [x] Optimize VAD model parameters for better noise filtering
-    - [x] Add semantic feature retrieval module to enhance voice similarity
     - [ ] Train models to optimize voice conversion quality
     - [ ] Improve model effectiveness for noisy data
         - Distinguish different noise types
