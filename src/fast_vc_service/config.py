@@ -89,6 +89,11 @@ class ModelConfig(BaseModel):
     """model config"""
     is_torch_compile: bool = False  # use torch.compile to accelerate
     
+    # retrieval
+    is_retrieval: bool = False  # 是否启用语义特征检索模块
+    index_rate: float = 1.0  ## 检索特征相对权重，0.0 表示不使用检索特征，1.0 表示完全使用检索特征
+    index_path: str | None = None  # faiss索引文件路径
+    
     # 自定义模型路径，比如训练后的模型
     dit_checkpoint_path: str | None = None
     dit_config_path: str | None = None

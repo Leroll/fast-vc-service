@@ -89,6 +89,7 @@ class ModelFactory:
         self.to_mel, self.mel_fn_args = self._load_mel()
         self.vad_model = self._load_vad_model()
         self.f0_fn = self._load_f0_fn() if self.is_f0 else None
+        self.retrieval_fn = self._load_retrieval() if self.cfg.is_retrieval else None
         
         if self.is_torch_compile:  # if using torch compile to accelerate
             self._torch_compile()
@@ -99,6 +100,7 @@ class ModelFactory:
             "dit_model": self.dit_model,
             
             "semantic_fn": self.semantic_fn,
+            "retrieval_fn": self.retrieval_fn,
             "dit_fn": self.dit_fn,
             "vocoder_fn": self.vocoder_fn,
             "to_mel": self.to_mel,
@@ -123,7 +125,7 @@ class ModelFactory:
     def _load_dit_model(self):
         """dit model"""
         
-        self.logger.info("===> Loading DiT model")
+        self.logger.info("======> Loading DiT model")
         
         if self.cfg.dit_checkpoint_path and self.cfg.dit_config_path:
             # use custom paths if provided
@@ -181,7 +183,7 @@ class ModelFactory:
     def _load_campplus_model(self):
         """加载campplus模型"""
         
-        self.logger.info("===> Loading CampPlus model")
+        self.logger.info("======> Loading CampPlus model")
 
         from externals.seed_vc.modules.campplus.DTDNN import CAMPPlus
 
@@ -203,7 +205,7 @@ class ModelFactory:
     def _load_vocoder_fn(self):
         """加载vocoder模型"""
         
-        self.logger.info("===> Loading vocoder model")
+        self.logger.info("======> Loading vocoder model")
         vocoder_type = self.model_params.vocoder.type
 
         if vocoder_type == 'bigvgan':  # bigvgan
@@ -252,7 +254,7 @@ class ModelFactory:
     def _load_semantic_fn(self):
         """加载语义模型"""
         
-        self.logger.info("===> Loading semantic model")
+        self.logger.info("======> Loading semantic model")
         speech_tokenizer_type = self.model_params.speech_tokenizer.type
         if speech_tokenizer_type == 'whisper':
             # whisper
@@ -387,7 +389,7 @@ class ModelFactory:
     def _load_vad_model(self):
         """加载vad模型"""
         
-        self.logger.info("===> Loading VAD model")
+        self.logger.info("======> Loading VAD model")
         from funasr import AutoModel
         vad_config = {
             "speech_noise_thres": 0.8,
@@ -409,12 +411,38 @@ class ModelFactory:
     @timer_decorator
     def _load_f0_fn(self):
         # f0 extractor
+        self.logger.info("======> Loading F0 extractor model")
         from externals.seed_vc.modules.rmvpe import RMVPE
         model_path = load_custom_model_from_hf("lj1995/VoiceConversionWebUI", "rmvpe.pt", None)
         rmvpe = RMVPE(model_path, is_half=False, device=self.device)
         f0_fn = rmvpe.infer_from_audio
         
         return f0_fn
+    
+    @timer_decorator
+    def _load_retrieval(self):
+        """加载语义特征检索模型"""
+        self.logger.info("======> Loading Retrieval model")
+        import faiss
+        import numpy as np
+        
+        if self.cfg.index_path is None:
+            raise ValueError("index_path must be provided when retrieval_enable is True")
+        
+        if not os.path.exists(self.cfg.index_path):
+            raise FileNotFoundError(f"Index file not found: {self.cfg.index_path}")
+        
+        index = faiss.read_index(self.cfg.index_path)
+        self.logger.info(f"Retrieval index loaded from {self.cfg.index_path} | total vectors: {index.ntotal}")
+        big_npy = index.reconstruct_n(0, index.ntotal)
+        
+        retrieval_fn = {
+            "index": index,
+            "big_npy": big_npy,
+            "index_rate": self.cfg.index_rate,
+        }
+        
+        return retrieval_fn
     
       
 if __name__ == "__main__":

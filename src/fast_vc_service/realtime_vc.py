@@ -263,6 +263,25 @@ class RealtimeVoiceConversion:
                                                      # has value only when is_f0 is True
         }
         return reference
+    
+    def _retrieval(self, S_alt):
+        if self.models['retrieval_fn'] is None:
+            return S_alt
+        
+        index = self.models['retrieval_fn']['index']
+        big_npy = self.models['retrieval_fn']['big_npy']
+        index_rate = self.models['retrieval_fn']['index_rate']
+        
+        npy = S_alt.squeeze(0).cpu().numpy().astype("float32")
+        score, ix = index.search(npy, k=8)
+        weight = np.square(1 / score)
+        weight /= weight.sum(axis=1, keepdims=True)
+        npy = np.sum(big_npy[ix] * np.expand_dims(weight, axis=2), axis=1)
+
+        searched_feat = torch.from_numpy(npy).unsqueeze(0).to(S_alt.device)
+        searched_feat = searched_feat * index_rate + S_alt * (1 - index_rate)
+    
+        return searched_feat
 
     @torch.no_grad()
     def _vc_infer(self,
@@ -304,6 +323,7 @@ class RealtimeVoiceConversion:
         # get cat_condition
         t0 = time.perf_counter()
         S_alt = semantic_fn(input_wav.unsqueeze(0))
+        S_alt = self._retrieval(S_alt)  # apply retrieval if enabled
         S_alt = S_alt[:, int(ce_dit_difference * 50):]  # 16k sr with 320x downsampling of senmantic(whisper, wav2vec, hubert)
                                                    # 50 frames per second
                                                    

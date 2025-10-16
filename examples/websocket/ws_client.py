@@ -36,7 +36,7 @@ class Inputs(BaseModel):
     worker_delay: float = 1.0  # Delay in seconds between starting each worker
     
     # wav params
-    src_wavs: list = ["wavs/sources/rough-male-0.wav"]   # List of source wav file paths
+    src_wavs: list = ["resources/srcs/rough-male-0.wav"]   # List of source wav file paths
     session_gen: bool = False  # Whether to auto-generate session IDs, if False, using src_wav.name as session_id
     session_ids: list = [] # List of custom session IDs, used if session_gen is False
     output_wav_dir: str = "outputs/ws_client"  # Directory to save output audio files
@@ -517,8 +517,8 @@ def get_inputs_example():
     """
     Example
     """
-    src_dir = "wavs/sources"
-    src_wavs = [ str(p) for p in Path(src_dir).glob("*.wav") ] * 5
+    src_dir = "resources/srcs"
+    src_wavs = [ str(p) for p in Path(src_dir).glob("*.wav") ]
     logger.info(f"Found {len(src_wavs)} source wav files in {src_dir}")
     
     max_workers = min(10, len(src_wavs))  # 10并发

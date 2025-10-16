@@ -156,6 +156,7 @@ python examples/websocket/ws_client.py \
     - [x] Support custom model address configuration
     - [x] Support multi-GPU multi-instance deployment
     - [x] Optimize VAD model parameters for better noise filtering
+    - [x] Add semantic feature retrieval module to enhance voice similarity
     - [ ] Train models to optimize voice conversion quality
     - [ ] Improve model effectiveness for noisy data
         - Distinguish different noise types

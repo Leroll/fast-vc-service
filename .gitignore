@@ -53,13 +53,14 @@ checkpoints*
 
 
 ## 测试音频相关
-wavs/cases/*
+resources/cases/*
 outputs/*
-wavs/sources/*.wav
+resources/srcs/*.wav
 
 *ipynb
 
 .env
+resources/retrieval/*.index
 
 # temp
 temp/*
