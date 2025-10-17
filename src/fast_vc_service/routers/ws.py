@@ -17,6 +17,25 @@ from fast_vc_service.adapters.protocol_adapter import ProtocolAdapter
 
 websocket_router = APIRouter()
 
+def ws_close_reason(code: int) -> str:
+    reasons = {
+        1000: "Normal Closure",
+        1001: "Going Away",
+        1002: "Protocol Error",
+        1003: "Unsupported Data",
+        1005: "No Status Received",
+        1006: "Abnormal Closure",
+        1007: "Invalid Payload",
+        1008: "Policy Violation",
+        1009: "Message Too Big",
+        1010: "Mandatory Extension",
+        1011: "Internal Error (server)",
+        1012: "Service Restart",
+        1013: "Try Again Later",
+        1014: "Bad Gateway",
+        1015: "TLS Handshake Failure",
+    }
+    return reasons.get(code, "Unknown")
 
 class ConnectionMonitor:
     """WebSocket connection monitor
@@ -307,7 +326,7 @@ async def process_chunk(websocket: WebSocket,
         session.record_event(EventType.RECV, output_duration_ms)
             
     except Exception as e:
-        logger.error(f"Error processing audio chunk: \n{traceback.format_exc()}")
+        logger.error(f"{session.session_id} | Error processing audio chunk: {e}\n{traceback.format_exc()}")
         return None
 
 
@@ -333,7 +352,10 @@ async def process_tail_bytes_and_vc(websocket: WebSocket,
 @websocket_router.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
-    logger.info("WebSocket connection established")
+    client = websocket.client
+    ua = websocket.headers.get("user-agent")
+    subproto = websocket.headers.get("sec-websocket-protocol")
+    logger.info(f"WebSocket connection established from {getattr(client,'host',None)}:{getattr(client,'port',None)} | UA={ua} | subprotocol={subproto}")
     session, buffer, adapter = None, None, None
     receive_timeout = websocket.app.state.cfg.app.receive_timeout
     connection_added = False
@@ -350,57 +372,65 @@ async def websocket_endpoint(websocket: WebSocket):
             try:
                 data = await asyncio.wait_for(
                     websocket.receive(),
-                    timeout = receive_timeout
+                    timeout=receive_timeout
                 )
             except asyncio.TimeoutError:
-                logger.warning(f"{session.session_id} | WebSocket receive timeout after {receive_timeout} seconds")
+                logger.error(f"{session.session_id} | WebSocket receive timeout after {receive_timeout} seconds")
                 break
-            
+            except WebSocketDisconnect as e:
+                code = getattr(e, "code", None)
+                logger.error(f"{session.session_id} | WebSocketDisconnect raised (code={code}, reason={ws_close_reason(code)})")
+                break
+            except RuntimeError as e:
+                # Starlette: calling receive() after a disconnect event
+                if "disconnect message has been received" in str(e):
+                    logger.error(f"{session.session_id} | Receive called after disconnect. Exiting loop.")
+                    break
+                raise
+
+            # 显式处理断开事件，避免下一轮再 receive()
+            if isinstance(data, dict) and data.get("type") == "websocket.disconnect":
+                code = data.get("code")
+                logger.info(f"{session.session_id} | Received websocket.disconnect (code={code}, reason={ws_close_reason(code)})")
+                break
+
             if "bytes" in data:
                 audio_bytes = data["bytes"]
                 if audio_bytes is None or len(audio_bytes) == 0:
                     logger.warning(f"{session.session_id} | Received empty audio bytes")
                     continue
-                
-                await process_new_bytes_and_vc(
-                    audio_bytes, websocket, 
-                    buffer, session
-                )
-                
-        
+                await process_new_bytes_and_vc(audio_bytes, websocket, buffer, session)
+
             elif "text" in data:
                 try:
                     json_data = json.loads(data["text"])
                     if adapter.is_end_message(json_data):
-                        logger.info(f"{session.session_id} | Received end signal. ")
-                        await process_tail_bytes_and_vc(
-                            websocket, buffer, session
-                        )
-                        
-                        complete_msg = adapter.format_complete_message({})  # send complete message
+                        logger.info(f"{session.session_id} | Received end signal.")
+                        await process_tail_bytes_and_vc(websocket, buffer, session)
+                        complete_msg = adapter.format_complete_message({})
                         await websocket.send_json(complete_msg)
-                        logger.info(f"{session.session_id} | Voice conversion completed. ")
-                        
+                        logger.info(f"{session.session_id} | Voice conversion completed.")
                         break
-                except Exception as e:
+                except Exception:
                     logger.error(f"Error processing end signal: \n{traceback.format_exc()}")
-                    await send_error(websocket, "INTERNAL_ERROR", 
-                                    f"Error processing control message: {str(e)}", session.session_id, adapter)
+                    await send_error(websocket, "INTERNAL_ERROR",
+                                     "Error processing control message", session.session_id, adapter)
                     break
     
-    except WebSocketDisconnect:
+    except WebSocketDisconnect as e:
+        code = getattr(e, "code", None)
         session_log_id = session.session_id if session else "None-ID"
-        logger.info(f"{session_log_id} | Client disconnected. ")
+        logger.error(f"{session_log_id} | Client disconnected (code={code}, reason={ws_close_reason(code)}).")
     
     except Exception as e:
-        logger.error(f"WebSocket error: \n{traceback.format_exc()}")
+        logger.error(f"WebSocket error: {e}\n{traceback.format_exc()}")
     
     finally:
         session_log_id = session.session_id if session else "None-ID"
         try:
             if websocket.client_state.name != "DISCONNECTED":
-                await websocket.close()
-                logger.info(f"{session_log_id} | WebSocket connection closed in finally. ")
+                await websocket.close(code=1000)
+                logger.info(f"{session_log_id} | WebSocket connection closed in finally (code=1000 Normal Closure).")
             
             if connection_added and session:
                 worker_remaining, instance_remaining = await connection_monitor.remove_connection(session.session_id)
@@ -416,7 +446,7 @@ async def websocket_endpoint(websocket: WebSocket):
                 logger.info(f"{session_log_id} | Session save and cleanup task created")
                                     
         except Exception as e:
-            logger.error(f"{session_log_id} | Error during cleanup: \n{traceback.format_exc()}")
+            logger.error(f"{session_log_id} | Error during cleanup: {e}\n{traceback.format_exc()}")
 
 
 

@@ -34,7 +34,7 @@ def create_app() -> FastAPI:
     # Initialize logging
     cfg = Config().get_config()
     worker_id = _get_work_id()
-    LoggingSetup.setup(cfg.app.log_dir, worker_pid=worker_id)
+    LoggingSetup.setup(cfg.app.log_dir, worker_id=worker_id)
     logger.info("-" * 21 + "initilizing service" + "-" * 21)
     
     # Create FastAPI application
@@ -84,7 +84,9 @@ def main() -> None:
         port=app_config.port,
         workers=app_config.workers,
         factory=True,
-        log_config=None  # Forbid default logging config
+        log_config=None,  # Forbid default logging config
+        ws_ping_interval=600,
+        ws_ping_timeout=600,
     )
     
 if __name__ == "__main__":

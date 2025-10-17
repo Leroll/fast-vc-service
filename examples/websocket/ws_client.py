@@ -25,6 +25,10 @@ class SampleRateEnum(Enum):
     SR_16000 = 16000
     SR_24000 = 24000
     SR_48000 = 48000
+    
+class SessionIDTypeEnum(Enum):
+    FILENAME = "filename"  # use filename as session ID
+    TIMESTAMP = "timestamp"  # generate session ID with timestamp prefix
 
 class Inputs(BaseModel):
     # server params
@@ -36,9 +40,8 @@ class Inputs(BaseModel):
     worker_delay: float = 1.0  # Delay in seconds between starting each worker
     
     # wav params
-    src_wavs: list = ["resources/srcs/rough-male-0.wav"]   # List of source wav file paths
-    session_gen: bool = False  # Whether to auto-generate session IDs, if False, using src_wav.name as session_id
-    session_ids: list = [] # List of custom session IDs, used if session_gen is False
+    src_wavs: list = ["resources/srcs/female-0-16khz.wav"]   # List of source wav file paths
+    session_id_type: SessionIDTypeEnum  = SessionIDTypeEnum.TIMESTAMP  # Type of session ID to generate  
     output_wav_dir: str = "outputs/ws_client"  # Directory to save output audio files
     real_time: bool = True  # Simulate real-time audio sending, if False, send as fast as possible
     
@@ -54,11 +57,21 @@ class Inputs(BaseModel):
     # results params
     save_timeline: bool = False  # Save send/receive timeline to JSON file
     
-    def model_post_init(self, context):
-        if not self.session_gen:
-            self.session_ids = [ Path(wav).stem for wav in self.src_wavs ]
-
-
+ 
+def generate_session_id(stype: SessionIDTypeEnum, wav_path: str):
+    """
+    Generate a session ID based on the specified type.
+    """
+    unique_suffix = uuid.uuid4().hex[:6]  # 取UUID的前4位保证唯一性
+    
+    if stype == SessionIDTypeEnum.FILENAME:
+        return f"{Path(wav_path).stem}-{unique_suffix}"
+    elif stype == SessionIDTypeEnum.TIMESTAMP:
+        timestamp = datetime.now().strftime("%Y%m%d%H%M%S")    
+        return f"F{timestamp}-{unique_suffix}"
+    else:
+        raise ValueError(f"Unsupported session ID type: {stype}")
+        
 def read_audio_file(audio_path, encoding, target_sample_rate):
     """
     Read an audio file.
@@ -123,8 +136,7 @@ async def send_audio_file(websocket_url,
                           # wav params
                           audio_path, 
                           real_time_simulation,
-                          session_id=None,  # 允许外部传入session_id
-                          save_output=True,  # 控制是否保存输出文件
+                          session_id_type: SessionIDTypeEnum = SessionIDTypeEnum.TIMESTAMP,
                           output_wav_dir="wavs/outputs/ws_client", 
                           # encoding params
                           encoding="PCM",
@@ -146,7 +158,6 @@ async def send_audio_file(websocket_url,
         audio_path: Path to the input audio file
         real_time_simulation: If True, simulate real-time sending of audio chunks
         session_id: Optional session ID for tracking the conversion session
-        save_output: If True, save the output audio file after conversion
         output_wav_dir: Directory to save output audio files
         
         encoding: Format to send audio in ("PCM" or "OPUS")
@@ -183,23 +194,13 @@ async def send_audio_file(websocket_url,
             raise ValueError(f"Sample rate {target_sample_rate} Hz not supported. Must be one of: {opus_sample_rates}")
         
         # 1. before connecting, load audio file and prepare parameters
-        # Generate session ID if not provided
-        if session_id is None:
-            # 生成带时间戳前缀的session ID
-            timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
-            unique_suffix = uuid.uuid4().hex[:4]  # 取UUID的前4位保证唯一性
-            session_id = f"F{timestamp}{unique_suffix}"
-            logger.info(f"Generated session ID: {session_id}")
+        session_id = generate_session_id(session_id_type, audio_path)
         result['session_id'] = session_id
         
         # Generate output path based on input filename
-        if save_output:
-            output_dir = Path(output_wav_dir)
-            output_dir.mkdir(parents=True, exist_ok=True)
-            output_filename = f"{session_id}_ws-client-output.wav"
-            output_path = output_dir / output_filename
-            result['output_path'] = str(output_path)
-            logger.info(f"Output will be saved to: {output_path}")
+        Path(output_wav_dir).mkdir(parents=True, exist_ok=True)
+        output_path = Path(output_wav_dir).joinpath(f"{session_id}__ws-client.wav").as_posix()
+        result['output_path'] = str(output_path)
         
         # read audio file with target sample rate
         audio, sample_rate = read_audio_file(audio_path, encoding, target_sample_rate)
@@ -229,9 +230,9 @@ async def send_audio_file(websocket_url,
         output_audio = []
         async with websockets.connect(
             websocket_url,
-            ping_interval=None,   # 关闭定时 ping（可选）
-            ping_timeout=None,    # 不因 pong 超时而断开（可选）
-            close_timeout=None,   # 关闭时也不设超时（可选）
+            ping_interval=600,   
+            ping_timeout=600,    
+            close_timeout=600,  
             max_size=None,
         ) as websocket:
             # 2.1. Send config
@@ -387,7 +388,7 @@ async def send_audio_file(websocket_url,
                     pass
             
             # Save the output audio only if requested
-            if output_audio and save_output:
+            if output_audio:
                 output_audio_array = np.concatenate(output_audio)
                 sf.write(output_path, output_audio_array, 16000)
                 logger.info(f"Saved converted audio to {output_path} ({len(output_audio_array)} samples)")
@@ -427,14 +428,13 @@ async def send_audio_file(websocket_url,
 
 async def run_ws_client_async(inputs, idx):
     src_wav = inputs.src_wavs[idx]
-    session_id = inputs.session_ids[idx] if not inputs.session_gen else None
 
     result = await send_audio_file(
         websocket_url=inputs.url,
         api_key=inputs.api_key,
 
         audio_path=src_wav,
-        session_id=session_id,  # 传入用户指定的session_id
+        session_id_type=inputs.session_id_type,
         output_wav_dir=inputs.output_wav_dir,
         real_time_simulation=inputs.real_time,
         
@@ -520,9 +520,12 @@ def get_inputs_example():
     src_dir = "resources/srcs"
     src_wavs = [ str(p) for p in Path(src_dir).glob("*.wav") ]
     logger.info(f"Found {len(src_wavs)} source wav files in {src_dir}")
+    session_id_type = SessionIDTypeEnum.FILENAME
     
     max_workers = min(10, len(src_wavs))  # 10并发
-    return Inputs(src_wavs=src_wavs, max_workers=max_workers)
+    worker_delay = 0.1
+    return Inputs(src_wavs=src_wavs, session_id_type=session_id_type,
+                  max_workers=max_workers, worker_delay=worker_delay)
 
 def get_inputs():
     """
