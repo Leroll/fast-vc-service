@@ -86,7 +86,7 @@ class LoggingSetup:
         logger.add(
             sys.stdout,
             level="INFO",
-            format=f"<bold><green>{{time:YYYY-MM-DD HH:mm:ss.SSS}}</green></bold> | <bold><level>{{level}}</level></bold> | <bold><magenta>{{name}}</magenta></bold> | <bold><cyan>{worker_id}</cyan></bold> | <bold><white>{{message}}</white></bold>",
+            format=f"<bold><green>{{time:YYYY-MM-DD HH:mm:ss.SSS}}</green></bold> | <bold><level>{{level}}</level></bold> | <bold><magenta>{{name}}:{{line}}</magenta></bold> | <bold><cyan>{worker_id}</cyan></bold> | <bold><white>{{message}}</white></bold>",
             colorize=True,
         )
         
@@ -102,7 +102,7 @@ class LoggingSetup:
             backtrace=True,
             encoding="utf-8",
             filter=lambda record: "uvicorn" in record["name"],
-            format=f"{{time:YYYY-MM-DD HH:mm:ss.SSS}} | {{level}} | {{name}} | {worker_id} | {{message}}",
+            format=f"{{time:YYYY-MM-DD HH:mm:ss.SSS}} | {{level}} | {{name}}:{{line}} | {worker_id} | {{message}}",
         )
         
         # 添加应用日志文件 - 包含实例名
@@ -114,7 +114,7 @@ class LoggingSetup:
             backtrace=True,
             encoding="utf-8",
             filter=lambda record: "uvicorn" not in record["name"],
-            format=f"{{time:YYYY-MM-DD HH:mm:ss.SSS}} | {{level}} | {{name}} | {worker_id} | {{message}}",
+            format=f"{{time:YYYY-MM-DD HH:mm:ss.SSS}} | {{level}} | {{name}}:{{line}} | {worker_id} | {{message}}",
         )
         
         # 配置标准日志库将日志发送到我们的拦截器
