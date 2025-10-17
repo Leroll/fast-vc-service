@@ -61,27 +61,23 @@ class LoggingSetup:
         return "default"
     
     @classmethod
-    def setup(cls, log_dir: str, instance_name: str = None, worker_pid: int = None):
+    def setup(cls, log_dir: str, instance_name: str = None, worker_id: int = None):
         """配置日志系统，确保只被调用一次
         
         Args:
             log_dir: 日志目录
             instance_name: 实例名称，如果不提供则自动获取
-            worker_pid: Worker进程ID，如果不提供则自动获取
+            worker_id: 如果不提供则获取进程ID作为ID
         """
-        
-        # 如果已经初始化过，直接返回
         if cls._initialized:
             logger.debug("logging system already initialized, skipping setup")
             return
             
-        # 获取实例标识符
         if instance_name is None:
             instance_name = cls._get_instance_identifier()
             
-        # 获取worker PID
-        if worker_pid is None:
-            worker_pid = os.getpid()
+        if worker_id is None:
+            worker_id = os.getpid()
             
         # 移除默认的 loguru 处理器
         logger.remove()
@@ -90,12 +86,12 @@ class LoggingSetup:
         logger.add(
             sys.stdout,
             level="INFO",
-            format=f"<bold><green>{{time:YYYY-MM-DD HH:mm:ss.SSS}}</green></bold> | <bold><level>{{level}}</level></bold> | <bold><magenta>{{name}}</magenta></bold> | <bold><cyan>{worker_pid}</cyan></bold> | <bold><white>{{message}}</white></bold>",
+            format=f"<bold><green>{{time:YYYY-MM-DD HH:mm:ss.SSS}}</green></bold> | <bold><level>{{level}}</level></bold> | <bold><magenta>{{name}}</magenta></bold> | <bold><cyan>{worker_id}</cyan></bold> | <bold><white>{{message}}</white></bold>",
             colorize=True,
         )
         
         log_dir = Path(log_dir)
-        logger.info(f"logging directory: {log_dir}, instance: {instance_name}, worker PID: {worker_pid}")
+        logger.info(f"logging directory: {log_dir}, instance: {instance_name}, worker ID: {worker_id}")
         
         # 添加 Uvicorn 日志文件 - 包含实例名
         logger.add(
@@ -106,7 +102,7 @@ class LoggingSetup:
             backtrace=True,
             encoding="utf-8",
             filter=lambda record: "uvicorn" in record["name"],
-            format=f"{{time:YYYY-MM-DD HH:mm:ss.SSS}} | {{level}} | {{name}} | {worker_pid} | {{message}}",
+            format=f"{{time:YYYY-MM-DD HH:mm:ss.SSS}} | {{level}} | {{name}} | {worker_id} | {{message}}",
         )
         
         # 添加应用日志文件 - 包含实例名
@@ -118,7 +114,7 @@ class LoggingSetup:
             backtrace=True,
             encoding="utf-8",
             filter=lambda record: "uvicorn" not in record["name"],
-            format=f"{{time:YYYY-MM-DD HH:mm:ss.SSS}} | {{level}} | {{name}} | {worker_pid} | {{message}}",
+            format=f"{{time:YYYY-MM-DD HH:mm:ss.SSS}} | {{level}} | {{name}} | {worker_id} | {{message}}",
         )
         
         # 配置标准日志库将日志发送到我们的拦截器
@@ -133,4 +129,4 @@ class LoggingSetup:
         
         # 标记为已初始化
         cls._initialized = True
-        logger.info(f"logging system initialized successfully for instance: {instance_name}, worker PID: {worker_pid}")
+        logger.info(f"logging system initialized successfully for instance: {instance_name}, worker ID: {worker_id}")
