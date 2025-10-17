@@ -356,45 +356,76 @@ def _show_service_status(pid_file: Path):
         click.echo(click.style(f"❌ Error checking status: {e}", fg="red"))
 
 @cli.command("clean")
-@click.option("--confirm", "-y", is_flag=True, help="Skip confirmation prompt")
-def clean(confirm: bool):
-    """Clean log files in the logs/ directory."""
-    log_dir = PROJECT_ROOT / "logs"
-    
-    # 检查logs目录是否存在
-    if not log_dir.exists():
-        click.echo(click.style(f"❌ Log directory does not exist: {log_dir}", fg="red"))
+@click.option("--logs", is_flag=True, help="删除 logs/ 目录下的文件（保留 .gitkeep）")
+@click.option("--outputs", is_flag=True, help="删除 outputs/ 目录下的文件（保留 .gitkeep）")
+def clean(logs: bool, outputs: bool):
+    """Clean selected directories (logs/ or outputs/), preserving .gitkeep. Confirmation is always required."""
+    # 收集目标目录
+    targets = []
+    if logs:
+        targets.append(("logs", PROJECT_ROOT / "logs"))
+    if outputs:
+        targets.append(("outputs", PROJECT_ROOT / "outputs"))
+
+    if not targets:
+        click.echo(click.style("❌ 请通过 --logs 或 --outputs 指定要清理的目录", fg="red"))
         return
-    
-    # 查找所有.log文件
-    log_files = list(log_dir.glob("*.log*"))
-    
-    if not log_files:
-        click.echo(click.style("✅ No log files found to delete", fg="green"))
+
+    # 检查目录和待删除文件
+    files_to_delete = []
+    missing_dirs = []
+    for label, directory in targets:
+        if not directory.exists():
+            missing_dirs.append((label, directory))
+            continue
+
+        # 递归收集所有文件，排除 .gitkeep
+        dir_files = [
+            p for p in directory.rglob("*")
+            if p.is_file() and p.name != ".gitkeep"
+        ]
+
+        files_to_delete.extend(dir_files)
+
+    # 提示不存在的目录
+    for label, directory in missing_dirs:
+        click.echo(click.style(f"⚠️  目录不存在，跳过：{directory}", fg="yellow"))
+
+    if not files_to_delete:
+        click.echo(click.style("✅ 未找到可删除的文件（已跳过 .gitkeep）", fg="green"))
         return
-    
-    # 显示要删除的文件
-    click.echo(click.style(f"📁 Found {len(log_files)} log file(s) to delete:", fg="cyan"))
-    for log_file in log_files:
-        click.echo(f"  - {log_file.relative_to(PROJECT_ROOT)}")
-    
-    # 确认删除
-    if not confirm:
-        if not click.confirm(click.style("❓ Do you want to delete these files?", fg="yellow")):
-            click.echo(click.style("❌ Operation cancelled", fg="red"))
-            return
-    
-    # 删除文件
-    deleted_count = 0
-    for log_file in log_files:
+
+    # 显示将要删除的文件列表
+    click.echo(click.style(f"📁 将删除以下 {len(files_to_delete)} 个文件（保留 .gitkeep）：", fg="cyan"))
+    for p in files_to_delete:
         try:
-            log_file.unlink()
-            click.echo(click.style(f"🗑️  Deleted: {log_file.relative_to(PROJECT_ROOT)}", fg="green"))
-            deleted_count += 1
+            rel = p.relative_to(PROJECT_ROOT)
+        except ValueError:
+            rel = p
+        click.echo(f"  - {rel}")
+
+    # 必须确认
+    if not click.confirm(click.style("❓ 确认删除以上文件吗？", fg="yellow")):
+        click.echo(click.style("❌ 操作已取消", fg="red"))
+        return
+
+    # 执行删除
+    deleted = 0
+    errors = 0
+    for p in files_to_delete:
+        try:
+            p.unlink(missing_ok=True)
+            deleted += 1
+            click.echo(click.style(f"🗑️  已删除: {p.relative_to(PROJECT_ROOT)}", fg="green"))
         except Exception as e:
-            click.echo(click.style(f"❌ Failed to delete {log_file.name}: {e}", fg="red"))
-    
-    click.echo(click.style(f"✅ Successfully deleted {deleted_count} log file(s)", fg="green"))
+            errors += 1
+            click.echo(click.style(f"❌ 删除失败 {p.name}: {e}", fg="red"))
+
+    # 总结
+    if errors == 0:
+        click.echo(click.style(f"✅ 成功删除 {deleted} 个文件", fg="green"))
+    else:
+        click.echo(click.style(f"⚠️  已删除 {deleted} 个文件，{errors} 个失败", fg="yellow"))
 
 @cli.command()
 def version():
@@ -432,10 +463,10 @@ if __name__ == "__main__":
     fast-vc stop -p 8043 --force           # 强制停止服务（使用SIGTERM）
     fast-vc stop -f                        # 强制停止所有服务
     
-    # 清理日志 (Clean Logs)
-    fast-vc clean                          # 清理日志文件（需要确认）
-    fast-vc clean -y                       # 跳过确认直接清理日志文件
-    fast-vc clean --confirm                # 长选项形式
+    # 清理文件 (Clean)
+    fast-vc clean --logs                   # 清理 logs/ 下的文件（保留 .gitkeep）
+    fast-vc clean --outputs                # 清理 outputs/ 下的文件（保留 .gitkeep）
+    fast-vc clean --logs --outputs         # 同时清理两个目录
     
     # 版本信息 (Version Info)
     fast-vc version                        # 显示版本信息
