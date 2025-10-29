@@ -25,7 +25,7 @@ class Session:
     """针对单通音频，流式vc过程中, 存储上下文状态类"""
     
     def __init__(self,session_id, extra_frame, crossfade_frame, sola_search_frame, 
-                 block_frame, extra_frame_right, zc, 
+                 block_frame, extra_frame_right, zc_frame, 
                  sola_buffer_frame, samplerate,
                  save_dir,
                  device,
@@ -82,7 +82,7 @@ class Session:
                                                device=device)  # vc时若未检测出人声，用于填补的 zero
         
         # noise gate
-        self.rms_buffer: np.ndarray = np.zeros(4 * zc, dtype="float32")  # 大小换成16k对应的; TODO 这里看下是不是可以改成 torch.tensor
+        self.rms_buffer: np.ndarray = np.zeros(4 * zc_frame, dtype="float32")  # 大小换成16k对应的; TODO 这里看下是不是可以改成 torch.tensor
         
         # sola
         self.sola_buffer: torch.Tensor = torch.zeros(

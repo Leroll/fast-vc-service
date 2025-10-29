@@ -39,21 +39,21 @@ class RealtimeVoiceConversion:
     def _init_realtime_parameters(self):
         """Initialize parameters related to real-time processing"""
         
-        self.zc = self.cfg.SAMPLERATE // self.cfg.zc_framerate  # precision factor
+        self.zc_frame = self.cfg.SAMPLERATE // self.cfg.fps  # precision factor
                                                                 # seed-vc is // 50
                                                                 # rvc is // 100
         # wav 相关
         self.block_frame = self.cfg.block_time * self.cfg.SAMPLERATE  # block_frame 代表的是 0.5s 的音频片段，单位是帧数
-        self.block_frame = int( np.round( self.block_frame / self.zc) ) * self.zc  # 规范化, n倍zc
+        self.block_frame = int( np.round( self.block_frame / self.zc_frame) ) * self.zc_frame  # 规范化, n倍zc
         
         self.crossfade_frame = self.cfg.crossfade_time * self.cfg.SAMPLERATE 
-        self.crossfade_frame = int( np.round( self.crossfade_frame / self.zc ) ) * self.zc 
+        self.crossfade_frame = int( np.round( self.crossfade_frame / self.zc_frame ) ) * self.zc_frame 
     
         self.extra_frame = self.cfg.extra_time * self.cfg.SAMPLERATE 
-        self.extra_frame = int( np.round( self.extra_frame / self.zc ) ) * self.zc 
+        self.extra_frame = int( np.round( self.extra_frame / self.zc_frame ) ) * self.zc_frame 
         
         self.extra_frame_right = self.cfg.extra_time_right * self.cfg.SAMPLERATE
-        self.extra_frame_right = int( np.round( self.extra_frame_right / self.zc ) ) * self.zc
+        self.extra_frame_right = int( np.round( self.extra_frame_right / self.zc_frame ) ) * self.zc_frame
         
         # vad
         self.vad_chunk_size = 1000 * self.cfg.block_time  # 转换成ms
@@ -63,8 +63,8 @@ class RealtimeVoiceConversion:
         self.f0_chunk_size = self.block_frame // rmvpe_hop_length + 1
         
         # sola
-        self.sola_buffer_frame = min( self.crossfade_frame, 4 * self.zc ) # 80ms帧 和 crossfade帧(默认40ms)中的小数
-        self.sola_search_frame = self.zc  # sola_search 
+        self.sola_buffer_frame = min( self.crossfade_frame, 4 * self.zc_frame ) # 80ms帧 和 crossfade帧(默认40ms)中的小数
+        self.sola_search_frame = self.zc_frame  # sola_search 
         self.fade_in_window: torch.Tensor = (
             torch.sin(
                 0.5
@@ -83,11 +83,11 @@ class RealtimeVoiceConversion:
         
         
         # vc models
-        self.skip_head = self.extra_frame // self.zc  # after // zc , it independent of sr, n zcs.
-        self.skip_tail = self.extra_frame_right // self.zc  
+        self.skip_head = self.extra_frame // self.zc_frame  # after // zc_frame , it independent of sr, n zcs.
+        self.skip_tail = self.extra_frame_right // self.zc_frame  
         self.return_length = (
             self.block_frame + self.sola_buffer_frame + self.sola_search_frame
-        ) // self.zc
+        ) // self.zc_frame
         
         model_samplerate = self.models["mel_fn_args"]["sampling_rate"]
         if model_samplerate != self.cfg.SAMPLERATE:  
@@ -103,8 +103,8 @@ class RealtimeVoiceConversion:
         
         # original code in rvc is: [self.extra_frame: ]
         # their has changed in seed-vc, using the same region of vc model final output 
-        self.region_start = - ( self.return_length * self.zc ) - ( self.skip_tail * self.zc )
-        self.region_end = - ( self.skip_tail * self.zc )
+        self.region_start = - ( self.return_length * self.zc_frame ) - ( self.skip_tail * self.zc_frame )
+        self.region_end = - ( self.skip_tail * self.zc_frame )
         
         
     def create_session(self, session_id):
@@ -115,7 +115,7 @@ class RealtimeVoiceConversion:
                        sola_search_frame=self.sola_search_frame, 
                        block_frame=self.block_frame, 
                        extra_frame_right=self.extra_frame_right, 
-                       zc=self.zc, 
+                       zc_frame=self.zc_frame, 
                        sola_buffer_frame=self.sola_buffer_frame,
                        samplerate=self.cfg.SAMPLERATE,
                        save_dir=self.cfg.save_dir,
@@ -274,8 +274,8 @@ class RealtimeVoiceConversion:
         
         # skip_head, return_length and skip_tail are unrelated to common_sr
         # using mel's sr and hop_length to make target_length consistent with the reference part
-        # the second  50 = 16000 / self.zc = 16000 / 320
-        # skip_head 这些是 16khz 下的，然后 * self.zc 还原为采样点数，再除以 16000 得到对应的时间， * sr 得到 22050 对应的长度, //hop_length 得到 mel 长度
+        # the second  50 = 16000 / self.zc_frame = 16000 / 320
+        # skip_head 这些是 16khz 下的，然后 * self.zc_frame 还原为采样点数，再除以 16000 得到对应的时间， * sr 得到 22050 对应的长度, //hop_length 得到 mel 长度
         target_lengths = torch.LongTensor([(skip_head + return_length + skip_tail - ce_dit_difference * 50) / 50 * sr // hop_length]).to(S_alt.device)
         cond = model.length_regulator(
             S_alt, ylens=target_lengths , n_quantizers=3, f0=shifted_f0_alt
@@ -311,8 +311,8 @@ class RealtimeVoiceConversion:
         chunk_time_records["voc"] = vocoder_time
         
         # final output
-        output_len = return_length * ( sr // self.cfg.zc_framerate )  # sola_buffer + sola_search + block
-        tail_len = skip_tail * ( sr // self.cfg.zc_framerate )  # extra_right
+        output_len = return_length * ( sr // self.cfg.fps )  # sola_buffer + sola_search + block
+        tail_len = skip_tail * ( sr // self.cfg.fps )  # extra_right
         
         # input_wav = extra + crossfade + sola_search + block + extra_right
         # -> x = input_wav[ ce_dit_difference: ]
@@ -386,30 +386,29 @@ class RealtimeVoiceConversion:
         2. 更新 median_log_f0_alt
         3. 更新 shifted_f0_alt
         """
-        if session.vad_speech_detected:  # only extract f0 when vad detected
-            t0 = time.perf_counter()
+        t0 = time.perf_counter()
+        
+        f0_alt = self.models['f0_fn'](session.input_wav, thred=0.03)  # 计算当前音频片段的f0
+        
+        if session.current_num_f0_blocks < self.cfg.total_block_for_f0:  # 累计计算当前通话的 median_log_f0_alt
+            # median_log_f0_alt
+            chunk_f0_alt = f0_alt[ -self.f0_chunk_size: ]  # 只累计当前chunk，而不加入上下文，以免重复加入
+            chunk_voiced_f0_alt = chunk_f0_alt[ chunk_f0_alt > 1 ]
+            chunk_voiced_log_f0_alt = np.log(chunk_voiced_f0_alt + 1e-5)
+            session.voiced_log_f0_alt.extend(chunk_voiced_log_f0_alt)
+            session.current_num_f0_blocks += 1
+            session.median_log_f0_alt = torch.tensor(np.median(session.voiced_log_f0_alt)).to(self.cfg.device)
+            logger.info(f"{session.session_id} | median_log_f0_alt: {session.median_log_f0_alt.item():.2f} | current_num_f0_blocks: {session.current_num_f0_blocks}")
             
-            f0_alt = self.models['f0_fn'](session.input_wav, thred=0.03)  # 计算当前音频片段的f0
-            
-            if session.current_num_f0_blocks < self.cfg.total_block_for_f0:  # 累计计算当前通话的 median_log_f0_alt
-                # median_log_f0_alt
-                chunk_f0_alt = f0_alt[ -self.f0_chunk_size: ]  # 只累计当前chunk，而不加入上下文，以免重复加入
-                chunk_voiced_f0_alt = chunk_f0_alt[ chunk_f0_alt > 1 ]
-                chunk_voiced_log_f0_alt = np.log(chunk_voiced_f0_alt + 1e-5)
-                session.voiced_log_f0_alt.extend(chunk_voiced_log_f0_alt)
-                session.current_num_f0_blocks += 1
-                session.median_log_f0_alt = torch.tensor(np.median(session.voiced_log_f0_alt)).to(self.cfg.device)
-                logger.info(f"{session.session_id} | median_log_f0_alt: {session.median_log_f0_alt.item():.2f} | current_num_f0_blocks: {session.current_num_f0_blocks}")
-                
-            # shifted_f0_alt
-            f0_alt = torch.from_numpy(f0_alt).to(self.cfg.device)[None]
-            log_f0_alt = torch.log(f0_alt + 1e-5)
-            shifted_log_f0_alt = log_f0_alt.clone()
-            shifted_log_f0_alt[f0_alt > 1] = log_f0_alt[f0_alt > 1] - session.median_log_f0_alt + self.reference['median_log_f0_ori']
-            session.shifted_f0_alt = torch.exp(shifted_log_f0_alt)
-            
-            f0_extractor_time = time.perf_counter() - t0
-            session.chunk_time_records["f0"] = f0_extractor_time
+        # shifted_f0_alt
+        f0_alt = torch.from_numpy(f0_alt).to(self.cfg.device)[None]
+        log_f0_alt = torch.log(f0_alt + 1e-5)
+        shifted_log_f0_alt = log_f0_alt.clone()
+        shifted_log_f0_alt[f0_alt > 1] = log_f0_alt[f0_alt > 1] - session.median_log_f0_alt + self.reference['median_log_f0_ori']
+        session.shifted_f0_alt = torch.exp(shifted_log_f0_alt)
+        
+        f0_extractor_time = time.perf_counter() - t0
+        session.chunk_time_records["f0"] = f0_extractor_time
         
     def _voice_conversion(self, session: Session) -> torch.Tensor:
         """vc inference 
@@ -535,8 +534,8 @@ class RealtimeVoiceConversion:
             # rms of input_wav
             rms_input = self._compute_rms(
                 waveform = input_wav,  
-                frame_length = 4 * self.zc,  
-                hop_length = self.zc,
+                frame_length = 4 * self.zc_frame,  
+                hop_length = self.zc_frame,
             )
             rms_input = F.interpolate(  # interpolation function
                 rms_input.unsqueeze(0),  # reshape to  (1, 1, 30)，
@@ -548,8 +547,8 @@ class RealtimeVoiceConversion:
             # rms of infer_wav
             rms_infer = self._compute_rms(
                 waveform =infer_wav[:],
-                frame_length=4 * self.zc,  
-                hop_length=self.zc,
+                frame_length=4 * self.zc_frame,  
+                hop_length=self.zc_frame,
             )
             rms_infer = F.interpolate(
                 rms_infer.unsqueeze(0),
@@ -589,9 +588,8 @@ class RealtimeVoiceConversion:
         # 2. preprocessing
         self._preprocessing(in_data, session) 
         
-        
         # 3. F0 extraction
-        if self.cfg.is_f0:  # only extract f0 when vad detected
+        if self.cfg.is_f0 and session.vad_speech_detected:  # only extract f0 when vad detected
             self._f0_extractor(session)  # 更新 median_log_f0_alt 和 shifted_f0_alt
             
         # 4. voice conversion

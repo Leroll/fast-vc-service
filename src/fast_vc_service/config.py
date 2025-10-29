@@ -47,7 +47,9 @@ class RealtimeVoiceConversionConfig(BaseModel):
                                 # rmvpe 也需要 16000
     BIT_DEPTH: int = 16  # 音频流的位深度，16位
     
-    zc_framerate: int = 50  # zc = samplerate // zc_framerate, rvc:100, seed-vc: 50
+    fps: int = 50  # 1s切分fps份，作为精度因子； 若50的话，精度就对应20ms，
+                   # rvc:100, seed-vc: 50
+                   # zc_frame = samplerate // fps, zc_frame 代表每一个精度对应的帧数
     block_time: float = 0.5  # 0.5 ；这里的 block time 是 0.5s                    
     crossfade_time: float = 0.04  # 0.04 ；用于平滑过渡的交叉渐变长度，这里设定为 0.04 秒。交叉渐变通常用于避免声音中断或"断层"现象。
     extra_time: float = 2.5  # 2.5；  附加时间，设置为 0.5秒。可能用于在处理音频时延长或平滑过渡的时间。
