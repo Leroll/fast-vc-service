@@ -57,10 +57,6 @@ class RealtimeVoiceConversionConfig(BaseModel):
     # auto_f0 
     is_f0: bool =  True  # 是否使用自适应音高
     total_block_for_f0: int = 6  # 6； 用于计算中位数音高的总块数，只有探测到人声的才会包含，6块对应 3s
-
-    # noise_gata
-    noise_gate: bool = True  # 是否使用噪声门
-    noise_gate_threshold: float = -60  # 噪声门的阈值，单位是分贝，-60dB
     
     # vc models
     diffusion_steps: int = 10  # 10；                    

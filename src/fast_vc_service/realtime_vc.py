@@ -344,9 +344,6 @@ class RealtimeVoiceConversion:
             session: 会话对象
         """
         
-        # vad 放在 noise_gate 之后的话，vad 耗时异常增加，v100上会增加到 600，700ms
-        # vad 放在前面就正常了，应该是zc级别的精度置0给vad造成了很大的困惑
-        
         vad_model = self.models["vad_model"]
         res = vad_model.generate(input=indata, cache=session.vad_cache, is_final=False, chunk_size=self.vad_chunk_size, disable_pbar=True)  # ---- 改成优化后的函数
         res_value = res[0]["value"]
@@ -354,30 +351,6 @@ class RealtimeVoiceConversion:
             session.vad_speech_detected = True
         elif len(res_value) % 2 == 1 and session.vad_speech_detected:
             session.set_speech_detected_false_at_end_flag = True
-    
-    def _noise_gate(self, indata, session):
-        """通过分贝阈值的方式，讲低于某个分贝的音频数据置为0
-        """
-        if session.vad_speech_detected or session.is_first_chunk:  # vad 检测出来人声才会进行 noise-gate
-    
-            indata = np.append(session.rms_buffer, indata)  # rms_buffer 仅用在这个地方
-            rms = librosa.feature.rms(
-                y=indata, frame_length=4 * self.zc, hop_length=self.zc
-            )[:, 2:]  # 这里丢掉了前2个frame的数据， hop_length是1个精度，所以丢掉了前 40ms 的值
-            session.rms_buffer[:] = indata[-4 * self.zc :]  # 替换新的 rms_buffer
-            indata = indata[2 * self.zc - self.zc // 2 :]  # indata 切掉了 1.5个zc，也就是30ms，所以这里做了10ms的重叠？为了让声音更平滑吗？
-            db_threhold = (
-                librosa.amplitude_to_db(rms, ref=1.0)[0] < self.cfg.noise_gate_threshold
-            )
-            for i in range(db_threhold.shape[0]):
-                if db_threhold[i]:
-                    indata[i * self.zc : (i + 1) * self.zc] = 0  # 这里是以 zc 为一个窗格的，20ms
-            indata = indata[self.zc // 2 :]   # 这里最终输出的indata 前面贴了 2个zc，40ms 的 rms-buffer
-                                                  # 这个在后面的 input_wav_res 填入的时候给平掉了 
-        else:
-            session.rms_buffer[:] = 0  # vad 检测不出来的时候，缓存置0
-            
-        return indata
     
     def _preprocessing(self, indata, session):
         """预处理函数
@@ -594,20 +567,13 @@ class RealtimeVoiceConversion:
         vad_time = time.perf_counter() - t0
         time_records["vad"] = vad_time
         
-        # 2. noise_gate
-        if self.cfg.noise_gate and (self.cfg.noise_gate_threshold > -60):
-            t0 = time.perf_counter()
-            in_data = self._noise_gate(in_data)
-            noise_gate_time = time.perf_counter() - t0
-            time_records["ng"] = noise_gate_time
-        
-        # 3. preprocessing
+        # 2. preprocessing
         t0 = time.perf_counter()
         self._preprocessing(in_data, session) 
         preprocess_time = time.perf_counter() - t0
         time_records["pre"] = preprocess_time
         
-        # F0 extraction
+        # 3. F0 extraction
         if self.cfg.is_f0:  # only extract f0 when vad detected
             t0 = time.perf_counter()
             self._f0_extractor(session)  # 更新 median_log_f0_alt 和 shifted_f0_alt
@@ -627,7 +593,6 @@ class RealtimeVoiceConversion:
             rms_mix_time = time.perf_counter() - t0
             time_records["rms_m"] = rms_mix_time
             
-        
         # 6. sola
         t0 = time.perf_counter()
         infer_wav = self._sola(infer_wav, session) 
