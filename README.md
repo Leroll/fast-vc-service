@@ -161,7 +161,9 @@ uv run examples/websocket/ws_client.py
 # 🚧 TODO
 - [ ] tag - v0.2 - Improve inference efficiency, reduce RTF - v2025-xx
     - [x] add t_span_schedule parameter to support cosine rearrangement, achieving better audio quality with the same number of steps
-    - [x] delete performance tracking module in realtimevc, remove file-vc script
+    - [x] delete performance tracking module in realtimevc, remove file-vc script, remove noise gate module to reduce code redundancy
+    - [x] add vad configuration to config file
+    - [ ] add output sample rate parameter to WebSocket protocol, output corresponding sample rate audio
     - [ ] update documentation to reflect latest code
     - [ ] Train models to optimize voice conversion quality
     - [ ] Improve model effectiveness for noisy data

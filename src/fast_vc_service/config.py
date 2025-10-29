@@ -87,6 +87,9 @@ class ModelConfig(BaseModel):
     index_rate: float = 1.0  ## 检索特征相对权重，0.0 表示不使用检索特征，1.0 表示完全使用检索特征
     index_path: str | None = None  # faiss索引文件路径
     
+    # vad
+    speech_noise_thres: float = 0.8  # VAD  语音与噪声能量比阈值 控制噪声过滤的灵敏度。vad默认0.6
+    
     # cfm
     t_span_schedule: Literal["linear", "cosine"] = "cosine"  # 线性 or 余弦重排
     

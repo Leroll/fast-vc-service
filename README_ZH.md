@@ -160,7 +160,9 @@ uv run examples/websocket/ws_client.py
 # 🚧 TODO 
 - [ ] tag - v0.2 - 提升推理时效，降低RTF - v2025-xx
     - [x] 新增t_span_schedule参数，支持余弦重排，同样的步数可以有更好的音质表现
-    - [x] 删除realtimevc中的性能追踪模块，删除file-vc脚本
+    - [x] 删除realtimevc中的性能追踪模块，删除file-vc脚本, 删除噪声门模块，减轻代码冗余程度
+    - [x] vad 配置增加到配置文件中
+    - [ ] websocket协议新增输出采样率参数，据此输出对应采样率音频，RealtimeVC中按22k处理
     - [ ] 更新文档，以适应最新的代码
     - [ ] 训练模型，优化换声品质
     - [ ] 提升针对噪声数据的模型效果
