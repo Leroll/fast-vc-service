@@ -56,6 +56,9 @@ class Session:
         self.sent_audio_ms = 0.0  # 累计发送的音频时长，这里的发送接受是基于客户端的角色来定的，客户端发送了多少
         self.recv_audio_ms = 0.0  # 累计接收的音频时长，这里的发送接受是基于客户端的角色来定的，服务端换声了多少
         
+        # chunk time cost records
+        self.chunk_time_records = {}  # 记录每个chunk在各个环节的时间消耗情况
+        
         # wav 相关
         self.input_wav: torch.Tensor = torch.zeros( 
             extra_frame

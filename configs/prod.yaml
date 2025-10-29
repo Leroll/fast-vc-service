@@ -21,10 +21,10 @@ realtime_vc:
   save_output: True  # is to save output wav
   
   # realtime 
-  SAMPLERATE: 16000  # also called common_sr
-                              # 音频流在vc过程中基础采样率
-                              # 不可修改，需要保证为 16k，vad，senmantic 都是 16k 模型
-                              # 某些环节采样率会改变，比如dit model会更改为22050，需要再次转换回来
+  SAMPLERATE: 16000   # also called common_sr
+                      # 音频流在vc过程中基础采样率
+                      # 不可修改，需要保证为 16k，vad，senmantic 都是 16k 模型
+                      # 某些环节采样率会改变，比如dit model会更改为22050，需要再次转换回来
   BIT_DEPTH: 16  # 音频流的位深度，16位
   
   zc_framerate: 50  # zc = samplerate // zc_framerate, rvc:100, seed-vc: 50

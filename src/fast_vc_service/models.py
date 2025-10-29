@@ -141,7 +141,6 @@ class ModelFactory:
                 t_span = t_span + (-1) * (torch.cos(torch.pi / 2 * t_span) - 1 + t_span)
             return self.solve_euler(z, x_lens, prompt, mu, style, f0, t_span, inference_cfg_rate)
         cfm.inference = types.MethodType(patched_inference, cfm)
-        self.logger.info(f"Patched cfm.inference to support t_span_schedule: {cfm.inference}")
         
         return cfm 
     

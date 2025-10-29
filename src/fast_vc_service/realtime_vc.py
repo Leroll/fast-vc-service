@@ -34,7 +34,7 @@ class RealtimeVoiceConversion:
         self._init_realtime_parameters()  # init realtime parameters
         self.reference = self._update_reference()
         self.instance_id = uuid.uuid4().hex
-        logger.info(f"RealtimeVoiceConversion instance created with ID: {self.instance_id}")
+        logger.info(f"RealtimeVoiceConversion instance created with ID: {self.instance_id}, device: {self.cfg.device}")
     
     def _init_realtime_parameters(self):
         """Initialize parameters related to real-time processing"""
@@ -231,7 +231,8 @@ class RealtimeVoiceConversion:
                   return_length,
                   diffusion_steps,
                   inference_cfg_rate,
-                  shifted_f0_alt=None
+                  shifted_f0_alt=None,
+                  chunk_time_records={}
                 ):
         """vc inference
         
@@ -282,7 +283,7 @@ class RealtimeVoiceConversion:
         cat_condition = torch.cat([prompt_condition, cond], dim=1)
         
         senmantic_time = time.perf_counter() - t0  # which includes semantic and length_regulator
-        
+        chunk_time_records["sem"] = senmantic_time
         
         # dit model
         t0 = time.perf_counter()
@@ -299,6 +300,7 @@ class RealtimeVoiceConversion:
         vc_target = vc_target[:, :, prompt_mel.size(-1) :]
         
         dit_time = time.perf_counter() - t0
+        chunk_time_records["dit"] = dit_time
         
         # vocoder model
         t0 = time.perf_counter()
@@ -306,6 +308,7 @@ class RealtimeVoiceConversion:
         vc_wave = vocoder_fn(vc_target).squeeze()  # vc_wave sr = 22050?
         
         vocoder_time = time.perf_counter() - t0
+        chunk_time_records["voc"] = vocoder_time
         
         # final output
         output_len = return_length * ( sr // self.cfg.zc_framerate )  # sola_buffer + sola_search + block
@@ -336,13 +339,14 @@ class RealtimeVoiceConversion:
         session.save()  # save wav
         session.cleanup()  # clear session data
                 
-    def _vad(self, indata, session):
+    def _vad(self, indata, session: Session):
         """VAD函数
         
         Args:
             indata: 输入音频数据，采样率必须为16k
             session: 会话对象
         """
+        t0 = time.perf_counter()
         
         vad_model = self.models["vad_model"]
         res = vad_model.generate(input=indata, cache=session.vad_cache, is_final=False, chunk_size=self.vad_chunk_size, disable_pbar=True)  # ---- 改成优化后的函数
@@ -351,13 +355,17 @@ class RealtimeVoiceConversion:
             session.vad_speech_detected = True
         elif len(res_value) % 2 == 1 and session.vad_speech_detected:
             session.set_speech_detected_false_at_end_flag = True
+            
+        vad_time = time.perf_counter() - t0
+        session.chunk_time_records["vad"] = vad_time
     
-    def _preprocessing(self, indata, session):
+    def _preprocessing(self, indata, session: Session):
         """预处理函数
         
         平移input_wav，填入新chunk
         """
-
+        t0 = time.perf_counter()
+        
         # 平移一个block_frame
         # 尝试使用 torch.roll() 耗时反而增加
         session.input_wav[: -self.block_frame] = session.input_wav[self.block_frame :].clone()  
@@ -368,6 +376,9 @@ class RealtimeVoiceConversion:
             self.cfg.device
         )
         
+        preprocess_time = time.perf_counter() - t0
+        session.chunk_time_records["pre"] = preprocess_time
+        
     def _f0_extractor(self, session:Session):
         """音高提取函数
         
@@ -376,6 +387,8 @@ class RealtimeVoiceConversion:
         3. 更新 shifted_f0_alt
         """
         if session.vad_speech_detected:  # only extract f0 when vad detected
+            t0 = time.perf_counter()
+            
             f0_alt = self.models['f0_fn'](session.input_wav, thred=0.03)  # 计算当前音频片段的f0
             
             if session.current_num_f0_blocks < self.cfg.total_block_for_f0:  # 累计计算当前通话的 median_log_f0_alt
@@ -394,8 +407,11 @@ class RealtimeVoiceConversion:
             shifted_log_f0_alt = log_f0_alt.clone()
             shifted_log_f0_alt[f0_alt > 1] = log_f0_alt[f0_alt > 1] - session.median_log_f0_alt + self.reference['median_log_f0_ori']
             session.shifted_f0_alt = torch.exp(shifted_log_f0_alt)
+            
+            f0_extractor_time = time.perf_counter() - t0
+            session.chunk_time_records["f0"] = f0_extractor_time
         
-    def _voice_conversion(self, session) -> torch.Tensor:
+    def _voice_conversion(self, session: Session) -> torch.Tensor:
         """vc inference 
         
         Returns:
@@ -409,7 +425,8 @@ class RealtimeVoiceConversion:
                 self.return_length,
                 int(self.cfg.diffusion_steps),
                 self.cfg.inference_cfg_rate,
-                session.shifted_f0_alt  # 默认是 None，兼容不取音高的模式
+                session.shifted_f0_alt,  # 默认是 None，兼容不取音高的模式
+                session.chunk_time_records
             )
             
             # model sr != common sr 的话，会 resample 到 common sr
@@ -417,9 +434,9 @@ class RealtimeVoiceConversion:
                 logger.debug(f"before resample: {infer_wav.shape}")
                 infer_wav = self.resampler_model_to_common(infer_wav)
                 logger.debug(f"after resample: {infer_wav.shape}, theroy_length: 8800")
-        else:       
-            infer_wav = session.infer_wav_zero 
-            
+        else:
+            infer_wav = session.infer_wav_zero.clone()
+        
         return infer_wav 
     
     def _sola(self, infer_wav, session:Session):
@@ -427,6 +444,7 @@ class RealtimeVoiceConversion:
         
         infer_wav: [sola_buffer + sola_search + block]
         """
+        t0 = time.perf_counter()
         
         # SOLA algorithm from https://github.com/yxlllc/DDSP-SVC
         conv_input = infer_wav[
@@ -463,7 +481,9 @@ class RealtimeVoiceConversion:
         # new infer wav: new_sola_buffer + sola_search + block
         # the new sola_buffer is the same wav_area as the next infer_wav[：sola_buffer_frame]
         # it means that sola_buffer is the area to smoothing between two chunks
-    
+        
+        sola_time = time.perf_counter() - t0
+        session.chunk_time_records["sola"] = sola_time
         return infer_wav
     
     def _compute_rms(self, waveform:torch.tensor, 
@@ -506,6 +526,7 @@ class RealtimeVoiceConversion:
         """
         
         if session.vad_speech_detected or session.is_first_chunk:  # only do rms-mixing when vad detected
+            t0 = time.perf_counter()
             
             # original code in rvc is: [self.extra_frame: ]
             # their has changed in seed-vc, using the same region of vc model final output 
@@ -541,8 +562,9 @@ class RealtimeVoiceConversion:
             infer_wav *= torch.pow(
                 rms_input / rms_infer, torch.tensor(1 - self.cfg.rms_mix_rate)
             )
-        else:
-            rms_mix_time = None
+            
+            rms_mixing_time = time.perf_counter() - t0
+            session.chunk_time_records["rms_m"] = rms_mixing_time
             
         return infer_wav
 
@@ -553,7 +575,7 @@ class RealtimeVoiceConversion:
             indata: self.cfg.samplerate 采样率的音频数据, pcm格式, channel=1
         """
         start_time = time.perf_counter()
-        time_records = {}
+        session.chunk_time_records = {}
         
         logger.debug(f"in_data.max: {in_data.max()}, in_data.min: {in_data.min()}")
         if self.cfg.save_input:  # save input chunk
@@ -562,42 +584,25 @@ class RealtimeVoiceConversion:
         in_data = librosa.to_mono(in_data.T)  # 转换完之后的indata shape: (11025,), max=1.0116995573043823, min=-1.0213052034378052
         
         # 1. vad
-        t0 = time.perf_counter()
         self._vad(in_data, session) 
-        vad_time = time.perf_counter() - t0
-        time_records["vad"] = vad_time
         
         # 2. preprocessing
-        t0 = time.perf_counter()
         self._preprocessing(in_data, session) 
-        preprocess_time = time.perf_counter() - t0
-        time_records["pre"] = preprocess_time
+        
         
         # 3. F0 extraction
         if self.cfg.is_f0:  # only extract f0 when vad detected
-            t0 = time.perf_counter()
             self._f0_extractor(session)  # 更新 median_log_f0_alt 和 shifted_f0_alt
-            f0_extractor_time = time.perf_counter() - t0
-            time_records["f0"] = f0_extractor_time
-    
+            
         # 4. voice conversion
-        t0 = time.perf_counter()
         infer_wav = self._voice_conversion(session) 
-        voice_conversion_time = time.perf_counter() - t0
-        time_records["vc"] = voice_conversion_time
         
         # 5. rms—mix
         if self.cfg.rms_mix_rate < 1:  
-            t0 = time.perf_counter()
             infer_wav = self._rms_mixing(infer_wav, session)
-            rms_mix_time = time.perf_counter() - t0
-            time_records["rms_m"] = rms_mix_time
             
         # 6. sola
-        t0 = time.perf_counter()
         infer_wav = self._sola(infer_wav, session) 
-        sola_time = time.perf_counter() - t0
-        time_records["sola"] = sola_time
         
         # 7. output
         session.out_data[:] = (
@@ -630,7 +635,7 @@ class RealtimeVoiceConversion:
         
         # tracking
         chunk_time = time.perf_counter() - start_time
-        time_msg = " | ".join([f"{k}: {v*1000:0.1f}" for k, v in time_records.items()])
+        time_msg = " | ".join([f"{k}: {v*1000:0.1f}" for k, v in session.chunk_time_records.items()])
         time_msg = f"{is_speech_detected} | chunk: {chunk_time*1000:0.1f} | " + time_msg
             
         return time_msg
