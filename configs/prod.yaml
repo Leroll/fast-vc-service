@@ -51,10 +51,7 @@ realtime_vc:
   # rms_mix
   rms_mix_rate: 0.9   # 0.25； 这个参数是用来控制 RMS 混合的比例，
                       # 范围是 0 到 1。
-                      # 0 表示完全使用 Input 的包络，1 表示完全使用 Infer 包络。
-                              
-  # 辅助参数
-  max_tracking_counter: 10000  # 用于记录单chunk推理时间损耗的最大记录数量
+                      # 0 表示完全使用 Input 的包络，1 表示完全使用 Infer 包络。                             
 
   # SLOW 监测
   send_slow_threshold: 100 # 100ms, 两个客户段发送过来的音频包之间的间隔，认定SLOW的阈值

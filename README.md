@@ -60,15 +60,13 @@ cp .env.example .env
 uv sync
 
 # Start service
-fast-vc serve
+uv run fast-vc serve
 ```
 
 ## 🧪 Quick Testing
 ```bash
 # WebSocket real-time voice conversion
-python examples/websocket/ws_client.py \
-    --source-wav-path "wavs/sources/low-pitched-male-24k.wav" \
-    --encoding PCM
+uv run examples/websocket/ws_client.py
 ```
 
 > For detailed installation and usage guide, please refer to [Quick Start](docs/getting_started/quick_started_en.md) documentation.
@@ -163,6 +161,8 @@ python examples/websocket/ws_client.py \
 # 🚧 TODO
 - [ ] tag - v0.2 - Improve inference efficiency, reduce RTF - v2025-xx
     - [x] add t_span_schedule parameter to support cosine rearrangement, achieving better audio quality with the same number of steps
+    - [x] delete performance tracking module in realtimevc, remove file-vc script
+    - [ ] update documentation to reflect latest code
     - [ ] Train models to optimize voice conversion quality
     - [ ] Improve model effectiveness for noisy data
         - Distinguish different noise types

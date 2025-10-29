@@ -31,70 +31,10 @@ class RealtimeVoiceConversion:
         self.models = ModelFactory(model_config=model_cfg, 
                                    is_f0=self.cfg.is_f0, 
                                    device=self.cfg.device).get_models()  # initialize models
-        self._init_performance_tracking() 
         self._init_realtime_parameters()  # init realtime parameters
         self.reference = self._update_reference()
         self.instance_id = uuid.uuid4().hex
         logger.info(f"RealtimeVoiceConversion instance created with ID: {self.instance_id}")
-    
-    def _init_performance_tracking(self):
-        """init performance tracking
-        
-        1. time cost in every module        
-        """
-        self.vad_time = deque(maxlen=self.cfg.max_tracking_counter)  
-        self.f0_extractor_time = deque(maxlen=self.cfg.max_tracking_counter)
-        self.noise_gate_time = deque(maxlen=self.cfg.max_tracking_counter)  
-        self.preprocessing_time = deque(maxlen=self.cfg.max_tracking_counter)  
-        
-        self.senmantic_time = deque(maxlen=self.cfg.max_tracking_counter)  
-        self.dit_time = deque(maxlen=self.cfg.max_tracking_counter)  
-        self.vocoder_time = deque(maxlen=self.cfg.max_tracking_counter)  
-        self.vc_time = deque(maxlen=self.cfg.max_tracking_counter)  
-        
-        self.rms_mix_time = deque(maxlen=self.cfg.max_tracking_counter)  
-        self.sola_time = deque(maxlen=self.cfg.max_tracking_counter) 
-        
-        self.chunk_time = deque(maxlen=self.cfg.max_tracking_counter)  # time cost of one chunk
-        
-    def _performance_report(self):
-        """Report module timing statistics"""
-        msg = "\n"
-        time_records = {
-            "VAD": self.vad_time,
-            "F0 Extractor": self.f0_extractor_time,
-            "Noise Gate": self.noise_gate_time,
-            "Preprocessing": self.preprocessing_time,
-            "Semantic Extraction": self.senmantic_time,
-            "Diffusion Model": self.dit_time,
-            "Vocoder": self.vocoder_time,
-            "VC Models Overall": self.vc_time,
-            "RMS Mixing": self.rms_mix_time,
-            "SOLA Algorithm": self.sola_time,
-            "Chunk Overall": self.chunk_time
-        }
-        
-        msg += "========== Voice Conversion Module Timing Statistics (ms) ==========\n"
-        stats = {}
-        for name, records in time_records.items():
-            if not records:  # Skip if queue is empty
-                continue
-                
-            records_arr = np.array(list(records)) * 1000 # Convert to milliseconds
-            temp_stats = {
-                "Mean": f"{np.mean(records_arr):0.1f}",
-                "Min": f"{np.min(records_arr):0.1f}",
-                "Max": f"{np.max(records_arr):0.1f}",
-                "Median": f"{np.median(records_arr):0.1f}",
-                "Std Dev": f"{np.std(records_arr):0.1f}",
-                "Count": len(records)
-            }
-            stats[name] = temp_stats    
-        
-        msg += json.dumps(stats, indent=4, ensure_ascii=False) + "\n"
-        msg += "====================================================================\n"
-        logger.info(msg)
-        return stats
     
     def _init_realtime_parameters(self):
         """Initialize parameters related to real-time processing"""
@@ -342,7 +282,6 @@ class RealtimeVoiceConversion:
         cat_condition = torch.cat([prompt_condition, cond], dim=1)
         
         senmantic_time = time.perf_counter() - t0  # which includes semantic and length_regulator
-        self.senmantic_time.append(senmantic_time) 
         
         
         # dit model
@@ -360,7 +299,6 @@ class RealtimeVoiceConversion:
         vc_target = vc_target[:, :, prompt_mel.size(-1) :]
         
         dit_time = time.perf_counter() - t0
-        self.dit_time.append(dit_time)
         
         # vocoder model
         t0 = time.perf_counter()
@@ -368,7 +306,6 @@ class RealtimeVoiceConversion:
         vc_wave = vocoder_fn(vc_target).squeeze()  # vc_wave sr = 22050?
         
         vocoder_time = time.perf_counter() - t0
-        self.vocoder_time.append(vocoder_time)
         
         # final output
         output_len = return_length * ( sr // self.cfg.zc_framerate )  # sola_buffer + sola_search + block
@@ -417,8 +354,6 @@ class RealtimeVoiceConversion:
             session.vad_speech_detected = True
         elif len(res_value) % 2 == 1 and session.vad_speech_detected:
             session.set_speech_detected_false_at_end_flag = True
-            
-        
     
     def _noise_gate(self, indata, session):
         """通过分贝阈值的方式，讲低于某个分贝的音频数据置为0
@@ -486,7 +421,6 @@ class RealtimeVoiceConversion:
             shifted_log_f0_alt = log_f0_alt.clone()
             shifted_log_f0_alt[f0_alt > 1] = log_f0_alt[f0_alt > 1] - session.median_log_f0_alt + self.reference['median_log_f0_ori']
             session.shifted_f0_alt = torch.exp(shifted_log_f0_alt)
-            
         
     def _voice_conversion(self, session) -> torch.Tensor:
         """vc inference 
@@ -658,7 +592,6 @@ class RealtimeVoiceConversion:
         t0 = time.perf_counter()
         self._vad(in_data, session) 
         vad_time = time.perf_counter() - t0
-        self.vad_time.append(vad_time)
         time_records["vad"] = vad_time
         
         # 2. noise_gate
@@ -666,14 +599,12 @@ class RealtimeVoiceConversion:
             t0 = time.perf_counter()
             in_data = self._noise_gate(in_data)
             noise_gate_time = time.perf_counter() - t0
-            self.noise_gate_time.append(noise_gate_time)
             time_records["ng"] = noise_gate_time
         
         # 3. preprocessing
         t0 = time.perf_counter()
         self._preprocessing(in_data, session) 
         preprocess_time = time.perf_counter() - t0
-        self.preprocessing_time.append(preprocess_time) 
         time_records["pre"] = preprocess_time
         
         # F0 extraction
@@ -681,14 +612,12 @@ class RealtimeVoiceConversion:
             t0 = time.perf_counter()
             self._f0_extractor(session)  # 更新 median_log_f0_alt 和 shifted_f0_alt
             f0_extractor_time = time.perf_counter() - t0
-            self.f0_extractor_time.append(f0_extractor_time)
             time_records["f0"] = f0_extractor_time
     
         # 4. voice conversion
         t0 = time.perf_counter()
         infer_wav = self._voice_conversion(session) 
         voice_conversion_time = time.perf_counter() - t0
-        self.vc_time.append(voice_conversion_time)
         time_records["vc"] = voice_conversion_time
         
         # 5. rms—mix
@@ -696,7 +625,6 @@ class RealtimeVoiceConversion:
             t0 = time.perf_counter()
             infer_wav = self._rms_mixing(infer_wav, session)
             rms_mix_time = time.perf_counter() - t0
-            self.rms_mix_time.append(rms_mix_time)
             time_records["rms_m"] = rms_mix_time
             
         
@@ -704,7 +632,6 @@ class RealtimeVoiceConversion:
         t0 = time.perf_counter()
         infer_wav = self._sola(infer_wav, session) 
         sola_time = time.perf_counter() - t0
-        self.sola_time.append(sola_time)
         time_records["sola"] = sola_time
         
         # 7. output
@@ -738,7 +665,6 @@ class RealtimeVoiceConversion:
         
         # tracking
         chunk_time = time.perf_counter() - start_time
-        self.chunk_time.append(chunk_time)
         time_msg = " | ".join([f"{k}: {v*1000:0.1f}" for k, v in time_records.items()])
         time_msg = f"{is_speech_detected} | chunk: {chunk_time*1000:0.1f} | " + time_msg
             

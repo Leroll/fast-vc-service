@@ -72,11 +72,6 @@ class RealtimeVoiceConversionConfig(BaseModel):
     rms_mix_rate: float = 0    # 0.25； 这个参数是用来控制 RMS 混合的比例，
                                # 范围是 0 到 1。
                                # 0 表示完全使用 Input 的包络，1 表示完全使用 Infer 包络。
-                               
-    # 辅助参数
-    max_tracking_counter: int = 10_000  # 用于记录单chunk推理时间损耗的最大记录数量
-                                        # record audio duration = max_tracking_counter * block_time
-                                        # default: 10_000 * 0.5 = 5000s = 83min
                                         
     # SLOW 参数, 包-包之间延迟认定为SLOW的阈值
     send_slow_threshold: int = 100  # 100ms, 两个客户段发送过来的音频包之间的间隔，认定SLOW的阈值

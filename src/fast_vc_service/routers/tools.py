@@ -32,36 +32,3 @@ async def get_session_data(
         logger.error(f"Error retrieving session data for {session_id}: {e}")
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
-@tools_router.get("/performance-report", summary="Get current realtime voice conversion performance report")
-async def get_performance_report(request: Request):
-    """
-    Get current performance statistics for the realtime voice conversion system.
-    
-    Returns detailed timing statistics for all voice conversion modules including:
-    - VAD processing time
-    - Noise gate processing time  
-    - Preprocessing time
-    - Semantic extraction time
-    - Diffusion model time
-    - Vocoder time
-    - RMS mixing time
-    - SOLA algorithm time
-    - Overall chunk processing time
-    
-    Example:
-    ```
-    curl -X GET "http://localhost:8042/tools/performance-report"
-    ```
-    """
-    try:
-        # Get the realtime VC instance from app state
-        if not hasattr(request.app.state, 'realtime_vc'):
-            raise HTTPException(status_code=404, detail="Realtime voice conversion service not initialized")
-        
-        realtime_vc = request.app.state.realtime_vc
-        return realtime_vc._performance_report()
-        
-    except Exception as e:
-        logger.error(f"Error retrieving performance report: {e}")
-        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
-
