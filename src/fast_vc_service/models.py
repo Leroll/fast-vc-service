@@ -9,6 +9,7 @@ import sys
 from pathlib import Path
 import os
 from huggingface_hub import hf_hub_download
+import types
 
 # add seed-vc path to sys.path
 SEED_VC_PATH = Path(__file__).resolve().parent.parent.parent / "externals" / "seed_vc"
@@ -121,6 +122,29 @@ class ModelFactory:
         total_params = sum(p.numel() for p in model.parameters())
         return total_params
     
+    def _add_t_span_schedule(self, cfm):
+        # set var: t_span_schedule 
+        schedule = self.cfg.t_span_schedule
+        if schedule not in ("linear", "cosine"):
+            self.logger.warning(f"Unknown t_span_schedule={schedule}, fallback to 'cosine'")
+            schedule = "cosine"
+        cfm.t_span_schedule = schedule
+        self.logger.info(f"Set cfm.t_span_schedule to {cfm.t_span_schedule}, config: {self.cfg.t_span_schedule}")
+        
+        # set func: patched_inference
+        @torch.inference_mode()
+        def patched_inference(self, mu, x_lens, prompt, style, f0, n_timesteps, temperature=1.0, inference_cfg_rate=0.5):
+            B, T = mu.size(0), mu.size(1)
+            z = torch.randn([B, self.in_channels, T], device=mu.device) * temperature
+            t_span = torch.linspace(0, 1, n_timesteps + 1, device=mu.device)
+            if self.t_span_schedule == "cosine":
+                t_span = t_span + (-1) * (torch.cos(torch.pi / 2 * t_span) - 1 + t_span)
+            return self.solve_euler(z, x_lens, prompt, mu, style, f0, t_span, inference_cfg_rate)
+        cfm.inference = types.MethodType(patched_inference, cfm)
+        self.logger.info(f"Patched cfm.inference to support t_span_schedule: {cfm.inference}")
+        
+        return cfm 
+    
     @timer_decorator
     def _load_dit_model(self):
         """dit model"""
@@ -169,6 +193,7 @@ class ModelFactory:
             dit_model[key].eval()
             dit_model[key].to(self.device)
         dit_model.cfm.estimator.setup_caches(max_batch_size=1, max_seq_length=8192)  
+        dit_model.cfm = self._add_t_span_schedule(dit_model.cfm)
         dit_fn = dit_model.cfm.inference
         
         # 计算dit_mdoel的参数量

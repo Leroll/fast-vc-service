@@ -1,3 +1,5 @@
+from dotenv import load_dotenv
+load_dotenv()
 import yaml
 import os
 from pydantic import BaseModel
@@ -7,8 +9,8 @@ from loguru import logger
 from pathlib import Path
 import traceback
 import torch
-from dotenv import load_dotenv
-load_dotenv()
+from typing import Literal
+
 
 from fast_vc_service.utils import Singleton  
 
@@ -93,6 +95,9 @@ class ModelConfig(BaseModel):
     is_retrieval: bool = False  # 是否启用语义特征检索模块
     index_rate: float = 1.0  ## 检索特征相对权重，0.0 表示不使用检索特征，1.0 表示完全使用检索特征
     index_path: str | None = None  # faiss索引文件路径
+    
+    # cfm
+    t_span_schedule: Literal["linear", "cosine"] = "cosine"  # 线性 or 余弦重排
     
     # 自定义模型路径，比如训练后的模型
     dit_checkpoint_path: str | None = None

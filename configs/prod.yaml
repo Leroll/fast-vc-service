@@ -43,15 +43,15 @@ realtime_vc:
   noise_gate_threshold: -60  # 噪声门的阈值，单位是分贝，-60dB
   
   # vc models
-  diffusion_steps: 10  # 10；                    
+  diffusion_steps: 5  # 10；                    
   inference_cfg_rate: 0.7  # 0.7
   max_prompt_length: 10.0 # 3； 
   ce_dit_difference: 2  # 2 seconds， content encoder ?
   
   # rms_mix
-  rms_mix_rate: 0.3    # 0.25； 这个参数是用来控制 RMS 混合的比例，
-                              # 范围是 0 到 1。
-                              # 0 表示完全使用 Input 的包络，1 表示完全使用 Infer 包络。
+  rms_mix_rate: 0.9   # 0.25； 这个参数是用来控制 RMS 混合的比例，
+                      # 范围是 0 到 1。
+                      # 0 表示完全使用 Input 的包络，1 表示完全使用 Infer 包络。
                               
   # 辅助参数
   max_tracking_counter: 10000  # 用于记录单chunk推理时间损耗的最大记录数量
@@ -73,6 +73,9 @@ models:
   index_rate: 1.0  # # 检索特征相对权重，0.0 表示不使用检索特征，1.0 表示完全使用检索特征
   index_path: "resources/retrieval/ref-tencet-female__added_IVF256_Flat_nprobe_1.index"  # faiss索引文件路径
   
+  # cfm
+  t_span_schedule: "cosine"  # "linear", "cosine"， 线性 or 余弦重排，
+
   # 自定义模型路径，比如训练后的模型
   dit_checkpoint_path: null
   dit_config_path: null

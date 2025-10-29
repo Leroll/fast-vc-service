@@ -162,6 +162,7 @@ python examples/websocket/ws_client.py \
 
 # 🚧 TODO
 - [ ] tag - v0.2 - Improve inference efficiency, reduce RTF - v2025-xx
+    - [x] add t_span_schedule parameter to support cosine rearrangement, achieving better audio quality with the same number of steps
     - [ ] Train models to optimize voice conversion quality
     - [ ] Improve model effectiveness for noisy data
         - Distinguish different noise types

@@ -255,7 +255,7 @@ class RealtimeVoiceConversion:
 
         reference = {
             "wav": reference_wav,  # not using
-            "prompt_condition": prompt_condition, 
+            "prompt_condition": prompt_condition,  # semantic_feat with length aligned to mel
             "prompt_mel": prompt_mel,  # need 22.05k sr, related to hop_length, win_length
                            # parameter of it is complicated, let it be for now  
             "prompt_style": prompt_style, 
