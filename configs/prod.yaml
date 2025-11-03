@@ -13,7 +13,8 @@ realtime_vc:
   # 设备
   device: ["cuda:0", "cuda:0"]  # 支持多卡，比如 ["cuda:0", "cuda:1"]
                                 # 在多卡场景下，worker会循环依次部署到各个卡上
-  
+  is_debug: False  # 是否开启debug模式，debug模式会保存更多中间文件，便于排查问题
+
   # wav 相关
   reference_wav_path: "resources/refs/ref-24k.wav"  
   save_dir: "outputs/"  # save

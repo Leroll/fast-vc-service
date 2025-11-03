@@ -164,7 +164,7 @@ uv run examples/websocket/ws_client.py
     - [x] vad 配置增加到配置文件中
     - [x] 各模块的 time_records 转移到 session 中统一管理
     - [x] realtime_vc输出固定为模型采样率（22k），以保证更高输出音质。
-    - [ ] 静音过长时，保留足够有声上下文
+    - [x] 静音过长时，保留足够有声上文，以提升合成效果
     - [ ] 兼容 fp16 推理模式
     - [ ] 无论在哪里ws中断，都要把当前的input，output音频保存下来
     - [ ] websocket协议新增输出采样率参数，据此输出对应采样率音频

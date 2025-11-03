@@ -324,15 +324,18 @@ class RealtimeVoiceConversion:
         """
         t0 = time.perf_counter()
         
-        # 平移一个block_frame
-        # 尝试使用 torch.roll() 耗时反而增加
-        session.input_wav[: -self.block_frame] = session.input_wav[self.block_frame :].clone()  
+        if session.vad_speech_detected:  # 检测到人声时，就正常全上下文滚动
+            # 平移一个block_frame
+            # 尝试使用 torch.roll() 耗时反而增加
+            session.input_wav[: -self.block_frame] = session.input_wav[self.block_frame :].clone()  
+        else:  # 未检测到人声时，只在return_frame + tail_frame 部分滚动，保留足够的上文，以防上文全静音，影响后续的vc效果
+            session.input_wav[self.extra_frame_ce : -self.block_frame] = session.input_wav[self.extra_frame_ce + self.block_frame :].clone()   
         
         # 整体填入 indata (可能大于block_frame)，但是核心内容是 block_frame大小
         # new block will be put at the end of input_wav
         session.input_wav[-indata.shape[0] :] = torch.from_numpy(indata).to(
             self.cfg.device
-        )
+        )    
         
         preprocess_time = time.perf_counter() - t0
         session.chunk_time_records["pre"] = preprocess_time
@@ -382,6 +385,13 @@ class RealtimeVoiceConversion:
             )
         else:
             infer_wav = session.infer_wav_zero.clone()
+            
+        if self.cfg.is_debug:
+            import soundfile as sf
+            t = time.time()
+            Path("outputs/debug_vc").mkdir(parents=True, exist_ok=True)
+            sf.write(f"outputs/debug_vc/{session.session_id}_{int(t*1000)}_input.wav", session.input_wav.cpu().numpy(), self.cfg.SAMPLERATE_IN)
+            sf.write(f"outputs/debug_vc/{session.session_id}_{int(t*1000)}_vc.wav", infer_wav.cpu().numpy(), self.cfg.SAMPLERATE_OUT)
         
         return infer_wav 
     
