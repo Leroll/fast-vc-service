@@ -413,8 +413,6 @@ async def websocket_endpoint(websocket: WebSocket):
                         break
                 except Exception:
                     logger.error(f"Error processing end signal: \n{traceback.format_exc()}")
-                    await send_error(websocket, "INTERNAL_ERROR",
-                                     "Error processing control message", session.session_id, adapter)
                     break
     
     except WebSocketDisconnect as e:
@@ -428,9 +426,12 @@ async def websocket_endpoint(websocket: WebSocket):
     finally:
         session_log_id = session.session_id if session else "None-ID"
         try:
-            if websocket.client_state.name != "DISCONNECTED":
-                await websocket.close(code=1000)
-                logger.info(f"{session_log_id} | WebSocket connection closed in finally (code=1000 Normal Closure).")
+            try:
+                if websocket.client_state.name != "DISCONNECTED":
+                    await websocket.close(code=1000)
+                    logger.info(f"{session_log_id} | WebSocket connection closed in finally (code=1000 Normal Closure).")
+            except Exception as e:
+                logger.warning(f"{session_log_id} | Error closing WebSocket: {e}")
             
             if connection_added and session:
                 worker_remaining, instance_remaining = await connection_monitor.remove_connection(session.session_id)
