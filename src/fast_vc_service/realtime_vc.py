@@ -31,40 +31,54 @@ class RealtimeVoiceConversion:
         self.models = ModelFactory(model_config=model_cfg, 
                                    is_f0=self.cfg.is_f0, 
                                    device=self.cfg.device).get_models()  # initialize models
+        vc_model_sr = self.models['mel_fn_args']['sampling_rate']  # vc model 的采样率，通常是22050
+        assert self.cfg.SAMPLERATE_OUT == vc_model_sr, \
+            f"SAMPLERATE_OUT must be equal to vc model sampling rate: {vc_model_sr}"
         self._init_realtime_parameters()  # init realtime parameters
-        self.reference = self._update_reference()
+        self.reference = self._cal_reference()
         self.instance_id = uuid.uuid4().hex
         logger.info(f"RealtimeVoiceConversion instance created with ID: {self.instance_id}, device: {self.cfg.device}")
     
     def _init_realtime_parameters(self):
         """Initialize parameters related to real-time processing"""
         
-        self.zc_frame = self.cfg.SAMPLERATE // self.cfg.fps  # precision factor
-                                                                # seed-vc is // 50
-                                                                # rvc is // 100
-        # wav 相关
-        self.block_frame = self.cfg.block_time * self.cfg.SAMPLERATE  # block_frame 代表的是 0.5s 的音频片段，单位是帧数
-        self.block_frame = int( np.round( self.block_frame / self.zc_frame) ) * self.zc_frame  # 规范化, n倍zc
+        # zc 精度
+        # zc_frame_in，16k采样率对应的帧数，代表了pipeline中从开头到vc模型输入的精度，无论是 vad，rmvpe 还是 content encoder，都是16k的
+        # zc_frame_out 代表从 vc 模型出来后的，模型输出采样率对应的帧数，一般为 22k，影响后续 rms-mixing, sola 模块
+        self.zc_frame_in = self.cfg.SAMPLERATE_IN // self.cfg.FRAMERATE  # FRAMERATE: content encoder 的帧率
+                                                                         # seed-vc: 50, rvc: 100 , 但是 rvc 对 hubert 做了插值到100
+        self.zc_frame_out = self.cfg.SAMPLERATE_OUT // self.cfg.FRAMERATE
         
-        self.crossfade_frame = self.cfg.crossfade_time * self.cfg.SAMPLERATE 
-        self.crossfade_frame = int( np.round( self.crossfade_frame / self.zc_frame ) ) * self.zc_frame 
-    
-        self.extra_frame = self.cfg.extra_time * self.cfg.SAMPLERATE 
-        self.extra_frame = int( np.round( self.extra_frame / self.zc_frame ) ) * self.zc_frame 
+        # input_wav（16khz）
+        self.extra_frame_ce = self.cfg.extra_time_ce * self.cfg.SAMPLERATE_IN  # extra time for content encoder
+        self.extra_frame_ce = int( np.round( self.extra_frame_ce / self.zc_frame_in ) ) * self.zc_frame_in
         
-        self.extra_frame_right = self.cfg.extra_time_right * self.cfg.SAMPLERATE
-        self.extra_frame_right = int( np.round( self.extra_frame_right / self.zc_frame ) ) * self.zc_frame
+        self.extra_frame_dit = self.cfg.extra_time_dit * self.cfg.SAMPLERATE_IN  # extra time for dit model
+        self.extra_frame_dit = int( np.round( self.extra_frame_dit / self.zc_frame_in ) ) * self.zc_frame_in
         
-        # vad
-        self.vad_chunk_size = 1000 * self.cfg.block_time  # 转换成ms
+        self.sola_search_frame = self.zc_frame_in  # sola_search, 16k sr
         
-        # f0_extractor
-        rmvpe_hop_length = 160  # 这个在RMVPE模型设置里面，hop_length设置的160，没有取，而是写死了。
-        self.f0_chunk_size = self.block_frame // rmvpe_hop_length + 1
+        self.sola_buffer_frame = self.cfg.sola_buffer_time * self.cfg.SAMPLERATE_IN 
+        self.sola_buffer_frame = int( np.round( self.sola_buffer_frame / self.zc_frame_in ) ) * self.zc_frame_in
         
-        # sola
-        self.sola_buffer_frame = min( self.crossfade_frame, 4 * self.zc_frame ) # 80ms帧 和 crossfade帧(默认40ms)中的小数
-        self.sola_search_frame = self.zc_frame  # sola_search 
+        self.block_frame = self.cfg.block_time * self.cfg.SAMPLERATE_IN  
+        self.block_frame = int( np.round( self.block_frame / self.zc_frame_in) ) * self.zc_frame_in  
+        self.block_frame_out = self.block_frame // self.zc_frame_in * self.zc_frame_out  # block frame in vc model output sr
+        
+        self.extra_frame_right = self.cfg.extra_time_right * self.cfg.SAMPLERATE_IN
+        self.extra_frame_right = int( np.round( self.extra_frame_right / self.zc_frame_in ) ) * self.zc_frame_in
+        
+        self.input_wav_frame = (
+            self.extra_frame_ce
+            + self.sola_search_frame
+            + self.sola_buffer_frame
+            + self.block_frame
+            + self.extra_frame_right
+        )
+        
+        # sola (vc 模型后， 22khz), 先search，offset 对齐，再进行 crossfade
+        self.sola_search_frame_out = self.zc_frame_out  # sola_search, 22k sr
+        self.sola_buffer_frame_out = self.sola_buffer_frame // self.zc_frame_in * self.zc_frame_out  # sola_buffer, 22k sr
         self.fade_in_window: torch.Tensor = (
             torch.sin(
                 0.5
@@ -72,76 +86,61 @@ class RealtimeVoiceConversion:
                 * torch.linspace(
                     0.0,
                     1.0,
-                    steps=self.sola_buffer_frame,
+                    steps=self.sola_buffer_frame_out,
                     device=self.cfg.device,
                     dtype=torch.float32,
                 )
             )
             ** 2
-        ) # 一个tensor，0-1的序列(共sola_buffer_frame个元素)，经过sin再经过平方，整体就是平滑的从 0 到 1。
-        self.fade_out_window: torch.Tensor = 1 - self.fade_in_window  # 反向的，这样对于前面和后面的一个 fade-out，一个 fade-in
+        ) 
+        self.fade_out_window: torch.Tensor = 1 - self.fade_in_window  
         
+        # vc models（22khz）
+        self.ce_dit_diff_frame =  (
+            self.extra_frame_ce // self.zc_frame_in
+            - self.extra_frame_dit // self.zc_frame_in
+        ) # content encoder 输入 和 dit model 输入的帧差，帧率是 content encoder framerate 50hz
         
-        # vc models
-        self.skip_head = self.extra_frame // self.zc_frame  # after // zc_frame , it independent of sr, n zcs.
-        self.skip_tail = self.extra_frame_right // self.zc_frame  
-        self.return_length = (
-            self.block_frame + self.sola_buffer_frame + self.sola_search_frame
-        ) // self.zc_frame
+        self.s_alt_target_length = (  # vc model 输入的总长度，单位是 mel 的帧数
+                self.extra_frame_dit // self.zc_frame_in
+            +   self.sola_buffer_frame // self.zc_frame_in
+            +   self.block_frame // self.zc_frame_in
+            +   self.extra_frame_right // self.zc_frame_in
+        ) / self.cfg.FRAMERATE * self.cfg.SAMPLERATE_OUT // self.models["mel_fn_args"]["hop_size"]
         
-        model_samplerate = self.models["mel_fn_args"]["sampling_rate"]
-        if model_samplerate != self.cfg.SAMPLERATE:  
-            self.resampler_model_to_common = tat.Resample(
-                orig_freq=model_samplerate,
-                new_freq=self.cfg.SAMPLERATE,
-                dtype=torch.float32,
-            ).to(self.cfg.device)  # 模型的采样率 到 通用采样率
-        else:
-            self.resampler_model_to_common = None 
-            
+        self.return_frame = (
+                self.sola_search_frame_out
+            +   self.sola_buffer_frame_out 
+            +   self.block_frame_out
+        )
+        self.tail_frame = self.extra_frame_right // self.zc_frame_in * self.zc_frame_out
+        
+        # vad
+        self.vad_chunk_size = 1000 * self.cfg.block_time  # 转换成ms
+        
+        # f0_extractor
+        rmvpe_hop_length = 160  # 这个在RMVPE模型设置里面，hop_length设置的160
+        self.f0_chunk_size = self.block_frame // rmvpe_hop_length + 1
+        
         # rms-mixing
-        
-        # original code in rvc is: [self.extra_frame: ]
-        # their has changed in seed-vc, using the same region of vc model final output 
-        self.region_start = - ( self.return_length * self.zc_frame ) - ( self.skip_tail * self.zc_frame )
-        self.region_end = - ( self.skip_tail * self.zc_frame )
+        self.return_frame_in = self.return_frame // self.zc_frame_out * self.zc_frame_in
+        self.tail_frame_in = self.tail_frame // self.zc_frame_out * self.zc_frame_in
         
         
     def create_session(self, session_id):
         """创建一个新的会话"""
         return Session(session_id=session_id,
-                       extra_frame=self.extra_frame, 
-                       crossfade_frame=self.crossfade_frame, 
-                       sola_search_frame=self.sola_search_frame, 
-                       block_frame=self.block_frame, 
-                       extra_frame_right=self.extra_frame_right, 
-                       zc_frame=self.zc_frame, 
-                       sola_buffer_frame=self.sola_buffer_frame,
-                       samplerate=self.cfg.SAMPLERATE,
+                       sr_in=self.cfg.SAMPLERATE_IN, sr_out=self.cfg.SAMPLERATE_OUT,
+                       input_wav_frame=self.input_wav_frame, return_frame=self.return_frame,
+                       block_frame_out=self.block_frame_out,
+                       sola_buffer_frame_out=self.sola_buffer_frame_out,
                        save_dir=self.cfg.save_dir,
                        device=self.cfg.device,
                        send_slow_threshold=self.cfg.send_slow_threshold,
                        recv_slow_threshold=self.cfg.recv_slow_threshold)
     
-    def _update_reference(self):
-        """读取reference音频，并计算相关的模型输入
-        """
-        reference_wav = self._load_reference_wav()
-        reference = self._cal_reference(reference_wav=reference_wav)
-        return reference
-        
-    def _load_reference_wav(self):
-        """load reference wav
-        
-        sample rate of reference wav should be 22050, to cal prompt_mel
-        """
-        reference_wav, _ = librosa.load(
-                self.cfg.reference_wav_path, sr=self.models["mel_fn_args"]["sampling_rate"]  # 22050
-        )
-        return reference_wav
-    
     @torch.no_grad()
-    def _cal_reference(self, reference_wav):
+    def _cal_reference(self):
         """calculate model inputs which are related to reference wav
         
         # pipleline:
@@ -149,6 +148,9 @@ class RealtimeVoiceConversion:
             rf_wav_22050 -> [ to_mel ] -> prompt_mel
             rf_wav_16k -> [ semantic_fn, length_regulator, mel_size ] -> prompt_condition
         """
+        reference_wav, _ = librosa.load(
+            self.cfg.reference_wav_path, sr=self.cfg.SAMPLERATE_OUT, mono=True
+        )
         
         # acquire models
         model = self.models['dit_model']
@@ -226,11 +228,6 @@ class RealtimeVoiceConversion:
     @torch.no_grad()
     def _vc_infer(self,
                   input_wav,  # 16k sr
-                  skip_head,
-                  skip_tail,
-                  return_length,
-                  diffusion_steps,
-                  inference_cfg_rate,
                   shifted_f0_alt=None,
                   chunk_time_records={}
                 ):
@@ -240,11 +237,7 @@ class RealtimeVoiceConversion:
         prompt_condition + cond -> cat_condition
         
         cat_condition + prompt_mel + prompt_style -> vc_target
-        """        
-
-        # 获取 前global参数
-        ce_dit_difference = self.cfg.ce_dit_difference  
-        
+        """       
         # 获取 reference 相关
         prompt_condition = self.reference["prompt_condition"]
         prompt_mel = self.reference["prompt_mel"]
@@ -260,23 +253,13 @@ class RealtimeVoiceConversion:
         sr = mel_fn_args["sampling_rate"]
         hop_length = mel_fn_args["hop_size"]
         
-        
         # get cat_condition
         t0 = time.perf_counter()
         S_alt = semantic_fn(input_wav.unsqueeze(0))
         S_alt = self._retrieval(S_alt)  # apply retrieval if enabled
-        S_alt = S_alt[:, int(ce_dit_difference * 50):]  # 16k sr with 320x downsampling of senmantic(whisper, wav2vec, hubert)
-                                                   # 50 frames per second
-                                                   
-                                                   # The first portion of its output 
-                                                   # can contain initialization artifacts 
-                                                   # or less reliable features.
-        
-        # skip_head, return_length and skip_tail are unrelated to common_sr
-        # using mel's sr and hop_length to make target_length consistent with the reference part
-        # the second  50 = 16000 / self.zc_frame = 16000 / 320
-        # skip_head 这些是 16khz 下的，然后 * self.zc_frame 还原为采样点数，再除以 16000 得到对应的时间， * sr 得到 22050 对应的长度, //hop_length 得到 mel 长度
-        target_lengths = torch.LongTensor([(skip_head + return_length + skip_tail - ce_dit_difference * 50) / 50 * sr // hop_length]).to(S_alt.device)
+        S_alt = S_alt[:, self.ce_dit_diff_frame: ]  # align to dit model input 
+    
+        target_lengths = torch.LongTensor([self.s_alt_target_length]).to(S_alt.device)
         cond = model.length_regulator(
             S_alt, ylens=target_lengths , n_quantizers=3, f0=shifted_f0_alt
         )[0]
@@ -294,8 +277,8 @@ class RealtimeVoiceConversion:
             prompt_mel,
             prompt_style,
             None,
-            n_timesteps=diffusion_steps,
-            inference_cfg_rate=inference_cfg_rate,
+            n_timesteps=self.cfg.diffusion_steps,
+            inference_cfg_rate=self.cfg.inference_cfg_rate,
         )
         vc_target = vc_target[:, :, prompt_mel.size(-1) :]
         
@@ -305,39 +288,14 @@ class RealtimeVoiceConversion:
         # vocoder model
         t0 = time.perf_counter()
    
-        vc_wave = vocoder_fn(vc_target).squeeze()  # vc_wave sr = 22050?
+        vc_wave = vocoder_fn(vc_target).squeeze() 
         
         vocoder_time = time.perf_counter() - t0
         chunk_time_records["voc"] = vocoder_time
         
         # final output
-        output_len = return_length * ( sr // self.cfg.fps )  # sola_buffer + sola_search + block
-        tail_len = skip_tail * ( sr // self.cfg.fps )  # extra_right
-        
-        # input_wav = extra + crossfade + sola_search + block + extra_right
-        # -> x = input_wav[ ce_dit_difference: ]
-        # -> x = x[ ( -sola_buffer - sola_search - block ) - extra_right: -extra_right ]
-        # -> output = sola_buffer + sola_search + block
-        output = vc_wave[-output_len - tail_len: -tail_len]  
+        output = vc_wave[-self.return_frame - self.tail_frame : -self.tail_frame]  
         return output
-    
-    def file_vc(self, wav_path:str):
-        """读取wav文件并进行流式推理，用于批量测试效果
-        
-        Args:
-            wav_path: 输入音频文件路径
-        """
-        wav_data, _ = librosa.load(wav_path, sr=self.cfg.SAMPLERATE, mono=True) 
-        unique_id = Path(wav_path).name + "_file-vc" # 针对文件使用文件名作为 unique_id 
-        session = self.create_session(session_id=unique_id) 
-        
-        num_blocks = len(wav_data) // self.block_frame  # TODO 后续把结尾的block补上，padding 防止丢失
-        for i in range(num_blocks):           
-            block_data = wav_data[i * self.block_frame: (i + 1) * self.block_frame]
-            self.chunk_vc(block_data, session)
-
-        session.save()  # save wav
-        session.cleanup()  # clear session data
                 
     def _vad(self, indata, session: Session):
         """VAD函数
@@ -419,20 +377,9 @@ class RealtimeVoiceConversion:
         if session.vad_speech_detected or session.is_first_chunk:  # if don't detect speech, set to zero
             infer_wav = self._vc_infer(
                 session.input_wav,
-                self.skip_head,
-                self.skip_tail,
-                self.return_length,
-                int(self.cfg.diffusion_steps),
-                self.cfg.inference_cfg_rate,
                 session.shifted_f0_alt,  # 默认是 None，兼容不取音高的模式
                 session.chunk_time_records
             )
-            
-            # model sr != common sr 的话，会 resample 到 common sr
-            if self.resampler_model_to_common is not None:  
-                logger.debug(f"before resample: {infer_wav.shape}")
-                infer_wav = self.resampler_model_to_common(infer_wav)
-                logger.debug(f"after resample: {infer_wav.shape}, theroy_length: 8800")
         else:
             infer_wav = session.infer_wav_zero.clone()
         
@@ -441,15 +388,14 @@ class RealtimeVoiceConversion:
     def _sola(self, infer_wav, session:Session):
         """algorithm for time-domain pitch-synchronous overlap-add
         
-        infer_wav: [sola_buffer + sola_search + block]
+        infer_wav: [ sola_search + sola_buffer + block]
         """
         t0 = time.perf_counter()
         
         # SOLA algorithm from https://github.com/yxlllc/DDSP-SVC
         conv_input = infer_wav[
-            None, None, : self.sola_buffer_frame + self.sola_search_frame 
-        ]  # sola_buffer + sola_search
-           # None， None is to expand the dimension of the tensor
+            None, None, : self.sola_search_frame_out + self.sola_buffer_frame_out
+        ]  # sola_search + sola_buffer
         cor_nom = F.conv1d(conv_input, session.sola_buffer[None, None, :])  # sola-buffer initialized with zeros
                                                                             # dot product between the input and the buffer
                                                                             # 这里是滑动窗口 点积，每个buffer-frame的长度跟buffer点积
@@ -457,29 +403,26 @@ class RealtimeVoiceConversion:
         cor_den = torch.sqrt(
             F.conv1d(
                 conv_input**2,
-                torch.ones(1, 1, self.sola_buffer_frame, device=self.cfg.device),
+                torch.ones(1, 1, self.sola_buffer_frame_out, device=self.cfg.device),
             )
             + 1e-8
         )   # 这里是求分母，input**2 是能量，在 sola_buffer上卷积，最终也得到 sola_search_frame + 1 的长度
         sola_offset = torch.argmax(cor_nom[0, 0] / cor_den[0, 0])  # 这里就是相似度了，找到最相似的 arg
         logger.debug(f"sola_offset: {sola_offset}, infer_wav.shape: {infer_wav.shape[0]}")
 
-        infer_wav = infer_wav[sola_offset:]  # 这里从最相似的部分索引出来
-        infer_wav[: self.sola_buffer_frame] *= self.fade_in_window  # sola_buffer 的长度进行 fade_in
-        infer_wav[: self.sola_buffer_frame] += (
-            session.sola_buffer * self.fade_out_window
-        )  # 之前的 sola_buffer 进行 fade_out
+        # offset
+        infer_wav = infer_wav[sola_offset:]
         
-        # set new sola_buffer
+        # crossfade
+        infer_wav[: self.sola_buffer_frame_out] *= self.fade_in_window  #
+        infer_wav[: self.sola_buffer_frame_out] += (
+            session.sola_buffer * self.fade_out_window
+        )  
+        
+        # update sola_buffer
         session.sola_buffer[:] = infer_wav[
-            self.block_frame : self.block_frame + self.sola_buffer_frame
-        ]
-        # Index(block_frame + sola_buffer_frame) = Index(- sola_search)
-        # this chunk: new_sola_buffer + sola_search + extra_right
-        # add new chunk: new_sola_buffer + sola_search + extra_right + block
-        # new infer wav: new_sola_buffer + sola_search + block
-        # the new sola_buffer is the same wav_area as the next infer_wav[：sola_buffer_frame]
-        # it means that sola_buffer is the area to smoothing between two chunks
+            self.block_frame_out : self.block_frame_out + self.sola_buffer_frame_out
+        ]  # 前面 block_frame 部分会被输出，后面连贯的接下来要播放的部分更新到 buffer 中，留给下一个chunk再次 offset + crossfade
         
         sola_time = time.perf_counter() - t0
         session.chunk_time_records["sola"] = sola_time
@@ -500,16 +443,16 @@ class RealtimeVoiceConversion:
             padding = [int(frame_length // 2), int(frame_length // 2)]
             waveform = F.pad(waveform, padding, mode="constant", value=0)
             
-        # 分帧
+        # 分帧（使用 4D 输入给 F.unfold）
         frames = torch.nn.functional.unfold(
-            waveform.reshape(1, -1, 1),
+            waveform.view(1, 1, -1, 1),           # (N=1, C=1, H=T, W=1)
             kernel_size=(frame_length, 1),
             stride=(hop_length, 1),
-        )
+        )  # -> (1, frame_length, num_frames)
         
         # 计算每帧的均方根
-        rms = torch.sqrt(torch.mean(frames**2, dim=-2, keepdim=True))
-        return rms  # 这里输出的shape == (1,30)
+        rms = torch.sqrt(torch.mean(frames**2, dim=1, keepdim=True))  # (1,1,num_frames)
+        return rms.squeeze(1)  # -> (1, num_frames)
         
     def _rms_mixing(self, infer_wav, session:Session):
         """Audio fusion based on short-time RMS values 
@@ -529,26 +472,28 @@ class RealtimeVoiceConversion:
             
             # original code in rvc is: [self.extra_frame: ]
             # their has changed in seed-vc, using the same region of vc model final output 
-            input_wav = session.input_wav[ self.region_start : self.region_end] 
+            input_wav = session.input_wav[ -self.return_frame_in - self.tail_frame_in : -self.tail_frame_in] 
             
             # rms of input_wav
             rms_input = self._compute_rms(
-                waveform = input_wav,  
-                frame_length = 4 * self.zc_frame,  
-                hop_length = self.zc_frame,
+                waveform=input_wav,  
+                frame_length=4 * self.zc_frame_in,  
+                hop_length=self.zc_frame_in,
+                center=False,
             )
-            rms_input = F.interpolate(  # interpolation function
-                rms_input.unsqueeze(0),  # reshape to  (1, 1, 30)，
-                size = infer_wav.shape[0] + 1,  
-                mode = "linear", 
-                align_corners = True,
-            )[0, 0, :-1]  # turn to 1 dimension
+            rms_input = F.interpolate(
+                rms_input.unsqueeze(0),            # (1,1,frames)
+                size=infer_wav.shape[0] + 1,  
+                mode="linear", 
+                align_corners=True,
+            )[0, 0, :-1]
             
             # rms of infer_wav
             rms_infer = self._compute_rms(
-                waveform =infer_wav[:],
-                frame_length=4 * self.zc_frame,  
-                hop_length=self.zc_frame,
+                waveform=infer_wav[:],
+                frame_length=4 * self.zc_frame_out,  
+                hop_length=self.zc_frame_out,
+                center=False,
             )
             rms_infer = F.interpolate(
                 rms_infer.unsqueeze(0),
@@ -558,9 +503,8 @@ class RealtimeVoiceConversion:
             )[0, 0, :-1]
             rms_infer = torch.max(rms_infer, torch.zeros_like(rms_infer) + 1e-3)
             
-            infer_wav *= torch.pow(
-                rms_input / rms_infer, torch.tensor(1 - self.cfg.rms_mix_rate)
-            )
+            # 用标量指数避免 device 不一致
+            infer_wav *= torch.pow(rms_input / rms_infer, 1.0 - self.cfg.rms_mix_rate)
             
             rms_mixing_time = time.perf_counter() - t0
             session.chunk_time_records["rms_m"] = rms_mixing_time
@@ -600,17 +544,17 @@ class RealtimeVoiceConversion:
             infer_wav = self._rms_mixing(infer_wav, session)
             
         # 6. sola
-        infer_wav = self._sola(infer_wav, session) 
+        if self.cfg.is_sola :
+            infer_wav = self._sola(infer_wav, session) 
         
         # 7. output
         session.out_data[:] = (
-            infer_wav[: self.block_frame]  
+            infer_wav[: self.block_frame_out]  
             .t()
             .cpu()
             .numpy()
         )  # return the beginning of the output
            # add more latency include [sola_buffer + sola_search]
-        logger.debug(f"session.out_data.max: {session.out_data.max()}, session.out_data.min: {session.out_data.min()}")
         
         # system latency:
         # new chunk append to the end of input_wav

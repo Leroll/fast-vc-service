@@ -40,21 +40,19 @@ class RealtimeVoiceConversionConfig(BaseModel):
     save_output: bool = True  # is to save output wav
     
     # realtime 
-    SAMPLERATE: int = 16_000  # also called common_sr
-                                # 音频流在vc过程中基础采样率
-                                # 不可修改，需要保证为 16k，vad，senmantic 都是 16k 模型
-                                # 某些环节采样率会改变，比如dit model会更改为22050，需要再次转换回来
-                                # rmvpe 也需要 16000
+    SAMPLERATE_IN: int = 16000  # RealtimeVC模块输入采样率，从输入 到 vad, rmvpe, content encoder 都是16k
+    SAMPLERATE_OUT: int = 22050  # vc模型输出采样率，一直延续到 Realtime_VC 模块的输出，会经过 rms-mixing 和 sola 
     BIT_DEPTH: int = 16  # 音频流的位深度，16位
+    FRAMERATE: int = 50  # 帧率，代表系统的精度，和 content encoder的帧率一致； 1s 50帧，每帧20ms
+                         # rvc:100（与其内部的f0 model一致）, seed-vc: 50（和content encoder一致）   
     
-    fps: int = 50  # 1s切分fps份，作为精度因子； 若50的话，精度就对应20ms，
-                   # rvc:100, seed-vc: 50
-                   # zc_frame = samplerate // fps, zc_frame 代表每一个精度对应的帧数
-    block_time: float = 0.5  # 0.5 ；这里的 block time 是 0.5s                    
-    crossfade_time: float = 0.04  # 0.04 ；用于平滑过渡的交叉渐变长度，这里设定为 0.04 秒。交叉渐变通常用于避免声音中断或"断层"现象。
-    extra_time: float = 2.5  # 2.5；  附加时间，设置为 0.5秒。可能用于在处理音频时延长或平滑过渡的时间。
-                             # 原本默认0.5，后面更新成2.5了，放在音频的前面
-    extra_time_right: float = 0.02  # 0.02；
+    # 上下文             
+    extra_time_ce: float = 4.5   # 留给 content encoder 上文额外时间，默认2.5s
+    extra_time_dit: float = 1.5  # 留给 dit 上文额外时间，默认0.5s, 包含在extra_time_ce中，需要满足 extra_time_dit < extra_time_ce，
+                                 # content encoder 在得到 feat 后，会减去相对dit多出来的部分，再输入给 dit
+    sola_buffer_time: float = 0.04  # sola算法做crossfade的区域，默认：0.04，不要超过 0.08; 会增加整体延迟
+    block_time: float = 0.5  # 每块的时长，默认 0.5
+    extra_time_right: float = 0.02  # 结尾的额外时间，默认: 0.02, 会增加整体延迟
     
     # auto_f0 
     is_f0: bool =  True  # 是否使用自适应音高
@@ -64,12 +62,14 @@ class RealtimeVoiceConversionConfig(BaseModel):
     diffusion_steps: int = 10  # 10；                    
     inference_cfg_rate: float = 0.7  # 0.7
     max_prompt_length: float = 3.0 # 3； 
-    ce_dit_difference: float = 2  # 2 seconds， content encoder ?
     
     # rms_mix
     rms_mix_rate: float = 0    # 0.25； 这个参数是用来控制 RMS 混合的比例，
                                # 范围是 0 到 1。
                                # 0 表示完全使用 Input 的包络，1 表示完全使用 Infer 包络。
+                               
+    # sola
+    is_sola: bool = True  # 是否启用 SOLA 算法进行时域拼接  
                                         
     # SLOW 参数, 包-包之间延迟认定为SLOW的阈值
     send_slow_threshold: int = 100  # 100ms, 两个客户段发送过来的音频包之间的间隔，认定SLOW的阈值
@@ -78,6 +78,14 @@ class RealtimeVoiceConversionConfig(BaseModel):
                                     # 服务端发送回去的包，即 block_time，默认是500ms，所以超过700ms认为是SLOW
     vc_slow_threshold: int = 300  # 从累计到一个chunk开始，到完成vc并推送给客户段之间的耗时
                                   # 500ms一个chunk的话，认为vc时间超过300就算SLOW
+    
+    def model_post_init(self, context):
+        
+        super().model_post_init(context)
+        assert self.SAMPLERATE_IN % self.FRAMERATE == 0, "SAMPLERATE_IN must be divisible by FRAMERATE"
+        assert self.SAMPLERATE_OUT % self.FRAMERATE == 0, "SAMPLERATE_OUT must be divisible by FRAMERATE"
+        assert self.extra_time_ce > self.extra_time_dit, "extra_time_ce must be greater than extra_time_dit"
+        assert self.sola_buffer_time <= 0.08, "sola_buffer_time must be less than or equal to 0.08s"
 
 
 class ModelConfig(BaseModel):

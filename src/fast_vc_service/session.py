@@ -24,14 +24,17 @@ class EventType(Enum):
 class Session:
     """针对单通音频，流式vc过程中, 存储上下文状态类"""
     
-    def __init__(self,session_id, extra_frame, crossfade_frame, sola_search_frame, 
-                 block_frame, extra_frame_right, zc_frame, 
-                 sola_buffer_frame, samplerate,
+    def __init__(self,session_id, 
+                 sr_in, sr_out,
+                 input_wav_frame, return_frame,
+                 block_frame_out,
+                 sola_buffer_frame_out,
                  save_dir,
                  device,
                  send_slow_threshold, recv_slow_threshold):
         torch.cuda.empty_cache()  
-        self.sampelrate = samplerate  # 后续存储输入、输出音频用，对应common_sr
+        self.sr_in = sr_in  # 后续存储输入音频用
+        self.sr_out = sr_out  # 后续存储输出音频用
         self.session_id = session_id  # 唯一标识符
         self.input_wav_record = []
         self.output_wav_record = []
@@ -61,14 +64,10 @@ class Session:
         
         # wav 相关
         self.input_wav: torch.Tensor = torch.zeros( 
-            extra_frame
-            + crossfade_frame
-            + sola_search_frame
-            + block_frame
-            + extra_frame_right,
+            input_wav_frame,
             device=device,
             dtype=torch.float32,
-        )  # 2 * 44100 + 0.08 * 44100 + 0.01 * 44100 + 0.25 * 44100
+        )  # 默认：2.5s(extra) + 0.02s(sola_search) + 0.04s(sola_buffer) + 0.5s(block) + 0.02(extra_right) 
         
         # vad
         self.vad_cache = {}
@@ -76,21 +75,21 @@ class Session:
         self.set_speech_detected_false_at_end_flag = False
         
         # vc models
-        begin = -sola_buffer_frame - sola_search_frame - block_frame - extra_frame_right
-        end = -extra_frame_right
-        self.infer_wav_zero = torch.zeros_like(self.input_wav[begin:end], 
-                                               device=device)  # vc时若未检测出人声，用于填补的 zero
-        
-        # noise gate
-        self.rms_buffer: np.ndarray = np.zeros(4 * zc_frame, dtype="float32")  # 大小换成16k对应的; TODO 这里看下是不是可以改成 torch.tensor
+        self.infer_wav_zero = torch.zeros(
+            return_frame,
+            device=device,
+            dtype=torch.float32,
+        ) # vc时若未检测出人声，用于填补的 zero
         
         # sola
         self.sola_buffer: torch.Tensor = torch.zeros(
-            sola_buffer_frame, device=device, dtype=torch.float32
+            sola_buffer_frame_out, 
+            device=device, 
+            dtype=torch.float32
         )
         
         # outdata
-        self.out_data: np.ndarray = np.zeros(block_frame, dtype="float32")  
+        self.out_data: np.ndarray = np.zeros(block_frame_out, dtype="float32")  
         
     def add_chunk_input(self, chunk:np.ndarray):
         """添加chunk到输入音频
@@ -191,13 +190,13 @@ class Session:
         # Input audio
         if self.input_wav_record:
             input_path = daily_save_dir / f"{self.session_id}_input.wav"
-            sf.write(str(input_path), np.concatenate(self.input_wav_record), self.sampelrate)
+            sf.write(str(input_path), np.concatenate(self.input_wav_record), self.sr_in)
             logger.info(f"{self.session_id} | Input audio saved to : {input_path}")
         
         # Output audio
         if self.output_wav_record:
             output_path = daily_save_dir / f"{self.session_id}_output.wav"
-            sf.write(str(output_path), np.concatenate(self.output_wav_record), self.sampelrate)
+            sf.write(str(output_path), np.concatenate(self.output_wav_record), self.sr_out)
             logger.info(f"{self.session_id} | Output audio saved to : {output_path}")
         
         

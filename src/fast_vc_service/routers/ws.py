@@ -247,7 +247,7 @@ async def handle_initial_configuration(websocket: WebSocket):
         buffer = OpusAudioStreamBuffer(
             session_id=session_id,
             input_sample_rate=sample_rate,
-            output_sample_rate=realtime_vc.cfg.SAMPLERATE,
+            output_sample_rate=realtime_vc.cfg.SAMPLERATE_IN,
             output_bit_depth=realtime_vc.cfg.BIT_DEPTH,
             block_time=realtime_vc.cfg.block_time * 1000,  # Convert to milliseconds
             prefill_time=prefill_time,
@@ -259,7 +259,7 @@ async def handle_initial_configuration(websocket: WebSocket):
             session_id=session_id,
             input_sample_rate=sample_rate,
             input_bit_depth=bit_depth,
-            output_sample_rate=realtime_vc.cfg.SAMPLERATE,
+            output_sample_rate=realtime_vc.cfg.SAMPLERATE_IN,
             output_bit_depth=realtime_vc.cfg.BIT_DEPTH,
             block_time=realtime_vc.cfg.block_time * 1000,  # Convert to milliseconds
             prefill_time=prefill_time
