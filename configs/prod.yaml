@@ -50,7 +50,7 @@ realtime_vc:
                       # 0 表示完全使用 Input 的包络，1 表示完全使用 Infer 包络。 
 
   # sola
-  is_sola: False  # 是否启用 SOLA 算法进行时域拼接                            
+  is_sola: True  # 是否启用 SOLA 算法进行时域拼接                            
 
   # SLOW 监测
   send_slow_threshold: 100 # 100ms, 两个客户段发送过来的音频包之间的间隔，认定SLOW的阈值
