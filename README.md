@@ -95,6 +95,20 @@ uv run examples/websocket/ws_client.py
 # 📝 Version Updates
 <!-- don't forget to change version in __init__ and toml -->
 
+**2025-11-04 - v0.1.7**: Audio quality improvements and output sample-rate control
+
+  - Quality
+    - Added t_span_schedule (supports cosine reordering) to improve quality at the same step count
+    - Unified realtime_vc output to 22 kHz for better fidelity
+    - Preserve sufficient voiced context across long silences to improve coherence
+  - Output sample rate
+    - WebSocket adds sample_rate_out to return audio at the requested sample rate
+  - Other
+    - VAD settings moved into config for easier tuning and portability
+    - time_records centralized under session management
+    - Removed realtimevc perf tracing, file-vc scripts, and noise-gate module to reduce redundancy
+    - Fixed audio not being persisted when upstream disconnects unexpectedly
+
 **2025-10-16 - v0.1.6**: Multi-GPU/Multi-instance deployment, semantic feature retrieval, uv package management
 
   - Deployment & Concurrency
@@ -121,15 +135,15 @@ uv run examples/websocket/ws_client.py
     - Optimized session tool's file naming mechanism
     - Added config and model path options, support NAS configuration files, enable simpler cloud host deployment
 
+
+<details>
+<summary>View Historical Versions</summary>
+
 **2025-07-02 - v0.1.3**: Added Process and Instance Level Concurrency Monitoring  
 
   - Added PID record to logs for easier instance tracking
   - Added instance concurrency monitoring feature for real-time concurrency viewing
   - Optimized performance analysis interface to reduce impact on real-time performance
-
-
-<details>
-<summary>View Historical Versions</summary>
 
 **2025-06-26 - v0.1.2**: Persistent Storage Optimization   
 
@@ -160,14 +174,6 @@ uv run examples/websocket/ws_client.py
 
 # 🚧 TODO
 - [ ] tag - v0.2 - Improve inference efficiency, reduce RTF - v2025-xx
-    - [x] add t_span_schedule parameter to support cosine rearrangement, achieving better audio quality with the same number of steps
-    - [x] delete performance tracking module in realtimevc, remove file-vc script, remove noise gate module to reduce code redundancy
-    - [x] add vad configuration to config file
-    - [x] unify time_records management into session across modules
-    - [x] fix realtime_vc to output at model sample rate (22k) to ensure higher output quality.
-    - [x] retain sufficient voiced context during prolonged silence to enhance synthesis quality.
-    - [x] fix bug where audio fails to save properly when upstream disconnects unexpectedly
-    - [x] add output sample rate parameter to WebSocket protocol, output corresponding sample rate audio
     - [ ] support fp16 inference mode
     - [ ] update documentation to reflect latest code
     - [ ] Train models to optimize voice conversion quality

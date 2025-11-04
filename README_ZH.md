@@ -94,6 +94,20 @@ uv run examples/websocket/ws_client.py
 # 📝 版本更新 
 <!-- don't forget to change version in __init__ and toml -->
 
+**2025-11-04 - v0.1.7**: 音质优化与输出采样率控制
+
+  - 音质优化
+    - 新增 t_span_schedule（支持余弦重排），在等步数下提升音质
+    - realtime_vc 输出统一为 22 kHz，提升输出音质
+    - 长静音段保留足够有声上文，改善连贯性
+  - 输出采样率控制
+    - WebSocket 新增 sample_rate_out 参数，按需返回对应采样率音频
+  - 其他
+    - VAD 配置纳入配置文件，便于调参与环境迁移
+    - 各模块 time_records 统一由 session 管理
+    - 移除 realtimevc 性能追踪、file-vc 脚本与噪声门模块，减少冗余
+    - 修复上游异常断联导致的音频未正确持久化问题
+
 **2025-10-16 - v0.1.6**: 多卡多实例部署，语义特征检索，uv包管理
 
   - 部署与并发
@@ -120,15 +134,15 @@ uv run examples/websocket/ws_client.py
     - 优化session tool的文件命名机制
     - 增加config与model路径选项，支持nas配置文件，支持更简洁的云主机部署
 
+
+<details>
+<summary>查看历史版本</summary>
+
 **2025-07-02 - v0.1.3**: 增加进程与实例级别并发监控  
 
   - 日志新增PID记录，便于追踪实例
   - 增加实例并发监控功能，支持实时查看当前并发量
   - 优化性能分析接口，减少对实时性的影响
-
-
-<details>
-<summary>查看历史版本</summary>
 
 **2025-06-26 - v0.1.2**: 持久化存储优化   
 
@@ -159,14 +173,6 @@ uv run examples/websocket/ws_client.py
 
 # 🚧 TODO 
 - [ ] tag - v0.2 - 提升推理时效，降低RTF - v2025-xx
-    - [x] 新增t_span_schedule参数，支持余弦重排，同样的步数可以有更好的音质表现
-    - [x] 删除realtimevc中的性能追踪模块，删除file-vc脚本, 删除噪声门模块，减轻代码冗余程度
-    - [x] vad 配置增加到配置文件中
-    - [x] 各模块的 time_records 转移到 session 中统一管理
-    - [x] realtime_vc输出固定为模型采样率（22k），以保证更高输出音质。
-    - [x] 静音过长时，保留足够有声上文，以提升合成效果
-    - [x] 修复上游意外断联而导致的音频无法正常存储的bug
-    - [x] websocket协议新增输出采样率参数，据此输出对应采样率音频
     - [ ] 兼容 fp16 推理模式
     - [ ] 更新文档，以适应最新的代码
     - [ ] 训练模型，优化换声品质
