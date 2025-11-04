@@ -14,6 +14,7 @@
 |-----|------|---------|
 | 1.0 | 2025-05-27 | 初始版本 |
 | 1.1 | 2025-06-15 | 增加简单协议支持，新增opus_frame_duration字段|
+| 1.2 | 2025-11-04 | 新增 sample_rate_out 配置字段，以控制输出音频采样率 |
 
 ## 2. 交互流程
 
@@ -96,6 +97,7 @@ ws://[服务器地址]/ws
   "session_id": "sess_12345abcde",
   "api_key": "your_api_key_here",
   "sample_rate": 16000,
+  "sample_rate_out": 22050,
   "bit_depth": 16,
   "channels": 1,
   "encoding": "PCM",
@@ -107,7 +109,8 @@ ws://[服务器地址]/ws
 - `type`: 固定为"config"
 - `session_id`: 会话ID，用于标识当前连接
 - `api_key`: API密钥，用于身份验证
-- `sample_rate`: 采样率(Hz)
+- `sample_rate`: 采样率(Hz), 输入音频的采样率
+- `sample_rate_out`: 输出音频的采样率(Hz), 推荐值22050hz，与模型输出采样率一致，默认为16000hz，兼容历史版本
 - `bit_depth`: 位深度
 - `channels`: 声道数, 固定为1(单声道)
 - `encoding`: 编码格式(PCM/OPUS)，默认值为"PCM"
@@ -209,6 +212,7 @@ ws://[服务器地址]/ws
   "signal": "start",
   "stream_id": "stream_12345",
   "sample_rate": 16000,
+  "sample_rate_out": 22050,
   "sample_bit": 16,
   "encoding": "PCM",
   "opus_frame_duration": 20
@@ -218,7 +222,8 @@ ws://[服务器地址]/ws
 参数说明:
 - `signal`: 固定为"start"
 - `stream_id`: 流ID，用于标识当前连接
-- `sample_rate`: 采样率(Hz)
+- `sample_rate`: 采样率(Hz), 输入音频的采样率
+- `sample_rate_out`: 输出音频的采样率(Hz), 推荐值22050hz，与模型输出采样率一致，默认值为16000hz，兼容历史版本
 - `sample_bit`: 位深度
 - `encoding`: 编码格式(PCM/OPUS)，默认值为"PCM"
 - `opus_frame_duration`: (可选) OPUS编码帧长，单位为毫秒，默认值为20ms

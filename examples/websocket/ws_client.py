@@ -14,6 +14,7 @@ from loguru import logger
 from datetime import datetime
 from pydantic import BaseModel
 from enum import Enum
+from typing import Literal
 
 class EncodingEnum(Enum):
     PCM = "PCM"
@@ -48,6 +49,7 @@ class Inputs(BaseModel):
     # encoding params
     encoding: EncodingEnum = EncodingEnum.PCM  # Audio encoding format (PCM or OPUS)
     samplerate: SampleRateEnum = SampleRateEnum.SR_16000  # Target sample rate in Hz (must be Opus compatible: 8000, 12000, 16000, 24000, 48000)
+    samplerate_out: Literal[8000, 16000, 22050] = 22050  # Output sample rate in Hz
     # pcm params
     chunk_time: int = 20  # Chunk time in ms for sending audio (default: 20ms)
     # opus params
@@ -140,7 +142,8 @@ async def send_audio_file(websocket_url,
                           output_wav_dir="wavs/outputs/ws_client", 
                           # encoding params
                           encoding="PCM",
-                          target_sample_rate=16000,  # 添加目标采样率参数
+                          target_sample_rate=16000,  # 发送给server的采样率
+                          samplerate_out=22050,  # 客户端期望的输出采样率
                           # pcm params 
                           chunk_time_ms=500,
                           # opus params
@@ -241,6 +244,7 @@ async def send_audio_file(websocket_url,
                 "session_id": session_id,
                 "api_key": api_key,
                 "sample_rate": sample_rate,
+                "sample_rate_out": samplerate_out,
                 "bit_depth": 16,
                 "channels": 1,
                 "encoding": encoding
@@ -390,7 +394,7 @@ async def send_audio_file(websocket_url,
             # Save the output audio only if requested
             if output_audio:
                 output_audio_array = np.concatenate(output_audio)
-                sf.write(output_path, output_audio_array, 16000)
+                sf.write(output_path, output_audio_array, samplerate_out)
                 logger.info(f"Saved converted audio to {output_path} ({len(output_audio_array)} samples)")
         
         # 3. At the end of successful processing:
@@ -439,7 +443,8 @@ async def run_ws_client_async(inputs, idx):
         real_time_simulation=inputs.real_time,
         
         encoding=inputs.encoding.value,
-        target_sample_rate=inputs.samplerate.value,
+        target_sample_rate=inputs.samplerate.value,   # 发送给server的采样率
+        samplerate_out=inputs.samplerate_out,  # 客户端期望的输出采样率
         chunk_time_ms=inputs.chunk_time,
         bitrate=inputs.bitrate,
         frame_duration_ms=inputs.frame_duration,
@@ -524,8 +529,10 @@ def get_inputs_example():
     
     max_workers = min(10, len(src_wavs))  # 10并发
     worker_delay = 0.1
+    
+    samplerate_out = 22050  # 服务端输出采样率
     return Inputs(src_wavs=src_wavs, session_id_type=session_id_type,
-                  max_workers=max_workers, worker_delay=worker_delay)
+                  max_workers=max_workers, worker_delay=worker_delay, samplerate_out=samplerate_out)
 
 def get_inputs():
     """

@@ -166,8 +166,9 @@ uv run examples/websocket/ws_client.py
     - [x] unify time_records management into session across modules
     - [x] fix realtime_vc to output at model sample rate (22k) to ensure higher output quality.
     - [x] retain sufficient voiced context during prolonged silence to enhance synthesis quality.
+    - [x] fix bug where audio fails to save properly when upstream disconnects unexpectedly
+    - [x] add output sample rate parameter to WebSocket protocol, output corresponding sample rate audio
     - [ ] support fp16 inference mode
-    - [ ] add output sample rate parameter to WebSocket protocol, output corresponding sample rate audio
     - [ ] update documentation to reflect latest code
     - [ ] Train models to optimize voice conversion quality
     - [ ] Improve model effectiveness for noisy data

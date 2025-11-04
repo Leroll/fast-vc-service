@@ -126,8 +126,22 @@ class RealtimeVoiceConversion:
         self.return_frame_in = self.return_frame // self.zc_frame_out * self.zc_frame_in
         self.tail_frame_in = self.tail_frame // self.zc_frame_out * self.zc_frame_in
         
+        # resamplers
+        # 1. for ws output
+        self.resampler = {}
         
-    def create_session(self, session_id):
+        
+    def create_session(self, session_id, ws_sr_out=None):
+        if ws_sr_out is None:
+            ws_sr_out = self.cfg.SAMPLERATE_OUT
+            
+        if ws_sr_out != self.cfg.SAMPLERATE_OUT:  # 新增针对当前websocket输出采样率的 resampler
+            if ws_sr_out not in self.resampler:
+                self.resampler[ws_sr_out] = tat.Resample(orig_freq=self.cfg.SAMPLERATE_OUT,
+                                                         new_freq=ws_sr_out,
+                                                         dtype=torch.float32).to(self.cfg.device)
+                logger.info(f"{session_id} | Created resampler for ws_sr_out: {ws_sr_out}")
+        
         """创建一个新的会话"""
         return Session(session_id=session_id,
                        sr_in=self.cfg.SAMPLERATE_IN, sr_out=self.cfg.SAMPLERATE_OUT,
@@ -137,7 +151,8 @@ class RealtimeVoiceConversion:
                        save_dir=self.cfg.save_dir,
                        device=self.cfg.device,
                        send_slow_threshold=self.cfg.send_slow_threshold,
-                       recv_slow_threshold=self.cfg.recv_slow_threshold)
+                       recv_slow_threshold=self.cfg.recv_slow_threshold,
+                       ws_sr_out=ws_sr_out)
     
     @torch.no_grad()
     def _cal_reference(self):
@@ -557,9 +572,15 @@ class RealtimeVoiceConversion:
         if self.cfg.is_sola :
             infer_wav = self._sola(infer_wav, session) 
         
-        # 7. output
+        # 7. output-to-websocket, resample if needed
+        if session.ws_sr_out != self.cfg.SAMPLERATE_OUT:
+            t0 = time.perf_counter()
+            infer_wav = self.resampler[session.ws_sr_out](infer_wav)
+            rsp_out_time = time.perf_counter() - t0
+            session.chunk_time_records["rsp_out"] = rsp_out_time
+            
         session.out_data[:] = (
-            infer_wav[: self.block_frame_out]  
+            infer_wav[: session.ws_block_frame_out]  
             .t()
             .cpu()
             .numpy()

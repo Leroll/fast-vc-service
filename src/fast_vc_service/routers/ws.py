@@ -221,6 +221,7 @@ async def handle_initial_configuration(websocket: WebSocket):
         
     # extract audio format settings
     sample_rate = standard_config.get("sample_rate", 16000)
+    sample_rate_out = standard_config.get("sample_rate_out", 16000)  # 兼容历史版本，默认16000hz，推荐值22050hz
     bit_depth = standard_config.get("bit_depth", 16)
     channels = standard_config.get("channels", 1)
     encoding = standard_config.get("encoding", "PCM")  # supports "PCM" or "OPUS"
@@ -233,7 +234,7 @@ async def handle_initial_configuration(websocket: WebSocket):
     
     # create session
     realtime_vc = websocket.app.state.realtime_vc
-    session = realtime_vc.create_session(session_id=session_id)
+    session = realtime_vc.create_session(session_id=session_id, ws_sr_out=sample_rate_out)
     
     # create buffer
     prefill_time = websocket.app.state.cfg.buffer.prefill_time

@@ -69,6 +69,7 @@ class SimpleProtocolAdapter(ProtocolAdapter):
                 "session_id": message.get("stream_id", ""),
                 "api_key": "simple_protocol",  # 为简单协议设置一个特殊的api_key
                 "sample_rate": message.get("sample_rate", 16000),
+                "sample_rate_out": message.get("sample_rate_out", 16000),
                 "bit_depth": message.get("sample_bit", 16),
                 "channels": 1,  # 默认单声道
                 "encoding": message.get("encoding", "PCM")  # 支持encoding参数，默认PCM格式

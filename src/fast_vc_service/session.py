@@ -31,10 +31,12 @@ class Session:
                  sola_buffer_frame_out,
                  save_dir,
                  device,
-                 send_slow_threshold, recv_slow_threshold):
+                 send_slow_threshold, recv_slow_threshold,
+                 ws_sr_out=None):
         torch.cuda.empty_cache()  
-        self.sr_in = sr_in  # 后续存储输入音频用
-        self.sr_out = sr_out  # 后续存储输出音频用
+        self.sr_in = sr_in  # 输入音频采样率
+        self.sr_out = sr_out  # realtime_vc 主流程输出采样率
+        
         self.session_id = session_id  # 唯一标识符
         self.input_wav_record = []
         self.output_wav_record = []
@@ -87,9 +89,17 @@ class Session:
             device=device, 
             dtype=torch.float32
         )
-        
+                
+        # websocket输出相关
+        self.ws_sr_out = ws_sr_out or self.sr_out # websocket输出给客户端的采样率
+        if self.ws_sr_out != self.sr_out:
+            self.ws_block_frame_out = int(block_frame_out * self.ws_sr_out / self.sr_out)
+        else:
+            self.ws_block_frame_out = block_frame_out
+            
         # outdata
-        self.out_data: np.ndarray = np.zeros(block_frame_out, dtype="float32")  
+        self.out_data: np.ndarray = np.zeros(self.ws_block_frame_out, dtype="float32")  
+        
         
     def add_chunk_input(self, chunk:np.ndarray):
         """添加chunk到输入音频
@@ -196,7 +206,7 @@ class Session:
         # Output audio
         if self.output_wav_record:
             output_path = daily_save_dir / f"{self.session_id}_output.wav"
-            sf.write(str(output_path), np.concatenate(self.output_wav_record), self.sr_out)
+            sf.write(str(output_path), np.concatenate(self.output_wav_record), self.ws_sr_out)
             logger.info(f"{self.session_id} | Output audio saved to : {output_path}")
         
         
