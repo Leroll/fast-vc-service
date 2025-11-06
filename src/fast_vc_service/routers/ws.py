@@ -280,7 +280,7 @@ async def handle_initial_configuration(websocket: WebSocket):
         logger.info(f"{session_id} | Skipping ready signal for simple protocol")
     
     worker_connections, instance_connections = await connection_monitor.add_connection(session_id)
-    logger.info(f"{session_id} | Ready with audio format: sample_rate={sample_rate}, bit_depth={bit_depth}, channels={channels}, encoding={encoding}")
+    logger.info(f"{session_id} | Ready with audio format: sample_rate={sample_rate}, sample_rate_out={session.ws_sr_out}, bit_depth={bit_depth}, channels={channels}, encoding={encoding}")
     logger.info(f"{session_id} | Active connections - Worker: {worker_connections}, Instance: {instance_connections}")
     
     return session, buffer, adapter

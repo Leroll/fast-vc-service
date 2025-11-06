@@ -100,6 +100,7 @@ class ModelConfig(BaseModel):
     
     # vad
     speech_noise_thres: float = 0.8  # VAD  语音与噪声能量比阈值 控制噪声过滤的灵敏度。vad默认0.6
+    decibel_thres: float = -50.0  # 分贝阈值 低于该分贝的帧判为静音。vad默认-100.0
     
     # cfm
     t_span_schedule: Literal["linear", "cosine"] = "cosine"  # 线性 or 余弦重排
