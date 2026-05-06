@@ -173,17 +173,20 @@ uv run examples/websocket/ws_client.py
 
 
 # 🚧 TODO
-- [ ] tag - v0.2 - Improve inference efficiency, reduce RTF - v2025-xx
-    - [ ] support fp16 inference mode
-    - [ ] update documentation to reflect latest code
-    - [ ] Train models to optimize voice conversion quality
-    - [ ] Improve model effectiveness for noisy data
-        - Distinguish different noise types
-    - [ ] Server send/recv event definitions should match roles
-    - [ ] Model acceleration optimization:
-        - [ ] Change VAD to use ONNX-GPU to improve inference speed
-        - [ ] Explore solutions to reduce model inference latency (e.g., new model architectures, quantization, etc.)
-    - [ ] Create Docker image and AutoDL image for one-click deployment
+- [ ] tag - v0.2 - Improve inference efficiency, reduce RTF
+  - [ ] Add a monitoring frontend to display performance metrics and system status in real time
+  - [ ] Add scheduled tasks to periodically clean up logs and persisted data
+  - [ ] Optimize timeline analysis, add batch analysis to the comprehensive report, and add a streaming smoothness metric to determine whether returned audio is sufficient for downstream playback
+  - [ ] Support fp16 inference mode
+  - [ ] Update documentation to reflect the latest code
+  - [ ] Train models to optimize voice conversion quality
+  - [ ] Improve model effectiveness for noisy data
+    - Distinguish different noise types
+  - [ ] Server send/recv event definitions should match roles
+  - [ ] Model acceleration optimization:
+    - [ ] Change VAD to use ONNX-GPU to improve inference speed
+    - [ ] Explore solutions to reduce model inference latency (e.g., new model architectures, quantization, etc.)
+  - [ ] Create Docker image and AutoDL image for one-click deployment
 
 # 🙏 Acknowledgements
 - [Seed-VC](https://github.com/Plachtaa/seed-vc) - Provides powerful underlying voice conversion model

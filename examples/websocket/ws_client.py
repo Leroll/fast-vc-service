@@ -522,7 +522,7 @@ def get_inputs_example():
     """
     Example
     """
-    src_dir = "resources/srcs"
+    src_dir = "/root/autodl-tmp/speech-processing/outputs"
     src_wavs = [ str(p) for p in Path(src_dir).glob("*.wav") ]
     logger.info(f"Found {len(src_wavs)} source wav files in {src_dir}")
     session_id_type = SessionIDTypeEnum.FILENAME

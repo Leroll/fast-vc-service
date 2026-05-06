@@ -418,13 +418,13 @@ class ModelFactory:
         speech_noise_thres = self.cfg.speech_noise_thres
         decibel_thres = self.cfg.decibel_thres
         try: 
-            vad_model = AutoModel(model="fsmn-vad", model_revision="v2.0.4", 
+            vad_model = AutoModel(model="fsmn-vad", model_revision="v2.0.4", disable_update=True,
                                   device=self.device,
                                   speech_noise_thres=speech_noise_thres, decibel_thres=decibel_thres)
         except:
             # try loading from local path
             vad_model_path = self.modelscope_cache_path / "hub/iic/speech_fsmn_vad_zh-cn-16k-common-pytorch"
-            vad_model = AutoModel(model=vad_model_path, 
+            vad_model = AutoModel(model=vad_model_path, disable_update=True,
                                   device=self.device, 
                                   speech_noise_thres=speech_noise_thres, decibel_thres=decibel_thres) 
         logger.info(f"vad config | speech_noise_thres: {vad_model.model.vad_opts.speech_noise_thres} ")
