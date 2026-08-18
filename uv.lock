@@ -1,5 +1,5 @@
 version = 1
-revision = 2
+revision = 3
 requires-python = ">=3.10, <4.0"
 resolution-markers = [
     "python_full_version >= '3.12'",
@@ -674,7 +674,6 @@ dependencies = [
     { name = "modelscope" },
     { name = "munch" },
     { name = "numpy" },
-    { name = "onnxruntime-gpu" },
     { name = "openpyxl" },
     { name = "opuslib" },
     { name = "pandas" },
@@ -695,6 +694,11 @@ dependencies = [
     { name = "uvicorn" },
 ]
 
+[package.optional-dependencies]
+eval-gpu = [
+    { name = "onnxruntime-gpu" },
+]
+
 [package.metadata]
 requires-dist = [
     { name = "descript-audio-codec", specifier = "==1.0.0" },
@@ -712,7 +716,7 @@ requires-dist = [
     { name = "modelscope", specifier = "==1.18.1" },
     { name = "munch", specifier = "==4.0.0" },
     { name = "numpy", specifier = "==1.26.4" },
-    { name = "onnxruntime-gpu", specifier = ">=1.22.0" },
+    { name = "onnxruntime-gpu", marker = "extra == 'eval-gpu'", specifier = ">=1.22.0" },
     { name = "openpyxl", specifier = ">=3.1.5" },
     { name = "opuslib", specifier = "==3.0.1" },
     { name = "pandas", specifier = "==2.3.0" },
@@ -732,6 +736,7 @@ requires-dist = [
     { name = "transformers", specifier = "==4.46.3" },
     { name = "uvicorn", specifier = "==0.34.3" },
 ]
+provides-extras = ["eval-gpu"]
 
 [[package]]
 name = "fastapi"
