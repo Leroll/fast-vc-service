@@ -1,101 +1,34 @@
-# Streaming Voice Conversion Service - WebSocket API Specification
+# WebSocket API
 
-## Document Overview
+## 1. Scope and versions
 
-This document is the WebSocket interface specification for the streaming Voice Conversion service, intended for developers who need to integrate this service. The document provides detailed descriptions of connection establishment, message formats, interaction flows, and error handling.
+This reference describes the routes, adapters and buffers in repository version 0.1.7. Both protocols accept binary audio and return mono int16 PCM. The reference voice is configured on the server, not uploaded per request.
 
-## 1. Service Overview
-
-This service provides real-time voice conversion functionality, allowing clients to send audio streams via WebSocket and receive converted audio streams, enabling voice conversion from source speaker to target speaker.
-
-### 1.1 Version History
-
-| Version | Date | Changes |
-|---------|------|---------|
+| Protocol document history | Date | Change |
+| --- | --- | --- |
 | 1.0 | 2025-05-27 | Initial version |
-| 1.1 | 2025-06-15 | Added simple protocol support, added opus_frame_duration field |
+| 1.1 | 2025-06-15 | Simple protocol and opus_frame_duration |
+| 1.2 | 2025-11-04 | sample_rate_out |
 
-## 2. Interaction Flow
+The 2026-10-29 documentation update aligns the reference with the implementation without changing the protocol. [中文](websocket-api-doc.md) · [Quick start](../getting_started/quick_started_en.md)
 
-### 2.1 Basic Workflow
+## 2. Connection and flow
 
-```
-Client                                Server
-  |                                   |
-  |  --- Config Request ----------->   |
-  |  <-- Ready Confirmation --------  |  Initialize model
-  |                                   |
-  |  --- Audio Chunk 1 ------------>  |  Process audio
-  |  <-- Converted Audio 1 ---------   |
-  |                                   |
-  |  --- Audio Chunk 2 ------------>  |  Process audio
-  |  <-- Converted Audio 2 ---------   |
-  |                                   |
-  |  --- Audio Chunk N ------------>  |  Process audio
-  |  <-- Converted Audio N ---------   |
-  |                                   |
-  |  --- End Signal --------------->  |  Complete processing
-  |  <-- Complete Status -----------   |
-  |                                   |
-  |  --- Close Connection --------->  |
-  |                                   |
-```
+Connect to `ws://localhost:8042/ws`; the route also accepts `/`. Use the deployment's wss address when TLS is configured.
 
-### 2.2 Error Handling Flow
+Standard flow: connect → config → ready → bidirectional audio → end → remaining-buffer processing → complete → close. The simple protocol starts with start, sends no ready message and finishes with completed.
 
-When an error occurs, the server will send an error message and close the connection.
+The first message is JSON text. Audio uses binary messages; clients should send and receive concurrently. Audio and converted describe direction, not JSON type values.
 
-```
-Client                                Server
-  |                                   |
-  |  --- Audio Chunk -------------->  |
-  |  <-- Error Message -------------   |  Processing error
-  |  <-- Close Connection ----------   |  Actively close WebSocket
-  |                                   |  
-```
-
-## 3. Connection Establishment
-
-### 3.1 WebSocket URL
-
-```
-ws://[server_address]/ws
-```
-
-### 3.2 Connection Parameters
-
-No parameters are required in the URL when establishing the connection. All configuration information will be sent through the configuration request message.
-
-## 4. Message Format
-
-The service uses two types of message formats:
-1. **Control Messages**: JSON format, used to transmit configuration, status, and error information
-2. **Audio Data**: Binary format, used to transmit raw audio data and converted audio data
-
-### 4.1 Message Types
-
-| Message Type | Direction | Format | Description |
-|-------------|-----------|--------|-------------|
-| config | Client -> Server | JSON | Configuration request |
-| ready | Server -> Client | JSON | Ready confirmation |
-| audio | Client -> Server | Binary | Input audio data chunk |
-| converted | Server -> Client | Binary | Converted audio data chunk |
-| end | Client -> Server | JSON | End signal |
-| complete | Server -> Client | JSON | Complete status |
-| error | Server -> Client | JSON | Error information |
-
-## 5. Detailed API Description
-
-### 5.1 Configuration Request (config)
-
-After establishing the WebSocket connection, the client first sends a configuration message:
+## 3. Standard configuration
 
 ```json
 {
   "type": "config",
-  "session_id": "sess_12345abcde",
-  "api_key": "your_api_key_here",
+  "session_id": "example-001",
+  "api_key": "example-key",
   "sample_rate": 16000,
+  "sample_rate_out": 22050,
   "bit_depth": 16,
   "channels": 1,
   "encoding": "PCM",
@@ -103,199 +36,102 @@ After establishing the WebSocket connection, the client first sends a configurat
 }
 ```
 
-Parameter description:
-- `type`: Fixed as "config"
-- `session_id`: Session ID for identifying the current connection
-- `api_key`: API key for authentication
-- `sample_rate`: Sample rate (Hz)
-- `bit_depth`: Bit depth
-- `channels`: Number of channels, fixed as 1 (mono)
-- `encoding`: Encoding format (PCM/WAV)
-- `opus_frame_duration`: (Optional) OPUS encoding frame duration in milliseconds, default is 20ms
+| Field | Contract and default behavior |
+| --- | --- |
+| type | Must be config |
+| session_id | Supply a unique string suitable for filenames; format validation is incomplete |
+| api_key | Currently only checked for a nonempty value, not real key authentication |
+| sample_rate | Input sample rate; defaults to 16000 Hz |
+| sample_rate_out | Output PCM rate; defaults to 16000 Hz; explicitly request 22050 Hz to avoid output resampling in the tiny configuration |
+| bit_depth | Signed integer PCM input depth; defaults to 16; decoder accepts 16 / 24 / 32, not float32 |
+| channels | Must be 1 |
+| encoding | PCM or OPUS; defaults to PCM; other non-OPUS values currently fall into the PCM branch, so send only the documented values |
+| opus_frame_duration | Opus duration in milliseconds; defaults to server buffer.opus_frame_duration (20 in prod.yaml) |
 
-### 5.2 Ready Confirmation (ready)
+Input and output rates may differ. Opus input rates are limited to 8000 / 12000 / 16000 / 24000 / 48000 Hz. Validation is incomplete; invalid fields may close the connection without a structured error.
 
-After server initialization is complete, it sends a ready confirmation:
-
-```json
-{
-  "type": "ready",
-  "session_id": "sess_12345abcde",
-  "message": "Ready to process audio"
-}
-```
-
-### 5.3 Audio Data (audio)
-
-Audio data sent by the client is in binary format, sent directly as WebSocket binary messages, not wrapped in JSON. Each audio chunk should conform to the format and size specified in the configuration.
-
-### 5.4 Converted Audio (converted)
-
-Converted audio data returned by the server is also in binary format, returned directly as WebSocket binary messages, not wrapped in JSON.
-
-### 5.5 End Signal (end)
-
-When the client completes sending all audio, it sends an end signal:
+Successful initialization returns:
 
 ```json
-{
-  "type": "end"
-}
+{"type": "ready", "session_id": "example-001", "message": "Ready to process audio"}
 ```
 
-### 5.6 Complete Status (complete)
+Models and reference conditions load at Worker startup. Ready indicates that this connection's Session and Buffer have been initialized.
 
-After the server completes all processing, it sends a complete status:
+## 4. Audio and normal completion
+
+PCM input is mono integer samples without a WAV/RIFF header; little-endian int16 is recommended. Each Opus binary message contains one raw Opus packet, not an Ogg container. Input is accumulated into server inference blocks.
+
+Output is always mono int16 PCM without a file header, at sample_rate_out. OPUS input does not change output encoding.
+
+After sending input, send:
 
 ```json
-{
-  "type": "complete",
-  "stats": {
-    "total_processed_ms": 5000,
-    "chunks_processed": 25,
-    "average_latency_ms": 120
-  }
-}
+{"type": "end"}
 ```
 
-## 6. Error Handling
-
-### 6.1 Error Message Format
-
-When the server detects an error, it will send an error message and then immediately close the connection:
+The server pads and processes the remaining buffer. Its current completion message is:
 
 ```json
-{
-  "type": "error",
-  "error_code": "ERR_CODE",
-  "message": "Error description",
-  "details": {
-    "additional_info": "Additional error information"
-  }
-}
+{"type": "complete", "stats": {}}
 ```
 
-Parameter description:
-- `type`: Fixed as "error"
-- `error_code`: Error code
-- `message`: Human-readable error description
-- `details`: (Optional) detailed error information
+Stats is currently empty. Complete does not guarantee that files are already saved, or certify audio quality or every processing step. Do not disconnect instead of sending end; timeout and abnormal disconnection do not guarantee conversion of unprocessed tail audio.
 
-### 6.2 Common Error Codes
-
-| Error Code | Description | Handling Suggestion |
-|-----------|-------------|-------------------|
-| INVALID_CONFIG | Invalid configuration parameters | Check audio format configuration |
-| AUTH_FAILED | Authentication failed | Check API key |
-| INVALID_AUDIO | Invalid audio data format | Ensure audio data meets configuration requirements |
-| INTERNAL_ERROR | Server internal error | Retry later or contact support team |
-| TIMEOUT | Processing timeout | Try reducing audio chunk size or retry later |
-
-## 7. Protocol Adaptation
-
-### 7.1 Overview
-
-To support different client systems, the service provides automatic protocol detection and adaptation functionality. The server will automatically identify the protocol type based on the first message and perform corresponding format conversion.
-
-### 7.2 Simple Protocol
-
-#### 7.2.1 Initialization Message
-
-Initialization message format sent by simple protocol clients:
+## 5. Simple protocol
 
 ```json
 {
   "signal": "start",
-  "stream_id": "stream_12345",
+  "stream_id": "example-002",
   "sample_rate": 16000,
+  "sample_rate_out": 22050,
   "sample_bit": 16,
+  "encoding": "PCM",
   "opus_frame_duration": 20
 }
 ```
 
-Parameter description:
-- `signal`: Fixed as "start"
-- `stream_id`: Stream ID for identifying the current connection
-- `sample_rate`: Sample rate (Hz)
-- `sample_bit`: Bit depth
-- `opus_frame_duration`: (Optional) OPUS encoding frame duration in milliseconds, default is 20ms
+Stream_id maps to session_id and sample_bit to bit_depth. Channels is fixed to 1; the adapter supplies a placeholder api_key. Defaults for sample_rate, sample_rate_out, sample_bit and encoding are 16000, 16000, 16 and PCM. No ready message is sent.
 
-**Note**: Simple protocol does not require API key authentication, and the server will not send a ready confirmation message.
-
-#### 7.2.2 Audio Data
-
-Audio data transmission format is the same as the standard protocol, using WebSocket binary messages.
-
-#### 7.2.3 End Signal
-
-End signal format for simple protocol:
+Audio uses the standard protocol's format. End and completion are:
 
 ```json
-{
-  "signal": "end"
-}
+{"signal": "end"}
 ```
-
-#### 7.2.4 Complete Status
-
-Complete status returned by the server to simple protocol clients:
 
 ```json
-{
-  "signal": "completed"
-}
+{"signal": "completed"}
 ```
 
-#### 7.2.5 Error Message
+The existing simple client is used only for the PCM / 16000 Hz output quick start. It omits encoding from the initial message and saves output at a fixed 16000 Hz; its OPUS command-line option is not a correct integration example. Use the standard client invocation in the [quick start](../getting_started/quick_started_en.md) for Opus or explicit output sample rates.
 
-Error message format returned by the server to simple protocol clients:
+## 6. Errors and disconnection
+
+Explicit initialization errors include INVALID_CONFIG (wrong initial type or channel count) and AUTH_FAILED (failure of the placeholder key check).
+
+Standard error:
 
 ```json
-{
-  "status": "failed",
-  "stream_id": "stream_12345",
-  "error_msg": "Error description"
-}
+{"type": "error", "error_code": "INVALID_CONFIG", "message": "Only mono audio (1 channel) is supported"}
 ```
 
-### 7.3 Automatic Protocol Detection
+Simple error:
 
-The server automatically detects the protocol type based on the first message:
-
-| Detection Condition | Protocol Type | Description |
-|-------------------|---------------|-------------|
-| `"signal": "start"` | Simple Protocol | Automatically converts to standard format for processing |
-| `"type": "config"` | Standard Protocol | Processes according to standard flow |
-| Other | Standard Protocol | Uses standard protocol by default |
-
-### 7.4 Simple Protocol Interaction Flow
-
-```
-Simple Protocol Client                Server
-  |                                   |
-  |  --- Start Signal ------------->  |  Auto-detect protocol
-  |                                   |  Initialize model (no ready message)
-  |                                   |
-  |  --- Audio Chunk 1 ------------>  |  Process audio
-  |  <-- Converted Audio 1 ---------   |
-  |                                   |
-  |  --- Audio Chunk N ------------>  |  Process audio
-  |  <-- Converted Audio N ---------   |
-  |                                   |
-  |  --- End Signal --------------->  |  Complete processing
-  |  <-- Complete Signal -----------   |
-  |                                   |
-  |  --- Close Connection --------->  |
-  |                                   |
+```json
+{"status": "failed", "stream_id": "example-002", "error_msg": "Only mono audio (1 channel) is supported"}
 ```
 
-### 7.5 Protocol Comparison
+The standard adapter can include details, but current initialization calls do not supply it; its errors omit session_id. Other exceptions may only be logged before closing. Opus decoding errors are replaced with silence and some inference errors are only logged. Handle error text, connection closure and receive timeouts.
 
-| Feature | Standard Protocol | Simple Protocol |
-|---------|------------------|-----------------|
-| Initialization Message | `type: "config"` | `signal: "start"` |
-| API Key Authentication | Required | Not required |
-| Ready Confirmation | Sent | Not sent |
-| End Signal | `type: "end"` | `signal: "end"` |
-| Complete Message | `type: "complete"` | `signal: "completed"` |
-| Error Format | Standard error format | Simplified error format |
+App.receive_timeout applies to each receive after initialization (120 seconds in prod.yaml), not to the initial configuration wait. Error exits may still use close code 1000, so that code alone does not prove success.
+
+## 7. Access and data
+
+Key checking is a placeholder. The simple protocol needs no caller-provided key, and the HTTP session endpoint has no authentication. Supply access control at the deployment layer; see [configuration and deployment](../getting_started/配置与部署.md) (Chinese).
+
+Audio and timelines are saved according to server settings. Configure recording flags and directories on the server. The reference voice is fixed per Worker; there is no reference-upload, model-switching or training operation.
+
+## 8. Implementation and maintenance
+
+Sources: [ws.py](../../src/fast_vc_service/routers/ws.py), [adapters](../../src/fast_vc_service/adapters/protocol_adapter.py), [detection](../../src/fast_vc_service/adapters/protocol_detector.py), [buffer.py](../../src/fast_vc_service/buffer.py). Update both language versions, affected examples and the relevant Spec when changing the protocol.

@@ -1,193 +1,117 @@
+# Fast-VC
+
 <p align="center">
-    <img src="https://raw.githubusercontent.com/Leroll/fast-vc-service/main/assets/cover.PNG" alt="repo cover" width=80%>
+  <img src="assets/cover.PNG" alt="Fast-VC：实时流式语音转换服务" width="80%">
 </p>
 
-<div align="center">
-  <img alt="GitHub stars" src="https://img.shields.io/github/stars/Leroll/fast-vc-service?style=social">
-  <img alt="Github downloads" src="https://img.shields.io/github/downloads/Leroll/fast-vc-service/total?style=flat-square">
-  <img alt="GitHub release" src="https://img.shields.io/github/v/release/Leroll/fast-vc-service?style=flat-square">
-  <a href="https://github.com/Leroll/fast-vc-service/commits/main">
-    <img alt="GitHub last commit" src="https://img.shields.io/github/last-commit/Leroll/fast-vc-service">
-  </a>
-  <img alt="License" src="https://img.shields.io/badge/License-GPL%20v3-blue.svg">
-  <img alt="Python 3.10+" src="https://img.shields.io/badge/python-3.10+-blue.svg">
-</div>
+<p align="center">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-GPL%20v3-blue.svg" alt="GPL v3"></a>
+  <img src="https://img.shields.io/badge/python-3.10%2B-blue.svg" alt="Python 3.10+">
+  <a href="https://github.com/Leroll/fast-vc-service/releases"><img src="https://img.shields.io/github/v/release/Leroll/fast-vc-service" alt="GitHub release"></a>
+</p>
 
-<div align="center">
-  <h3>基于 Seed-VC 的实时语音转换服务，提供 WebSocket 接口，支持 PCM 和 Opus 音频格式</h3>
-</div> 
+基于 Seed-VC 的实时流式语音转换服务，通过 WebSocket 将音色转换能力接入语音应用，提供音频缓冲、会话管理和多 Worker 部署支持。
 
-<div align="center">
-  <a href="README.md">English</a> | 简体中文
-</div>
-<br>
+[English](README.md) · 简体中文 · [快速开始](docs/getting_started/quick_started_zh.md) · [API](docs/api_docs/websocket-api-doc.md) · [全部文档](docs/README.md)
 
-> 功能持续迭代更新中。欢迎关注我们的最新进展... ✨
+## 1. 项目用途与核心能力
 
-Fast-VC-Service 旨在打造一款专为生产环境设计的，高性能实时流式语音转换云服务。基于 Seed-VC 模型实现，支持 WebSocket 协议，PCM与OPUS音频编码类型。
+Fast-VC 面向希望把持续输入的语音转换为指定参考音色、再接回语音应用的开发者。它在 Seed-VC 推理能力之上提供服务接口和流式处理流程。
 
-<div align="center">
+- **持续收发音频**：通过 WebSocket 边发送边接收，支持标准协议和简单协议。
+- **音频格式适配**：接收 PCM 或 Opus，返回单声道 16-bit PCM，可指定输出采样率。
+- **流式转换链路**：音频分块、VAD、上下文保留、可选音高调整与语义检索、音量混合和 SOLA 拼接。
+- **服务部署**：按配置加载模型和参考音色，支持多 Worker、设备列表与不同端口的多实例。
+- **会话与分析**：保存输入/输出和时间线，提供健康检查、版本与会话数据接口，以及离线分析工具。
 
-[核心特性](#-核心特性) | [快速开始](#-快速开始) | [性能表现](#-性能表现) | [版本更新](#-版本更新) | [TODO](#-TODO) | [致谢](#-致谢)
+参考音色在服务启动时配置并由 Worker 复用，当前没有逐请求上传参考音频的接口。内部工作流程见[总体设计](docs/design/总体设计.md)。
 
-</div>
+## 2. 音频样例
 
-# ✨ 核心特性
+仓库提供以下输入与参考音频，可用快速开始生成转换结果并对照试听：
 
-- **实时转换**: 基于 Seed-VC 的低延迟流式语音转换
-- **WebSocket API**: 支持 PCM 和 OPUS 音频格式
-- **性能监控**: 完整的实时性能指标统计
-- **高并发**: 多Worker并发处理，支持生产环境
-- **易部署**: 简单配置，一键启动
+| 角色 | 文件 |
+| --- | --- |
+| 源音频 | [男声样例](resources/srcs/male-0-16khz.wav) · [女声样例](resources/srcs/female-0-16khz.wav) |
+| 默认参考音色 | [参考音频](resources/refs/ref-24k.wav) |
+| 转换结果 | 运行下方示例后保存在 outputs/quickstart |
 
+这里提供的是复现输入，尚未附带与当前版本绑定的转换结果合集。效果比较时应记录模型、配置和参考音频；方法见[评测指南](docs/evaluation/README.md)。
 
-# 🚀 快速开始 
+## 3. 运行要求与范围
 
-## 📦 一键安装
+- 快速开始采用 **Linux、NVIDIA CUDA、Python 3.10 和 uv**。历史性能报告记录了 NVIDIA GPU 结果；显存需求随模型与 Worker 数变化。
+- 需要 Opus、音频文件读写等系统依赖，首次启动可能下载模型。
+- 默认配置使用 cuda:0、2 个 Worker、tiny 模型和仓库参考音频。Windows 原生及 CPU 实时性能没有当前验证保证。
+- 当前内置 api_key 仅检查非空；外部访问需由部署层提供认证和访问控制。默认会保存会话音频，部署时按用途配置。
+
+详见[配置与部署](docs/getting_started/配置与部署.md)。
+
+## 4. 快速开始
+
+先安装 [uv](https://docs.astral.sh/uv/getting-started/installation/) 并准备 NVIDIA 驱动。Ubuntu / Debian：
+
 ```bash
-# 安装系统依赖（Ubuntu/Debian）
 sudo apt-get update
-sudo apt-get install -y libopus-dev libopus0 opus-tools
-
-# 克隆项目
+sudo apt-get install -y libopus-dev libopus0 libsndfile1 portaudio19-dev ffmpeg
 git clone --recursive https://github.com/Leroll/fast-vc-service.git
 cd fast-vc-service
-
-# 配置环境
+uv sync --locked --python 3.10
 cp .env.example .env
-
-# 安装依赖（使用 uv）
-uv sync
-
-# 启动服务
-uv run fast-vc serve
+uv run fast-vc serve -c configs/prod.yaml
 ```
 
-## 🧪 快速测试
+启动前按实际硬件调整 configs/prod.yaml 的 device 和 workers。等待模型初始化，在另一个终端进入仓库根目录：
+
 ```bash
-# WebSocket 实时语音转换
-uv run examples/websocket/ws_client.py 
+curl http://localhost:8042/health
+uv run python examples/websocket/simple_protocol_ws_client.py \
+  --source-wav-path resources/srcs/male-0-16khz.wav \
+  --output-wav-dir outputs/quickstart \
+  --encoding PCM \
+  --samplerate 16000 \
+  --url ws://localhost:8042/ws
 ```
 
-> 详细安装使用指南请参看 [快速开始](docs/getting_started/quick_started.md) 文档。
+检查终端的 Output saved to 路径和 outputs/quickstart 中生成的 WAV。此示例使用简单协议、PCM 输入和 16000 Hz PCM 输出；需要 Opus、22050 Hz 输出或并发时，按[完整快速开始](docs/getting_started/quick_started_zh.md)使用标准客户端。
 
+## 5. 历史性能参考
 
-# 📈 性能表现 
+以下摘自 **v0.1.0** 报告：Seed-VC v1.0 tiny、16 kHz / 16-bit PCM、500 ms 推理块、10 个扩散步。它们不是当前版本重测结果，不能直接外推部署容量。
 
-<div align="center">
+| GPU | 并发 | Worker | 报告中的平均 chunk 延迟（ms） | 报告中的平均 RTF |
+| --- | --- | --- | --- | --- |
+| RTX 4090D | 1 | 6 | 105.0 | 0.21 |
+| RTX 4090D | 12 | 12 | 216.6 | 0.44 |
+| GTX 1080 Ti | 1 | 6 | 252.2 | 0.50 |
 
-| GPU | 并发| Worker | 音频块时长 | 首token延迟 | 端到端延迟 | 平均chunk延迟 | 平均RTF | 中位数RTF | P95 RTF |
-|-----|----|--------|----------|-------------|----------|-------------|---------|----------|---------|
-|4090D  |1  |6      |500       |136.0        |143.0     |105.0        |0.21     |0.22      |0.24     |
-|4090D  |12 |12     |500       |140.1        |256.6     |216.6        |0.44     |0.45      |0.51     |
-|1080TI |1  |6      |500       |157.0        |272.0     |252.2        |0.50     |0.51      |0.61     |
-|1080TI |3  |6      |500       |154.3        |261.3     |304.9        |0.61     |0.62      |0.73     |
+原始记录：[4090D](docs/perfermance_tests/version0.1.0_4090D.md)（2025-06-15）、[1080 Ti](docs/perfermance_tests/version0.1.0_1080ti.md)（2025-06-14）、[全部报告](docs/perfermance_tests/README.md)。
 
-</div>
+模型处理耗时、首包等待、尾部收发差值和包含采集播放的端到端时延有不同含义。重新测量前请阅读[指标口径与限制](docs/evaluation/README.md)。
 
-- 时间单位为: 毫秒(ms)
-- 查看详细的测试报告: 
-    - [性能测试报告_4090D](docs/perfermance_tests/version0.1.0_4090D.md)
-    - [性能测试报告_1080ti](docs/perfermance_tests/version0.1.0_1080ti.md)
+## 6. 使用与开发文档
 
+| 目标 | 入口 |
+| --- | --- |
+| 安装并完成首次转换 | [快速开始](docs/getting_started/quick_started_zh.md) |
+| 接入语音应用 | [WebSocket API](docs/api_docs/websocket-api-doc.md) · [HTTP API](docs/api_docs/http-api.md) |
+| 调整模型、音色与部署 | [配置与部署](docs/getting_started/配置与部署.md) |
+| 排查问题与评估效果 | [故障排查](docs/getting_started/故障排查.md) · [评测](docs/evaluation/README.md) |
+| 理解实现与参与贡献 | [设计](docs/design/README.md) · [贡献指南](CONTRIBUTING.md) |
+| 查看完整文档 | [文档索引](docs/README.md) |
 
-# 📝 版本更新 
-<!-- don't forget to change version in __init__ and toml -->
+## 7. 版本动态
 
-**2025-11-04 - v0.1.7**: 音质优化与输出采样率控制
+仓库包版本为 **0.1.7**。该版本的主要变化包括 CFM 时间步安排、22.05 kHz 模型后处理输出及可配置的 WebSocket 输出采样率，详细内容见[版本历史](docs/changelog/releases.md)。
 
-  - 音质优化
-    - 新增 t_span_schedule（支持余弦重排），在等步数下提升音质
-    - realtime_vc 输出统一为 22 kHz，提升输出音质
-    - 长静音段保留足够有声上文，改善连贯性
-  - 输出采样率控制
-    - WebSocket 新增 sample_rate_out 参数，按需返回对应采样率音频
-  - 其他
-    - VAD 配置纳入配置文件，便于调参与环境迁移
-    - 各模块 time_records 统一由 session 管理
-    - 移除 realtimevc 性能追踪、file-vc 脚本与噪声门模块，减少冗余
-    - 修复上游异常断联导致的音频未正确持久化问题
+[GitHub Releases](https://github.com/Leroll/fast-vc-service/releases) · [每日工程变更](docs/changelog/README.md) · [已确认待办](docs/todo.md)
 
-**2025-10-16 - v0.1.6**: 多卡多实例部署，语义特征检索，uv包管理
+## 8. 问题与贡献
 
-  - 部署与并发
-    - 支持自定义模型与配置文件路径，支持多实例部署，按配置与端口隔离
-    - 支持单实例多卡部署，提升并发处理能力
-  - 质量与效果
-    - 新增语义特征检索模块，提升音色相似度与鲁棒性
-    - 优化 VAD 参数，降低噪声与静音误触发
-  - 工程化
-    - 包管理迁移至 uv，安装与启动更快
-    - 修复 send_slow 假延迟告警问题
-    - 新增 VC 效果评测工具 tools/eval.py
+欢迎通过 [Issues](https://github.com/Leroll/fast-vc-service/issues) 提交可复现的问题和建议，或按[贡献指南](CONTRIBUTING.md)提交改进。报告问题时说明版本、环境、配置、输入格式与复现步骤。
 
-**2025-07-24 - v0.1.5**: 支持音高自适应匹配与实时性监控优化
+## 9. 许可证与致谢
 
-  - 实时性监控优化:
-    - 优化timeline_lognize，添加同类event延迟项统计
-    - 日志新增SLOW标签，针对收包间隔、发包间隔以及VC-E2E耗时进行标记
-  - 支持音高自适应匹配参考音频，提升转换效果
-    - 新增音高分析脚本，提供音频分析工具
-    - 增加音高自适应匹配功能，并添加对应开关配置
-  - 其他优化
-    - 更改uid生成方式，改为基于时间的生成方式，便于实验与测试
-    - 优化session tool的文件命名机制
-    - 增加config与model路径选项，支持nas配置文件，支持更简洁的云主机部署
+本项目代码采用 [GPL-3.0](LICENSE)。所选模型权重与音频素材的使用条件应分别查看其来源说明。
 
-
-<details>
-<summary>查看历史版本</summary>
-
-**2025-07-02 - v0.1.3**: 增加进程与实例级别并发监控  
-
-  - 日志新增PID记录，便于追踪实例
-  - 增加实例并发监控功能，支持实时查看当前并发量
-  - 优化性能分析接口，减少对实时性的影响
-
-**2025-06-26 - v0.1.2**: 持久化存储优化   
-
-  - 优化session持久化存储模块，改为异步处理
-  - 分离耗时的时间线统计分析模块，提升响应速度
-  - 优化时间线记录机制，减少存储开销
-
-**2025-06-19 - v0.1.1**: 首包性能优化   
-
-  - 新增查询性能监控接口 /tools/performance-report，支持查询实时性能指标
-  - 细化耗时日志，便于分析性能瓶颈
-  - 缓解人声首包调用模型导致的延迟问题
-
-**2025-06-15 - v0.1.0**: 基础服务框架   
-
-  完成了基于 Seed-VC 的实时语音转换服务的核心框架搭建，实现了 WebSocket 流式推理、性能监控、多格式音频支持等完整的基础功能。   
-
-  - 实时流式语音转换服务
-  - WebSocket API 支持 PCM 和 Opus 格式
-  - 完整的性能监控和统计系统
-  - 灵活的配置管理和环境变量支持 
-  - 多Worker并发处理能力
-  - 并发性能测试框架
-  
-</details>
-
-
-
-# 🚧 TODO 
-- [ ] tag - v0.2 - 提升推理时效，降低RTF 
-    - [ ] 新增监控前端，实时展示性能指标和系统状态；
-    - [ ] 新增定时任务，定时清理日志和存储数据；
-    - [ ] 优化timeline分析，增加batch分析给综合报告，分析的方式再加一个流式是否畅通，就是返回的内容是否足够下游播放的
-    - [ ] 兼容 fp16 推理模式
-    - [ ] 更新文档，以适应最新的代码
-    - [ ] 训练模型，优化换声品质
-    - [ ] 提升针对噪声数据的模型效果
-        - 区分不同的噪声类型
-    - [ ] 服务器的send recv 等事件定义应该符合角色
-    - [ ] 模型加速优化: 
-        - [ ] vad 改用 onnx-gpu, 以提升推理速度
-        - [ ] 探索降低模型推理时延的方案（比如新的模型架构、量化等）
-    - [ ] 制作镜像，以及AutoDL镜像，一键可用。
-
-
-# 🙏 致谢 
-- [Seed-VC](https://github.com/Plachtaa/seed-vc) - 提供了强大的底层变声模型
-- [RVC](https://github.com/RVC-Project/Retrieval-based-Voice-Conversion-WebUI) - 提供了基础的流式语音转换pipeline
+感谢 [Seed-VC](https://github.com/Plachtaa/seed-vc) 提供底层语音转换模型，以及 [RVC](https://github.com/RVC-Project/Retrieval-based-Voice-Conversion-WebUI) 的流式处理工作。

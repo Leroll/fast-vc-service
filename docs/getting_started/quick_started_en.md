@@ -1,213 +1,98 @@
-# Quick Start
+# Quick start
 
-## Installation
+## 1. Environment and installation
 
-### Using uv (Recommended)
+This guide targets Linux, NVIDIA CUDA and Python 3.10. Install [uv](https://docs.astral.sh/uv/getting-started/installation/) and an NVIDIA driver compatible with your Torch environment first. Historical reports contain NVIDIA GPU results; a complete cross-platform validation matrix is not available.
+
+Install system dependencies on Ubuntu / Debian and clone:
+
 ```bash
-# Install system dependencies (Ubuntu/Debian)
 sudo apt-get update
-sudo apt-get install -y libopus-dev libopus0 opus-tools
-
-# Clone project
+sudo apt-get install -y libopus-dev libopus0 libsndfile1 portaudio19-dev ffmpeg
 git clone --recursive https://github.com/Leroll/fast-vc-service.git
 cd fast-vc-service
-cp .env.example .env  # Configure environment variables
-
-# Install uv (if not already installed)
-pip install uv
-
-# Sync dependencies and create virtual environment
-uv sync
+uv sync --locked --python 3.10
+cp .env.example .env
 ```
 
-When running for the first time, models will be automatically downloaded to the model path configured in .env (default checkpoints).  
-If you encounter network issues, you can uncomment the `HF_ENDPOINT` variable in the `.env` file to use domestic mirror sources for accelerated model downloads.
+For an existing clone, run `git submodule update --init --recursive`. Dependencies and pinned versions are maintained in pyproject.toml and uv.lock. Optional GPU quality-evaluation dependencies are described in the [evaluation guide](../evaluation/README.md) (Chinese).
 
-### Method 2: Using Poetry
-```bash
-git clone --recursive https://github.com/Leroll/fast-vc-service.git
-cd fast-vc-service
-cp .env.example .env  # Configure environment variables
-poetry install  # Install dependencies
-```
+Run all following commands from the repository root.
 
-### Method 3: Using Existing Conda Environment
-```bash
-git clone --recursive https://github.com/Leroll/fast-vc-service.git
-cd fast-vc-service
-cp .env.example .env  # Configure environment variables
+## 2. Configure and start
 
-# Activate existing conda environment (Python 3.10+)
-conda activate your_env_name
-
-# Use Poetry (disable virtual environment)
-poetry config virtualenvs.create false
-poetry install
-```
-
-### Replace Poetry Source (if needed)
-```
-poetry source remove aliyun
-poetry source add new_name https://xx/pypi/simple --priority=primary
-rm poetry.lock  # Delete lock file and regenerate
-poetry lock 
-poetry install  
-```
-
-## Start Service
-```bash
-# Start service
-fast-vc serve  # Default startup using env_profile in .env
-nohup fast-vc serve > /dev/null 2>&1 &  # Run service in background
-
-# Using uv
-uv run fast-vc serve
-```
-
-<!-- Add service startup demonstration -->
-<p align="center">
-    <img src="https://github.com/Leroll/fast-vc-service/releases/download/v0.0.1/fast-vc-serve.gif" alt="Service Startup Demo" width="800">
-    <br>
-    <em>🚀 Service Startup Process</em>
-</p>
-
-## Service Management
-```bash
-# Check service status
-fast-vc status
-
-# Stop service (graceful shutdown)
-fast-vc stop
-fast-vc stop --force   # Force stop
-
-# Clean log files
-fast-vc clean
-fast-vc clean -y  # Skip confirmation
-
-# View version information
-fast-vc version
-```
-
-### Service Management Description
-- `serve`: Start FastAPI server
-- `status`: Check service running status and process information
-- `stop`: Gracefully shutdown service (send SIGINT signal)
-- `stop --force`: Force shutdown service (send SIGTERM signal)
-- `clean`: Clean log files in logs/ directory
-- `clean -y`: Clean log files, skip confirmation prompt
-- `version`: Display service version information
-
-Service information is automatically saved to the project's `temp/` directory, supporting process status checking and automatic cleanup.
-
-<p align="center">
-    <img src="https://github.com/Leroll/fast-vc-service/releases/download/v0.0.1/fast-vc-command.gif" alt="Command Demo" width="800">
-    <br>
-    <em>🚀 Command Demonstration</em>
-</p>
-
-# Quick Testing
-
-**For detailed WebSocket API specifications, please refer to**: [WebSocket API Specification](docs/api_docs/websocket-api-doc.md)  
-**Supported Formats**: PCM | OPUS  
-
-## WebSocket Real-time Voice Conversion
-```bash
-python examples/websocket/ws_client.py \
-    --source-wav-path "wavs/sources/low-pitched-male-24k.wav" \
-    --encoding OPUS
-```
-
-## Batch File Testing (for validating voice conversion effects, no need to start service)
-```bash
-python examples/file_conversion/file_vc.py \
-    --source-wav-path "wavs/sources/low-pitched-male-24k.wav" \
-```
-
-## Concurrent Performance Testing
-
-### Multi-client Concurrent Testing
-Use concurrent WebSocket clients to test server processing capabilities:
+.env.example selects configs/prod.yaml, which uses cuda:0, two Workers and resources/refs/ref-24k.wav as the reference voice. Adjust device and workers for your hardware. Initial startup may download models; wait for model and reference initialization.
 
 ```bash
-# Start 5 concurrent clients, begin simultaneously with no delay
-python examples/websocket/concurrent_ws_client.py \
-    --num-clients 5 \
-    --source-wav-path "wavs/sources/low-pitched-male-24k.wav" \
-    --encoding OPUS
-
-# Start 10 clients, launching one every 2 seconds
-python examples/websocket/concurrent_ws_client.py \
-    --num-clients 10 \
-    --delay-between-starts 2.0 \
-    --max-workers 4 \
-    --timeout 600
-
-# Test different audio formats
-python examples/websocket/concurrent_ws_client.py \
-    --num-clients 3 \
-    --encoding PCM \
-    --chunk-time 40 \
-    --real-time
+uv run fast-vc serve -c configs/prod.yaml
 ```
 
-### Test Parameter Description
-- `--num-clients`: Number of concurrent clients (default: 5)
-- `--delay-between-starts`: Client startup interval in seconds (default: 0.0, start simultaneously)
-- `--max-workers`: Maximum worker processes (default: min(8, num_clients))
-- `--timeout`: Single client timeout in seconds (default: 420)
-- `--chunk-time`: Audio chunk time in milliseconds (default: 20ms)
-- `--encoding`: Audio encoding format, PCM or OPUS (default: PCM)
-- `--real-time`: Enable real-time audio sending simulation
-- `--no-real-time`: Disable real-time simulation, send as fast as possible
+In another terminal at the repository root:
 
-### Performance Metrics Analysis
-
-After testing completes, a detailed performance analysis report is automatically generated, including:
-
-#### 🕐 Latency Metrics
-- **First Token Latency**: Processing latency of the first audio packet
-- **End-to-End Latency**: Complete audio stream processing latency
-- **Chunk Latency Statistics**: Latency distribution for each audio chunk (mean, median, P95, P99, etc.)
-- **Latency Jitter**: Standard deviation of latency, measuring latency stability
-
-#### ⚡ Real-time Metrics
-- **Real-time Factor (RTF)**: Ratio of processing time/audio duration
-  - RTF < 1.0: Meets real-time processing requirements
-  - RTF > 1.0: Processing speed cannot keep up with audio playback speed
-- **RTF Statistics**: Includes mean, median, P95, P99 and other distribution information
-
-#### 📊 Send Timing Analysis
-- **Send Latency Statistics**: Actual send interval vs expected audio interval
-- **Timing Quality Assessment**: Send stability and continuous latency detection
-
-#### 📈 Example Output
-```json
-{
-  "first_token_latency_ms": 285.3,
-  "end_to_end_latency_ms": 1247.8,
-  "chunk_latency_stats": {
-    "mean_ms": 312.5,
-    "median_ms": 298.1,
-    "p95_ms": 456.7,
-    "p99_ms": 523.2
-  },
-  "real_time_factor": {
-    "mean": 0.87,
-    "median": 0.85,
-    "p95": 1.12
-  },
-  "is_real_time": true,
-  "timeline_summary": {
-    "total_send_events": 156,
-    "total_recv_events": 148,
-    "send_duration_ms": 3120,
-    "processing_start_to_end_ms": 3368
-  }
-}
+```bash
+curl http://localhost:8042/health
+curl http://localhost:8042/version
 ```
 
-### Result Files Description
-After testing completes, the following files will be generated in the `outputs/concurrent_ws_client/` directory:
-- `clientX_result.json`: Complete result data for each client
-- `clientX_stats.json`: Performance statistics analysis for each client
-- `clientX_output.wav`: Converted audio file (if saving is
+Health should return `{"status":"healthy"}`; this checks HTTP request handling, not an inference. Reference conditions load when each Worker starts. Restart after changing the reference configuration; there is no per-request reference-upload field.
+
+## 3. Convert your first audio file
+
+Use the bundled sample and simple-protocol client to send PCM at a simulated real-time pace:
+
+```bash
+uv run python examples/websocket/simple_protocol_ws_client.py \
+  --source-wav-path resources/srcs/male-0-16khz.wav \
+  --output-wav-dir outputs/quickstart \
+  --encoding PCM \
+  --samplerate 16000 \
+  --url ws://localhost:8042/ws
+```
+
+The client receives mono PCM at the protocol's default 16000 Hz and saves a WAV file. Check the Output saved to path, the audio in outputs/quickstart and error logs, then compare the result with the [source](../../resources/srcs/male-0-16khz.wav) and [reference](../../resources/refs/ref-24k.wav). A Success label alone does not establish complete or good-quality audio.
+
+This client omits encoding in its initial message and writes output at a fixed 16000 Hz. The example deliberately uses PCM / 16000 Hz output; do not simply change its encoding argument to OPUS. For other encodings or output rates, use the standard client below.
+
+## 4. Standard protocol and concurrent requests
+
+Configure the standard client through Inputs. Explicit source paths avoid the environment-specific configuration in ws_client.py's default entry point:
+
+```bash
+uv run python - <<'PY'
+import asyncio
+from examples.websocket.ws_client import Inputs, multi_ws_clients
+
+inputs = Inputs(
+    url="ws://localhost:8042/ws",
+    api_key="example-key",
+    src_wavs=["resources/srcs/male-0-16khz.wav"],
+    encoding="PCM",
+    samplerate_out=22050,
+    max_workers=1,
+    worker_delay=0.0,
+    save_timeline=True,
+)
+asyncio.run(multi_ws_clients(inputs))
+PY
+```
+
+Results are saved in outputs/ws_client; save_timeline also saves a session timeline. Use src_wavs, max_workers and worker_delay to schedule multiple requests. Each list entry creates one request; increasing max_workers with a single file does not generate extra requests.
+
+For Opus input, set `encoding="OPUS"` and select an input rate and frame duration supported by the [API](../api_docs/websocket-api-doc_EN.md). Output remains PCM. The client's samplerate_out maps to the protocol's sample_rate_out.
+
+## 5. Management and further reading
+
+```bash
+uv run fast-vc status -p 8042
+uv run fast-vc stop -p 8042
+```
+
+Without a port or configuration, stop operates on all instances recorded by the CLI. Clean requires --logs or --outputs and interactive confirmation; there is no -y option.
+
+The current api_key check is a placeholder and the default configuration records session audio. Configure access controls and recording policy before external integration; see [configuration and deployment](配置与部署.md) (Chinese).
+
+- [WebSocket API](../api_docs/websocket-api-doc_EN.md) / [HTTP API](../api_docs/http-api.md)
+- [Troubleshooting](故障排查.md) (Chinese)
+- [Performance and quality evaluation](../evaluation/README.md) (Chinese)
+- [Design](../design/README.md) (Chinese) / [Contributing](../../CONTRIBUTING.md)
+- [简体中文](quick_started_zh.md)
