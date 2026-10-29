@@ -1,5 +1,3 @@
-# Fast-VC
-
 <p align="center">
   <img src="assets/cover.PNG" alt="Fast-VC：实时流式语音转换服务" width="80%">
 </p>

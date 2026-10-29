@@ -1,5 +1,3 @@
-# Fast-VC
-
 <p align="center">
   <img src="assets/cover.PNG" alt="Fast-VC: real-time streaming voice conversion service" width="80%">
 </p>
