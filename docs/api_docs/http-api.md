@@ -30,7 +30,7 @@ The last request requires saved files. Parse the JSON string, then Base64-decode
 
 ## 3. 实现与范围 / Implementation and scope
 
-源码：[base.py](../../src/fast_vc_service/routers/base.py)、[tools.py](../../src/fast_vc_service/routers/tools.py)、[SessionDataManager](../../src/fast_vc_service/tools/session_data_manager.py)。保存约定见[会话设计](../design/会话与可观测性.md)。
+源码：[base.py](../../src/fast_vc_service/routers/base.py)、[tools.py](../../src/fast_vc_service/routers/tools.py)、[SessionDataManager](../../src/fast_vc_service/tools/session_data_manager.py)。保存约定见[数据记录与可观测性](../design/数据记录与可观测性.md)。
 
 FastAPI 默认提供 /docs 和 /openapi.json，描述 HTTP 路由；WebSocket 合同见独立 [API](websocket-api-doc.md)。当前没有 /tools/performance-report 路由。
 

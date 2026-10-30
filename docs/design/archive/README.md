@@ -6,9 +6,9 @@
 
 | 原文件 | 归档 | 当前入口 |
 | --- | --- | --- |
-| 关于vc过程中的-samplerate.md | [原文](关于vc过程中的-samplerate.md) | [采样率与流式处理](../流式处理与音频约定.md) |
+| 关于vc过程中的-samplerate.md | [原文](关于vc过程中的-samplerate.md) | [音频输入与缓冲](../音频输入与缓冲.md) |
 | 换声过程中的流程模块.md | [原文](换声过程中的流程模块.md) | [总体设计](../总体设计.md) |
-| Location of Output Region When a New Chunk is Incoming.md | [原文](<Location of Output Region When a New Chunk is Incoming.md>) | [窗口与延迟](../流式处理与音频约定.md) |
+| Location of Output Region When a New Chunk is Incoming.md | [原文](<Location of Output Region When a New Chunk is Incoming.md>) | [流式转换流水线](../流式转换流水线.md) |
 
 ## 2. 历史路线
 
