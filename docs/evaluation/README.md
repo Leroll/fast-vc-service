@@ -16,7 +16,7 @@
 
 ## 2. 现有性能工具与指标
 
-标准客户端可通过 Inputs 设置源文件列表、max_workers、worker_delay、real_time 与 save_timeline，见[快速开始](../getting_started/quick_started_zh.md)。它会保存输出并可记录客户端时间线；这不是完整的自动压力测试报告。
+标准客户端可通过 Inputs 设置源文件列表、max_workers、worker_delay、real_time 与 save_timeline，见[快速开始](../getting-started/quick-start.md)。它会保存输出并可记录客户端时间线；这不是完整的自动压力测试报告。
 
 [TimelineAnalyzer](../../src/fast_vc_service/tools/timeline_analyzer.py) 支持单文件和批量离线分析。以下为当前实现中的指标含义：
 

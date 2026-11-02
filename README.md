@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/cover.PNG" alt="Fast-VC: real-time streaming voice conversion service" width="80%">
+  <img src="assets/cover.PNG" alt="Fast-VC：实时流式语音转换服务" width="80%">
 </p>
 
 <p align="center">
@@ -8,46 +8,48 @@
   <a href="https://github.com/Leroll/fast-vc-service/releases"><img src="https://img.shields.io/github/v/release/Leroll/fast-vc-service" alt="GitHub release"></a>
 </p>
 
-A real-time streaming voice conversion service built on Seed-VC. Integrate voice conversion into speech applications over WebSocket, with audio buffering, session management and multi-Worker deployment.
+# Fast-VC
 
-English · [简体中文](README_ZH.md) · [Quick start](docs/getting_started/quick_started_en.md) · [API](docs/api_docs/websocket-api-doc_EN.md) · [Documentation](docs/README.md)
+基于 Seed-VC 的实时流式语音转换服务，通过 WebSocket 将音色转换能力接入语音应用，提供音频缓冲、会话管理和多 Worker 部署支持。
 
-## 1. Purpose and capabilities
+简体中文 · [English](docs/en/README.md) · [快速开始](docs/getting-started/quick-start.md) · [API](docs/api/README.md) · [文档索引](docs/README.md)
 
-Fast-VC is for developers who want to convert a continuous speech stream to a configured reference voice and feed the result back into an application. It adds service interfaces and streaming orchestration around Seed-VC inference.
+## 1. 项目用途与核心能力
 
-- **Bidirectional audio streaming** over WebSocket, with standard and simple protocols.
-- **Audio adaptation**: PCM or Opus input, mono 16-bit PCM output with a configurable output sample rate.
-- **Streaming conversion**: chunking, VAD, retained context, optional pitch adjustment and semantic retrieval, RMS mixing and SOLA stitching.
-- **Service deployment**: configured models and reference voices, multiple Workers, device lists and separate service ports.
-- **Sessions and analysis**: audio/timeline recording, health/version/session endpoints and offline analysis tools.
+Fast-VC 面向希望把持续输入的语音转换为指定参考音色、再接回语音应用的开发者。它在 Seed-VC 推理能力之上提供服务接口和流式处理流程。
 
-Reference conditions are loaded at service startup and reused by Workers; there is no per-request reference-upload interface. See the [architecture](docs/design/总体设计.md) (Chinese).
+- **持续收发音频**：通过 WebSocket 边发送边接收，支持标准协议和简单协议。
+- **音频格式适配**：接收 PCM 或 Opus，返回单声道 16-bit PCM，可指定输出采样率。
+- **流式转换链路**：音频分块、VAD、上下文保留、可选音高调整与语义检索、音量混合和 SOLA 拼接。
+- **服务部署**：按配置加载模型和参考音色，支持多 Worker、设备列表与不同端口的多实例。
+- **会话与分析**：保存输入/输出和时间线，提供健康检查、版本与会话数据接口，以及离线分析工具。
 
-## 2. Audio samples
+参考音色在服务启动时配置并由 Worker 复用，当前没有逐请求上传参考音频的接口。内部工作流程见[总体设计](docs/design/总体设计.md)。
 
-Use the bundled source and reference files to generate a converted result with the quick start:
+## 2. 音频样例
 
-| Role | File |
+仓库提供以下输入与参考音频，可用快速开始生成转换结果并对照试听：
+
+| 角色 | 文件 |
 | --- | --- |
-| Source | [Male sample](resources/srcs/male-0-16khz.wav) · [Female sample](resources/srcs/female-0-16khz.wav) |
-| Default reference voice | [Reference audio](resources/refs/ref-24k.wav) |
-| Converted result | Generated in outputs/quickstart by the example below |
+| 源音频 | [男声样例](resources/srcs/male-0-16khz.wav) · [女声样例](resources/srcs/female-0-16khz.wav) |
+| 默认参考音色 | [参考音频](resources/refs/ref-24k.wav) |
+| 转换结果 | 运行下方示例后保存在 outputs/quickstart |
 
-These files provide reproducible inputs; a collection of converted outputs tied to the current version is not bundled. Record the model, configuration and reference when comparing quality. See the [evaluation guide](docs/evaluation/README.md) (Chinese).
+这里提供的是复现输入，尚未附带与当前版本绑定的转换结果合集。效果比较时应记录模型、配置和参考音频；方法见[评测指南](docs/evaluation/README.md)。
 
-## 3. Requirements and scope
+## 3. 运行要求与范围
 
-- The quick start targets **Linux, NVIDIA CUDA, Python 3.10 and uv**. Historical reports contain NVIDIA GPU results; memory needs vary by model and Worker count.
-- System audio libraries are required. Initial startup may download model files.
-- The default configuration uses cuda:0, two Workers, the tiny model and a bundled reference. Native Windows support and real-time CPU performance have not been established by current validation.
-- The built-in api_key check only checks for a nonempty value. Supply authentication and access controls at the deployment layer. Session audio is recorded by default; configure recording for your use case.
+- 快速开始采用 **Linux、NVIDIA CUDA、Python 3.10 和 uv**。历史性能报告记录了 NVIDIA GPU 结果；显存需求随模型与 Worker 数变化。
+- 需要 Opus、音频文件读写等系统依赖，首次启动可能下载模型。
+- 默认配置使用 cuda:0、2 个 Worker、tiny 模型和仓库参考音频。Windows 原生及 CPU 实时性能没有当前验证保证。
+- 当前内置 api_key 仅检查非空；外部访问需由部署层提供认证和访问控制。默认会保存会话音频，部署时按用途配置。
 
-See [configuration and deployment](docs/getting_started/配置与部署.md) (Chinese).
+详见[配置与部署](docs/getting-started/configuration.md)。
 
-## 4. Quick start
+## 4. 快速开始
 
-Install [uv](https://docs.astral.sh/uv/getting-started/installation/) and prepare an NVIDIA driver. On Ubuntu / Debian:
+先安装 [uv](https://docs.astral.sh/uv/getting-started/installation/) 并准备 NVIDIA 驱动。Ubuntu / Debian：
 
 ```bash
 sudo apt-get update
@@ -59,7 +61,7 @@ cp .env.example .env
 uv run fast-vc serve -c configs/prod.yaml
 ```
 
-Adjust device and workers in configs/prod.yaml for your hardware before starting. After model initialization, open another terminal at the repository root:
+启动前按实际硬件调整 configs/prod.yaml 的 device 和 workers。等待模型初始化，在另一个终端进入仓库根目录：
 
 ```bash
 curl http://localhost:8042/health
@@ -71,45 +73,45 @@ uv run python examples/websocket/simple_protocol_ws_client.py \
   --url ws://localhost:8042/ws
 ```
 
-Check the Output saved to path and the generated WAV in outputs/quickstart. This example uses the simple protocol with PCM input and 16000 Hz PCM output. For Opus input, 22050 Hz output or concurrent requests, use the standard client in the [full quick start](docs/getting_started/quick_started_en.md).
+检查终端的 Output saved to 路径和 outputs/quickstart 中生成的 WAV。此示例使用简单协议、PCM 输入和 16000 Hz PCM 输出；需要 Opus、22050 Hz 输出或并发时，按[完整快速开始](docs/getting-started/quick-start.md)使用标准客户端。
 
-## 5. Historical performance
+## 5. 历史性能参考
 
-The following results are from **v0.1.0**: Seed-VC v1.0 tiny, 16 kHz / 16-bit PCM, 500 ms inference blocks and 10 diffusion steps. They are not fresh measurements of the current version or a deployment-capacity guarantee.
+以下摘自 **v0.1.0** 报告：Seed-VC v1.0 tiny、16 kHz / 16-bit PCM、500 ms 推理块、10 个扩散步。它们不是当前版本重测结果，不能直接外推部署容量。
 
-| GPU | Concurrency | Workers | Reported average chunk latency (ms) | Reported average RTF |
+| GPU | 并发 | Worker | 报告中的平均 chunk 延迟（ms） | 报告中的平均 RTF |
 | --- | --- | --- | --- | --- |
 | RTX 4090D | 1 | 6 | 105.0 | 0.21 |
 | RTX 4090D | 12 | 12 | 216.6 | 0.44 |
 | GTX 1080 Ti | 1 | 6 | 252.2 | 0.50 |
 
-Original reports: [4090D](docs/perfermance_tests/version0.1.0_4090D.md) (2025-06-15), [1080 Ti](docs/perfermance_tests/version0.1.0_1080ti.md) (2025-06-14), [all reports](docs/perfermance_tests/README.md).
+原始记录：[4090D](docs/perfermance_tests/version0.1.0_4090D.md)（2025-06-15）、[1080 Ti](docs/perfermance_tests/version0.1.0_1080ti.md)（2025-06-14）、[全部报告](docs/perfermance_tests/README.md)。
 
-Model processing time, first-chunk wait, final send/receive gap and capture-to-playback latency are different measurements. Review [metric definitions and limitations](docs/evaluation/README.md) (Chinese) before measuring again.
+模型处理耗时、首包等待、尾部收发差值和包含采集播放的端到端时延有不同含义。重新测量前请阅读[指标口径与限制](docs/evaluation/README.md)。
 
-## 6. Documentation
+## 6. 使用与开发文档
 
-| Goal | Entry |
+| 目标 | 入口 |
 | --- | --- |
-| Install and convert your first file | [Quick start](docs/getting_started/quick_started_en.md) |
-| Integrate a speech application | [WebSocket API](docs/api_docs/websocket-api-doc_EN.md) · [HTTP API](docs/api_docs/http-api.md) |
-| Configure models, voices and deployment | [Deployment guide](docs/getting_started/配置与部署.md) (Chinese) |
-| Troubleshoot and evaluate | [Troubleshooting](docs/getting_started/故障排查.md) · [Evaluation](docs/evaluation/README.md) (Chinese) |
-| Understand and contribute | [Design](docs/design/README.md) (Chinese) · [Contributing](CONTRIBUTING.md) |
-| Browse everything | [Documentation index](docs/README.md) (Chinese) |
+| 安装并完成首次转换 | [快速开始](docs/getting-started/quick-start.md) |
+| 接入语音应用 | [语音转换](docs/api/voice-conversion.md) · [系统接口](docs/api/system.md) · [会话数据](docs/api/session-data.md) |
+| 调整模型、音色与部署 | [配置与部署](docs/getting-started/configuration.md) |
+| 排查问题与评估效果 | [故障排查](docs/getting-started/troubleshooting.md) · [评测](docs/evaluation/README.md) |
+| 理解实现与参与贡献 | [设计](docs/design/README.md) · [贡献指南](CONTRIBUTING.md) |
+| 浏览用户文档 | [文档索引](docs/README.md) |
 
-## 7. Version updates
+## 7. 版本动态
 
-The repository package version is **0.1.7**. Its main changes include CFM time-step scheduling, 22.05 kHz model post-processing output and configurable WebSocket output sample rates. See the [release history](docs/changelog/releases_en.md).
+仓库包版本为 **0.1.7**。该版本的主要变化包括 CFM 时间步安排、22.05 kHz 模型后处理输出及可配置的 WebSocket 输出采样率，详细内容见[版本历史](docs/changelog/releases.md)。
 
-[GitHub Releases](https://github.com/Leroll/fast-vc-service/releases) · [Daily engineering changes](docs/changelog/README.md) · [Confirmed tasks](docs/todo.md)
+[GitHub Releases](https://github.com/Leroll/fast-vc-service/releases) · [每日工程变更](docs/changelog/README.md) · [已确认待办](docs/todo.md)
 
-## 8. Help and contributions
+## 8. 问题与贡献
 
-Report reproducible bugs and proposals through [Issues](https://github.com/Leroll/fast-vc-service/issues), or follow the [contribution guide](CONTRIBUTING.md). Include the version, environment, configuration, input format and reproduction steps.
+欢迎通过 [Issues](https://github.com/Leroll/fast-vc-service/issues) 提交可复现的问题和建议，或按[贡献指南](CONTRIBUTING.md)提交改进。报告问题时说明版本、环境、配置、输入格式与复现步骤。
 
-## 9. License and acknowledgements
+## 9. 许可证与致谢
 
-This project's code is licensed under [GPL-3.0](LICENSE). Consult the respective sources for the terms of model weights and audio assets.
+本项目代码采用 [GPL-3.0](LICENSE)。所选模型权重与音频素材的使用条件应分别查看其来源说明。
 
-Thanks to [Seed-VC](https://github.com/Plachtaa/seed-vc) for the underlying conversion model and [RVC](https://github.com/RVC-Project/Retrieval-based-Voice-Conversion-WebUI) for its streaming-processing work.
+感谢 [Seed-VC](https://github.com/Plachtaa/seed-vc) 提供底层语音转换模型，以及 [RVC](https://github.com/RVC-Project/Retrieval-based-Voice-Conversion-WebUI) 的流式处理工作。

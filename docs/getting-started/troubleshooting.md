@@ -1,5 +1,7 @@
 # 故障排查
 
+[用户文档](../README.md) · [English](../en/getting-started/troubleshooting.md)
+
 ## 1. 启动与依赖
 
 | 现象 | 检查步骤 |

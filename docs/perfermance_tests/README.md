@@ -12,10 +12,6 @@
 
 ## 2. 当前使用方式
 
-历史报告中提及的 concurrent_ws_client.py 已不在当前仓库。新评测使用[标准客户端配置方式](../getting_started/quick_started_zh.md)和[评测指南](../evaluation/README.md)，不要按旧脚本命令操作。
+历史报告中提及的 concurrent_ws_client.py 已不在当前仓库。新评测使用[标准客户端配置方式](../getting-started/quick-start.md)和[评测指南](../evaluation/README.md)，不要按旧脚本命令操作。
 
 README 仅摘录有明确版本和硬件条件的历史结果。新报告应补齐模型、输入、参考音频、配置、硬件、采样率、发送节奏和计时位置，分别说明首包、尾部收发差值、处理耗时和播放延迟。
-
-## 3. English note
-
-These reports are preserved historical results for version 0.1.0, not fresh measurements of the current version. The old concurrent_ws_client.py command is no longer available. Use the [current client guide](../getting_started/quick_started_en.md) and [evaluation guide](../evaluation/README.md) (Chinese). Hardware, model, configuration and metric definitions must accompany new results.

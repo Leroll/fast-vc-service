@@ -20,7 +20,7 @@
 
 ## 2. 与其他文档的分工
 
-对外字段与消息由 [API](../api_docs/websocket-api-doc.md) 维护，启动命令与配置由[操作指南](../getting_started/配置与部署.md)维护，测量方法见[评测指南](../evaluation/README.md)。此处说明内部职责和约束，不复制完整参数表。
+对外字段与消息由 [API](../api/README.md) 维护，启动命令与配置由[操作指南](../getting-started/configuration.md)维护，测量方法见[评测指南](../evaluation/README.md)。此处说明内部职责和约束，不复制完整参数表。
 
 模块文档统一说明职责与边界、输入输出、关键流程和约束，并指向实现源码。跨模块约定在所属专题详细维护，其他文档摘要并链接；行为变化应同步对应专题与总体设计。
 

@@ -10,13 +10,16 @@
 
 | 位置 | 职责 |
 | --- | --- |
-| README.md / README_ZH.md | 项目价值、能力、样例、运行条件、首次调用与文档导航 |
-| CONTRIBUTING.md | 面向贡献者的开发、验证和提交入口 |
+| README.md | 中文项目首页：项目价值、能力、样例、运行条件、首次调用与文档导航 |
+| CONTRIBUTING.md | 中文贡献指南：开发、验证和提交入口 |
 | docs/design/ | 当前实现、模块职责、约束与明确标注的后续方向 |
 | docs/specs/ | 重要任务的需求、设计、实施与验收证据 |
 | docs/changelog/ | 每日实际变更；releases 文件单独保留版本历史 |
 | docs/todo.md | 已确认且尚未完成的任务 |
-| docs/getting_started/、api_docs/、evaluation/ | 操作指南、接口合同、评测方法 |
+| docs/getting-started/ | 中文安装、首次调用、配置部署与故障排查 |
+| docs/api/ | 中文对外接口合同、字段、消息、错误和接入约定 |
+| docs/en/ | 约定范围内的英文译文；README.md 为英文项目首页，index.md 为英文用户索引 |
+| docs/evaluation/ | 性能与效果评测方法 |
 | docs/design/archive/、perfermance_tests/ | 历史笔记与历史测试依据，不代表当前验收结果 |
 
 一项规则只在一个位置详细维护，其他文档摘要并链接。README 保持开源项目主页的用途，不堆入完整开发日志或参数字典。
@@ -55,7 +58,7 @@ Git 操作前确认仓库根目录、分支和未提交变更；合并、变基�
 
 ## 7. 写作与记录
 
-开发设计与协作说明以中文维护；README、快速开始和 WebSocket API 保持中英文事实一致，其他文档的语言在索引中明确。
+中文为主文档语言：根 README、CONTRIBUTING、AGENTS 及 docs 主目录中的维护文档使用中文，英文译文集中在 docs/en。AGENTS 仅维护根目录这一份中文规则。同一页面不逐段混排两种语言；翻译范围、同步、路径对应和导航规则统一维护在[文档索引](docs/README.md#3-多语言维护)，新增文档不自动扩展翻译范围，历史资料保留原文。
 
 维护中的文档使用一个不编号 H1，H2 按“1.”编号，H3 按“1.1”编号；历史快照和版本原文保留原貌。章节调整同步文档内锚点。
 

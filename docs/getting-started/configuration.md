@@ -1,8 +1,10 @@
 # 配置与部署
 
+[用户文档](../README.md) · [English](../en/getting-started/configuration.md)
+
 ## 1. 运行入口与配置来源
 
-从仓库根目录运行，先按[快速开始](quick_started_zh.md)安装依赖与初始化子模块。
+从仓库根目录运行，先按[快速开始](quick-start.md)安装依赖与初始化子模块。
 
 配置优先级为 CLI `--config / -c` → 环境变量 `CONFIG_PATH` → Python 配置类默认值。.env.example 指定 `configs/prod.yaml`。配置文件读取或解析失败时，当前实现记录日志后回退类默认值；请检查启动日志的加载路径与有效参数。
 
@@ -42,7 +44,7 @@ uv run fast-vc version
 
 `models.dit_checkpoint_path` 和 `models.dit_config_path` 需成对提供；`models.index_path` 在启用检索时必须指向实际存在的匹配索引。仓库不附带 prod.yaml 所示的检索索引。
 
-输出给客户端的采样率用请求中的 `sample_rate_out` 控制，详见 [API](../api_docs/websocket-api-doc.md)，不要为调整网络输出而直接改模型采样率。
+输出给客户端的采样率用请求中的 `sample_rate_out` 控制，详见 [API](../api/voice-conversion.md)，不要为调整网络输出而直接改模型采样率。
 
 ## 3. 环境、模型与参考音色
 

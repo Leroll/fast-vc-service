@@ -1,5 +1,7 @@
 # 快速开始
 
+[用户文档](../README.md) · [English](../en/getting-started/quick-start.md)
+
 ## 1. 环境与安装
 
 本指南使用 Linux、NVIDIA CUDA 和 Python 3.10；需已安装 [uv](https://docs.astral.sh/uv/getting-started/installation/) 和与 Torch 环境兼容的 NVIDIA 驱动。历史性能报告记录了 NVIDIA GPU 结果，当前没有完整的跨平台验证矩阵。
@@ -78,7 +80,7 @@ PY
 
 结果位于 outputs/ws_client；save_timeline 会额外保存会话时间线。调整 src_wavs 列表、max_workers 和 worker_delay 可运行多个请求；每个列表元素对应一次请求，只有一个文件时不会因增加 max_workers 自动产生多请求。
 
-需要 Opus 输入时设置 `encoding="OPUS"`，并按 [API](../api_docs/websocket-api-doc.md)选择输入采样率与帧长。服务返回仍为 PCM。标准客户端的 samplerate_out 对应协议字段 sample_rate_out。
+需要 Opus 输入时设置 `encoding="OPUS"`，并按 [API](../api/voice-conversion.md)选择输入采样率与帧长。服务返回仍为 PCM。标准客户端的 samplerate_out 对应协议字段 sample_rate_out。
 
 ## 5. 管理与后续阅读
 
@@ -89,10 +91,9 @@ uv run fast-vc stop -p 8042
 
 stop 不带端口或配置会操作 CLI 记录的全部实例。clean 需指定 --logs 或 --outputs，并交互确认删除；没有 -y 选项。
 
-当前 api_key 仅为占位校验，默认配置会保存会话音频。对外接入前按[配置与部署](配置与部署.md)设置访问控制及保存策略。
+当前 api_key 仅为占位校验，默认配置会保存会话音频。对外接入前按[配置与部署](configuration.md)设置访问控制及保存策略。
 
-- [WebSocket API](../api_docs/websocket-api-doc.md) / [HTTP API](../api_docs/http-api.md)
-- [故障排查](故障排查.md)
+- [语音转换 API](../api/voice-conversion.md) / [系统 API](../api/system.md) / [会话数据 API](../api/session-data.md)
+- [故障排查](troubleshooting.md)
 - [性能与效果评测](../evaluation/README.md)
 - [当前设计](../design/README.md) / [贡献指南](../../CONTRIBUTING.md)
-- [English](quick_started_en.md)
