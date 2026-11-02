@@ -1,0 +1,22 @@
+{
+  "name": "fast-vc-docs-website",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "prepare:content": "node scripts/content.mjs",
+    "build": "npm run prepare:content && vitepress build && node scripts/check-search.mjs",
+    "preview": "vite preview --host 127.0.0.1 --port 18127 --base /fast-vc-service/ --outDir ../../site",
+    "test": "node --test scripts/*.test.mjs"
+  },
+  "devDependencies": {
+    "vitepress": "1.6.4",
+    "vite": "6.4.5",
+    "vue": "^3.5.0",
+    "markdown-it": "^14.1.0"
+  },
+  "overrides": {
+    "vite": "6.4.5"
+  }
+}

@@ -9,7 +9,6 @@ on:
       - 'README.md'
       - 'CONTRIBUTING.md'
       - 'AGENTS.md'
-      - 'mkdocs.yml'
       - '.github/workflows/docs.yml'
       - 'src/**'
       - 'configs/**'
@@ -24,7 +23,6 @@ on:
       - 'README.md'
       - 'CONTRIBUTING.md'
       - 'AGENTS.md'
-      - 'mkdocs.yml'
       - '.github/workflows/docs.yml'
       - 'src/**'
       - 'configs/**'
@@ -43,7 +41,7 @@ concurrency:
 
 jobs:
   build:
-    name: 严格构建文档
+    name: 检查并构建文档
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -63,8 +61,17 @@ jobs:
         run: uv run --project tools/docs --locked python tools/docs/check_content.py --base "$DOCS_BASE"
       - name: 验证文档检查器
         run: uv run --project tools/docs --locked python -m unittest discover -s tools/docs -p 'test_*.py'
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: docs/website/package-lock.json
+      - name: 安装网站构建依赖
+        run: npm --prefix docs/website ci --ignore-scripts
+      - name: 验证内容适配与链接兼容
+        run: npm --prefix docs/website test
       - name: 构建文档
-        run: uv run --project tools/docs --locked mkdocs build --strict
+        run: npm --prefix docs/website run build
       - name: 验证生成网页
         run: uv run --project tools/docs --locked python tools/docs/check_site.py
       - name: 上传 Pages 产物

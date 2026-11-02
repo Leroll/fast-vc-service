@@ -73,3 +73,8 @@ cases
 
 # 文档网站构建产物
 /site/
+/docs/website/node_modules/
+/docs/website/.generated/
+/docs/website/.vitepress/cache/
+/docs/website/.vitepress/dist/
+/docs/website/.vitepress/.temp/

@@ -5,9 +5,6 @@ from html.parser import HTMLParser
 from pathlib import Path
 from urllib.parse import unquote, urljoin, urlsplit
 
-from mkdocs.config import load_config
-
-
 ROOT = Path(__file__).resolve().parents[2]
 
 
@@ -16,10 +13,13 @@ class PageLinks(HTMLParser):
         super().__init__(convert_charrefs=True)
         self.ids = set()
         self.links = []
+        self.headings = 0
         self.feed(text)
 
     def handle_starttag(self, tag, attrs):
         attrs = dict(attrs)
+        if tag == "h1":
+            self.headings += 1
         if attrs.get("id"):
             self.ids.add(attrs["id"])
         if tag == "a" and attrs.get("name"):
@@ -36,7 +36,7 @@ def check_site(site, site_url):
         for file in site.rglob("*.html")
     }
     if not pages or not (site / "index.html").is_file():
-        raise ValueError("未找到网站首页；请先执行 mkdocs build --strict")
+        raise ValueError("未找到网站首页；请先执行 npm --prefix docs/website run build")
     base = urlsplit(site_url)
     prefix = base.path.rstrip("/") + "/"
     errors = []
@@ -66,20 +66,28 @@ def check_site(site, site_url):
                 errors.append(f"{source.relative_to(site)}: 锚点不存在: {value}")
 
     for source, page in pages.items():
+        historical_layout = any(part in source.relative_to(site).as_posix()
+                                for part in ("design/archive", "perfermance_tests"))
+        if source.name != "404.html" and page.headings != 1 and not historical_layout:
+            errors.append(f"{source.relative_to(site)}: 应有一个 H1，实际 {page.headings}")
         for value in page.links:
             check(source, value)
-    index = json.loads((site / "search/search_index.json").read_text(encoding="utf-8"))
-    for entry in index["docs"]:
-        check(site / "index.html", entry["location"])
+    index = json.loads((site / "search-records.json").read_text(encoding="utf-8"))
+    for location in index:
+        check(site / "index.html", location)
+    manifest = json.loads((site / "docs-manifest.json").read_text(encoding="utf-8"))
+    for destination in manifest["pages"].values():
+        check(site / "index.html", prefix + destination.removesuffix(".md") + ".html")
     if errors:
         raise ValueError("\n".join(errors))
-    return len(pages), checked, len(index["docs"])
+    return len(pages), checked, len(index)
 
 
 if __name__ == "__main__":
-    config = load_config(str(ROOT / "mkdocs.yml"))
+    site = ROOT / "site"
     try:
-        pages, links, entries = check_site(Path(config.site_dir), config.site_url)
+        manifest = json.loads((site / "docs-manifest.json").read_text(encoding="utf-8"))
+        pages, links, entries = check_site(site, "https://leroll.github.io" + manifest["base"])
     except (ValueError, OSError) as exc:
         raise SystemExit(str(exc)) from exc
     print(f"通过：{pages} 个 HTML 页面，{links} 个本地链接与资源引用，{entries} 条搜索记录。")

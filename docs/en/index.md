@@ -4,20 +4,18 @@
 
 Start with your first voice conversion, then find deployment instructions, API contracts and explanations for your task.
 
+[Get started](getting-started/quick-start.md) · [Explore the API](api/README.md)
+
 **Documentation version: main development branch.** For a released version, open its tag from [GitHub Releases](https://github.com/Leroll/fast-vc-service/releases) and read the documentation at that tag.
 
 ## 1. Installation and operation
 
-Start with the [quick start](getting-started/quick-start.md): prepare the environment, start the service, convert a bundled audio sample and inspect the result.
-
-| I want to… | Read |
-| --- | --- |
-| Configure models, reference voices or multiple Workers | [Configuration and deployment](getting-started/configuration.md) |
-| Integrate a WebSocket audio stream | [Voice conversion API](api/voice-conversion.md) |
-| Check service health and version | [System API](api/system.md) |
-| Retrieve recordings and session timelines | [Session data API](api/session-data.md) |
-| Diagnose startup, connection or audio problems | [Troubleshooting](getting-started/troubleshooting.md) |
-| Measure quality, latency and throughput | [Evaluation guide](../evaluation/README.md) (Chinese) |
+| Task | What you will learn | Read |
+| --- | --- | --- |
+| Your first conversion | Prepare the environment, start the service and verify audio input and output with a bundled sample. | [Quick start](getting-started/quick-start.md) |
+| Integrate your application | Understand messages, fields and audio formats; receive converted audio and session data. | [Voice conversion API](api/voice-conversion.md) · [System API](api/system.md) · [Session data](api/session-data.md) |
+| Configure and deploy | Set up models, reference voices, devices and Workers, and diagnose runtime issues. | [Configuration and deployment](getting-started/configuration.md) · [Troubleshooting](getting-started/troubleshooting.md) |
+| Understand and evaluate | Follow the streaming pipeline and measure quality, latency and throughput consistently. | [Architecture](../design/总体设计.md) · [Evaluation guide](../evaluation/README.md) (Chinese) |
 
 ## 2. API reference
 

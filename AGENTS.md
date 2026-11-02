@@ -19,6 +19,7 @@
 | docs/getting-started/ | 中文安装、首次调用、配置部署与故障排查 |
 | docs/api/ | 中文对外接口合同、字段、消息、错误和接入约定 |
 | docs/maintainers/ | 中文工程维护入口、文档职责、翻译与版本约定 |
+| docs/website/ | VitePress 网站工程、主题与构建适配；正文继续维护在原 Markdown 中 |
 | docs/en/ | 约定范围内的英文译文；README.md 为英文项目首页，index.md 为英文用户索引 |
 | docs/evaluation/ | 性能与效果评测方法 |
 | docs/design/archive/、perfermance_tests/ | 历史笔记与历史测试依据，不代表当前验收结果 |

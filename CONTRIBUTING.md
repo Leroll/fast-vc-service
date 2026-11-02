@@ -25,10 +25,11 @@
 文档网站可独立预览，无需安装服务和模型依赖：
 
 ```bash
-uv run --project tools/docs --python 3.12 --locked mkdocs serve
+npm --prefix docs/website ci --ignore-scripts
+npm --prefix docs/website run dev
 ```
 
-提交前执行内容检查、检查器回归用例、严格构建与网页检查，完整命令及 Pages 发布流程见[文档网站](docs/design/文档网站.md)。内容检查可用 --base origin/main 提醒源码改动影响的文档及单侧译文变化；提醒需要人工审查，不能证明语义同步。
+预览使用 Node.js 24；网站工程集中在 docs/website，正文继续在现有 Markdown 中维护。提交前执行 Python 内容检查、检查器与网站适配回归用例、生产构建和网页检查，完整命令及 Pages 发布流程见[文档网站](docs/design/文档网站.md)。内容检查可用 --base origin/main 提醒源码改动影响的文档及单侧译文变化；提醒需要人工审查，不能证明语义同步。
 
 代码改动按影响范围选择协议或配置检查、服务联调、GPU 推理、试听评测或压力测试。服务目前没有专门的自动化回归套件，文档检查器的测试和客户端示例不代表服务回归覆盖；说明实际执行了哪些验证，以及哪些仍未测试。
 
