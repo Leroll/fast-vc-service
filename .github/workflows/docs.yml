@@ -11,6 +11,12 @@ on:
       - 'AGENTS.md'
       - 'mkdocs.yml'
       - '.github/workflows/docs.yml'
+      - 'src/**'
+      - 'configs/**'
+      - 'examples/websocket/**'
+      - '.env.example'
+      - 'pyproject.toml'
+      - 'uv.lock'
   pull_request:
     paths:
       - 'docs/**'
@@ -20,6 +26,12 @@ on:
       - 'AGENTS.md'
       - 'mkdocs.yml'
       - '.github/workflows/docs.yml'
+      - 'src/**'
+      - 'configs/**'
+      - 'examples/websocket/**'
+      - '.env.example'
+      - 'pyproject.toml'
+      - 'uv.lock'
   workflow_dispatch:
 
 permissions:
@@ -38,12 +50,19 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+          fetch-depth: 0
       - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
         with:
           version: '0.11.23'
           python-version: '3.12'
           enable-cache: true
           cache-dependency-glob: tools/docs/uv.lock
+      - name: 检查文档内容与同步提醒
+        env:
+          DOCS_BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: uv run --project tools/docs --locked python tools/docs/check_content.py --base "$DOCS_BASE"
+      - name: 验证文档检查器
+        run: uv run --project tools/docs --locked python -m unittest discover -s tools/docs -p 'test_*.py'
       - name: 构建文档
         run: uv run --project tools/docs --locked mkdocs build --strict
       - name: 验证生成网页

@@ -7,6 +7,7 @@ dependencies = [
     "mkdocs>=1.6,<2",
     "mkdocs-material>=9.8,<10",
     "jieba>=0.42.1,<0.43",
+    "pyyaml>=6,<7",
 ]
 
 [tool.uv]

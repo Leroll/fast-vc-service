@@ -68,6 +68,7 @@ not_in_nav: |
   /getting_started/**
   /perfermance_tests/version*.md
   /todo.md
+  /changelog/README.md
 
 validation:
   nav:
@@ -103,11 +104,11 @@ nav:
       - 评测指南: evaluation/README.md
       - 历史性能报告: perfermance_tests/README.md
   - 开发与维护:
+      - 维护入口: maintainers/README.md
       - 贡献指南: contributing.md
+      - 文档维护: maintainers/documentation.md
       - 文档网站: design/文档网站.md
       - 版本历史: changelog/releases.md
-      - 每日变更: changelog/README.md
-      - 需求与验收: specs/README.md
   - English:
       - Documentation: en/index.md
       - Project overview: en/project.md

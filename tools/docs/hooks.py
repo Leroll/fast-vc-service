@@ -126,14 +126,32 @@ def on_files(files, config):
 def on_page_markdown(markdown, page, config, files):
     links.page = page
     links.origin = GENERATED.get(page.file.src_uri, f"docs/{page.file.src_uri}")
-    if page.file.src_uri.startswith("en/"):
+    english = page.file.src_uri.startswith("en/") or page.file.src_uri == "changelog/releases_en.md"
+    if english:
         page.meta["lang"] = "en"
     if page.file.src_uri.startswith((
         "specs/", "changelog/20", "design/archive/", "getting_started/",
         "perfermance_tests/version",
     )):
         page.meta["search"] = {"exclude": True}
-    return markdown
+    # 入口本身带有版本说明，便于直接在 GitHub 阅读；其他网页统一补充。
+    if links.origin in {"README.md", "docs/README.md", "docs/en/README.md", "docs/en/index.md"}:
+        return markdown
+    historical = page.file.src_uri.startswith((
+        "specs/", "changelog/", "design/archive/", "getting_started/", "perfermance_tests/",
+    ))
+    releases = config.repo_url.rstrip("/") + "/releases"
+    if english:
+        notice = f"> **Documentation version: main development branch.** For a released version, read the documentation at its [release tag]({releases})."
+        if historical:
+            notice += " This page contains historical records; interpret them in the context of their date or version."
+    else:
+        notice = f"> **文档版本：main 开发分支。** 使用已发布版本时，请阅读对应[发布标签]({releases})中的文档。"
+        if historical:
+            notice += " 本页包含历史记录，请按其日期或版本理解内容。"
+    rendered, count = re.subn(r"^(# .+\n)", lambda match: match[1] + "\n" + notice + "\n", markdown, count=1, flags=re.M)
+    # 历史笔记可能没有 H1；只调整网页展示，不改写历史 Markdown。
+    return rendered if count else notice + "\n\n" + markdown
 
 
 def on_serve(server, config, builder):

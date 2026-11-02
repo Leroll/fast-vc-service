@@ -16,6 +16,8 @@
 
 **在线文档：** 访问 [Fast-VC 文档网站](https://leroll.github.io/fast-vc-service/)，查看快速开始、配置部署、API 接入和故障排查指南。
 
+**文档版本：main 开发分支。** 使用已发布版本时，请从 [GitHub Releases](https://github.com/Leroll/fast-vc-service/releases) 进入对应标签阅读文档。
+
 ## 1. 项目用途与核心能力
 
 Fast-VC 面向希望把持续输入的语音转换为指定参考音色、再接回语音应用的开发者。它在 Seed-VC 推理能力之上提供服务接口和流式处理流程。
@@ -51,15 +53,9 @@ Fast-VC 面向希望把持续输入的语音转换为指定参考音色、再接
 
 ## 4. 快速开始
 
-先安装 [uv](https://docs.astral.sh/uv/getting-started/installation/) 并准备 NVIDIA 驱动。Ubuntu / Debian：
+先按[快速开始](docs/getting-started/quick-start.md#1-环境与安装)安装系统与 Python 依赖、克隆仓库及子模块并准备 .env，然后在仓库根目录启动：
 
 ```bash
-sudo apt-get update
-sudo apt-get install -y libopus-dev libopus0 libsndfile1 portaudio19-dev ffmpeg
-git clone --recursive https://github.com/Leroll/fast-vc-service.git
-cd fast-vc-service
-uv sync --locked --python 3.10
-cp .env.example .env
 uv run fast-vc serve -c configs/prod.yaml
 ```
 

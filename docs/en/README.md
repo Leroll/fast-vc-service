@@ -16,6 +16,8 @@ English · [简体中文](../../README.md) · [Quick start](getting-started/quic
 
 **Online documentation:** Visit the [Fast-VC documentation site](https://leroll.github.io/fast-vc-service/en/) for the quick start, configuration and deployment, API integration, and troubleshooting guides.
 
+**Documentation version: main development branch.** For a released version, open its tag from [GitHub Releases](https://github.com/Leroll/fast-vc-service/releases) and read the documentation at that tag.
+
 ## 1. Purpose and capabilities
 
 Fast-VC is for developers who want to convert a continuous speech stream to a configured reference voice and feed the result back into an application. It adds service interfaces and streaming orchestration around Seed-VC inference.
@@ -51,15 +53,9 @@ See [configuration and deployment](getting-started/configuration.md).
 
 ## 4. Quick start
 
-Install [uv](https://docs.astral.sh/uv/getting-started/installation/) and prepare an NVIDIA driver. On Ubuntu / Debian:
+Follow the [quick start](getting-started/quick-start.md#1-environment-and-installation) to install system and Python dependencies, clone the repository with submodules, and prepare .env. From the repository root:
 
 ```bash
-sudo apt-get update
-sudo apt-get install -y libopus-dev libopus0 libsndfile1 portaudio19-dev ffmpeg
-git clone --recursive https://github.com/Leroll/fast-vc-service.git
-cd fast-vc-service
-uv sync --locked --python 3.10
-cp .env.example .env
 uv run fast-vc serve -c configs/prod.yaml
 ```
 

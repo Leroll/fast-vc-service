@@ -98,6 +98,7 @@ dependencies = [
     { name = "jieba" },
     { name = "mkdocs" },
     { name = "mkdocs-material" },
+    { name = "pyyaml" },
 ]
 
 [package.metadata]
@@ -105,6 +106,7 @@ requires-dist = [
     { name = "jieba", specifier = ">=0.42.1,<0.43" },
     { name = "mkdocs", specifier = ">=1.6,<2" },
     { name = "mkdocs-material", specifier = ">=9.8,<10" },
+    { name = "pyyaml", specifier = ">=6,<7" },
 ]
 
 [[package]]
