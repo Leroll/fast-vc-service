@@ -70,3 +70,6 @@ cases
 
 # uv
 .venv*
+
+# 文档网站构建产物
+/site/

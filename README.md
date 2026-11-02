@@ -12,7 +12,7 @@
 
 基于 Seed-VC 的实时流式语音转换服务，通过 WebSocket 将音色转换能力接入语音应用，提供音频缓冲、会话管理和多 Worker 部署支持。
 
-简体中文 · [English](docs/en/README.md) · [快速开始](docs/getting-started/quick-start.md) · [API](docs/api/README.md) · [文档索引](docs/README.md)
+简体中文 · [English](docs/en/README.md) · [在线文档](https://leroll.github.io/fast-vc-service/) · [快速开始](docs/getting-started/quick-start.md) · [API](docs/api/README.md) · [文档索引](docs/README.md)
 
 ## 1. 项目用途与核心能力
 

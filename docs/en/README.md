@@ -12,7 +12,7 @@
 
 A real-time streaming voice conversion service built on Seed-VC. Integrate voice conversion into speech applications over WebSocket, with audio buffering, session management and multi-Worker deployment.
 
-English · [简体中文](../../README.md) · [Quick start](getting-started/quick-start.md) · [API](api/README.md) · [Documentation](index.md)
+English · [简体中文](../../README.md) · [Online documentation](https://leroll.github.io/fast-vc-service/en/) · [Quick start](getting-started/quick-start.md) · [API](api/README.md) · [Documentation](index.md)
 
 ## 1. Purpose and capabilities
 

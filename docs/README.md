@@ -1,6 +1,6 @@
 # Fast-VC 文档
 
-简体中文 · [English](en/index.md) · [项目主页](../README.md)
+简体中文 · [English](en/index.md) · [在线文档](https://leroll.github.io/fast-vc-service/) · [项目主页](../README.md)
 
 中文为主文档语言；英文入口见[项目首页](en/README.md)与[用户文档](en/index.md)。从安装服务到接入语音转换，可按下面的顺序阅读。
 
@@ -28,6 +28,7 @@
 - [当前设计](design/README.md)：总体设计，以及启动配置、协议适配、会话状态、音频缓冲、转换流水线、模型与参考音色、数据记录七个模块。
 - [评测指南](evaluation/README.md)：性能口径与效果评测；[历史性能报告](perfermance_tests/README.md)保留原始数据与语言。
 - [贡献指南](../CONTRIBUTING.md)：开发准备、报告问题、验证和提交。
+- [文档网站](design/文档网站.md)：本地预览、构建验证与 GitHub Pages 自动发布。
 - [协作规则](../AGENTS.md)：开发助手入口及维护规则。
 - [需求与验收](specs/README.md)：重要任务的方案与实施证据。
 - [每日变更](changelog/README.md)：实际改动、验证及限制。
