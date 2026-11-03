@@ -14,8 +14,8 @@ export const zhSidebar = {
   '/getting-started/': [group('使用指南', guide), group('继续阅读', [api[0], page('评测指南', '/evaluation/')])],
   '/project/': [group('使用指南', guide)],
   '/api/': [group('API 参考', api), group('接入准备', [guide[0], guide[1], guide[2]])],
-  '/design/': [group('当前设计', [page('设计索引', '/design/'), ...design]), group('评测', [page('评测指南', '/evaluation/'), page('历史性能报告', '/perfermance_tests/')])],
-  '/evaluation/': [group('评测', [page('评测指南', '/evaluation/'), page('历史性能报告', '/perfermance_tests/')]), group('原理', design, true)],
+  '/design/': [group('当前设计', [page('设计索引', '/design/'), ...design]), group('评测', [page('评测指南', '/evaluation/'), page('评测报告', '/evaluation/reports/')])],
+  '/evaluation/': [group('评测', [page('评测指南', '/evaluation/'), page('评测报告', '/evaluation/reports/')]), group('原理', design, true)],
   '/': [group('开发与维护', maintainers), group('使用指南', guide, true), group('API 参考', api, true)]
 }
 const enGuide = [page('Quick start', '/en/getting-started/quick-start/'), page('Configuration & deployment', '/en/getting-started/configuration/'), page('Troubleshooting', '/en/getting-started/troubleshooting/'), page('Project overview', '/en/project/')]

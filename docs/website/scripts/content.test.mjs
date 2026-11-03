@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
-import { routeFor, slugify, rewriteLink, rewriteHTML, prepareContent, createManifest, extractProtocol, isSearchable, stripEntryMetadata, ROOT } from './content.mjs'
+import { routeFor, slugify, rewriteLink, rewriteHTML, prepareContent, createManifest, extractProtocol, isHistorical, isSearchable, stripEntryMetadata, ROOT } from './content.mjs'
 
 test('保留入口与普通页面的目录式网址', () => {
   assert.equal(routeFor('docs/README.md'), 'index.md')
@@ -82,8 +82,14 @@ test('构建准备不改原文、不拷贝音频，删除文档后移除对应�
   } finally { fs.rmSync(root, { recursive: true, force: true }) }
 })
 
-test('历史资料不进入搜索，当前 API 与发布说明仍可检索', () => {
-  for (const source of ['docs/specs/task/plan.md', 'docs/changelog/2026-11-02.md', 'docs/design/archive/old.md', 'docs/perfermance_tests/version0.1.0.md']) assert.equal(isSearchable(source), false)
-  assert.equal(isSearchable('docs/api/voice-conversion.md'), true)
+test('历史正文保留提示且不进入搜索，评测入口和当前文档可检索', () => {
+  for (const source of ['docs/specs/task/plan.md', 'docs/changelog/2026-11-03.md', 'docs/design/archive/old.md', 'docs/evaluation/reports/2025-06-15_1803/4090d.md']) {
+    assert.equal(isSearchable(source), false)
+    assert.equal(isHistorical(source), true)
+  }
+  for (const source of ['docs/evaluation/README.md', 'docs/evaluation/reports/README.md', 'docs/api/voice-conversion.md']) {
+    assert.equal(isSearchable(source), true)
+    assert.equal(isHistorical(source), false)
+  }
   assert.equal(isSearchable('docs/changelog/releases.md'), true)
 })

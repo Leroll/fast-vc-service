@@ -21,8 +21,8 @@
 | docs/maintainers/ | 中文工程维护入口、文档职责、翻译与版本约定 |
 | docs/website/ | VitePress 网站工程、主题与构建适配；正文继续维护在原 Markdown 中 |
 | docs/en/ | 约定范围内的英文译文；README.md 为英文项目首页，index.md 为英文用户索引 |
-| docs/evaluation/ | 性能与效果评测方法 |
-| docs/design/archive/、perfermance_tests/ | 历史笔记与历史测试依据，不代表当前验收结果 |
+| docs/evaluation/ | 性能与效果评测方法；reports/ 保存按时间归档的评测报告，命名见[报告索引](docs/evaluation/reports/README.md) |
+| docs/design/archive/ | 历史笔记，不代表当前实现；历史评测报告见 docs/evaluation/reports/，不代表当前验收结果 |
 
 一项规则只在一个位置详细维护，其他文档摘要并链接。README 保持开源项目主页的用途，不堆入完整开发日志或参数字典。
 

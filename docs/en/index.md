@@ -15,7 +15,7 @@ Start with your first voice conversion, then find deployment instructions, API c
 | Your first conversion | Prepare the environment, start the service and verify audio input and output with a bundled sample. | [Quick start](getting-started/quick-start.md) |
 | Integrate your application | Understand messages, fields and audio formats; receive converted audio and session data. | [Voice conversion API](api/voice-conversion.md) · [System API](api/system.md) · [Session data](api/session-data.md) |
 | Configure and deploy | Set up models, reference voices, devices and Workers, and diagnose runtime issues. | [Configuration and deployment](getting-started/configuration.md) · [Troubleshooting](getting-started/troubleshooting.md) |
-| Understand and evaluate | Follow the streaming pipeline and measure quality, latency and throughput consistently. | [Architecture](../design/总体设计.md) · [Evaluation guide](../evaluation/README.md) (Chinese) |
+| Understand and evaluate | Follow the streaming pipeline and measure quality, latency and throughput consistently. | [Architecture](../design/总体设计.md) · [Evaluation guide](../evaluation/README.md) (Chinese) · [Evaluation reports](../evaluation/reports/README.md) (Chinese index) |
 
 ## 2. API reference
 

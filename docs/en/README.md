@@ -83,7 +83,7 @@ The following results are from **v0.1.0**: Seed-VC v1.0 tiny, 16 kHz / 16-bit PC
 | RTX 4090D | 12 | 12 | 216.6 | 0.44 |
 | GTX 1080 Ti | 1 | 6 | 252.2 | 0.50 |
 
-Original reports: [4090D](../perfermance_tests/version0.1.0_4090D.md) (2025-06-15), [1080 Ti](../perfermance_tests/version0.1.0_1080ti.md) (2025-06-14), [all reports](../perfermance_tests/README.md) (Chinese index; reports retain their original language).
+Original reports: [4090D](../evaluation/reports/2025-06-15_1803/4090d.md) (2025-06-15), [1080 Ti](../evaluation/reports/2025-06-14_1952/1080ti.md) (2025-06-14), [all reports](../evaluation/reports/README.md) (Chinese index; reports retain their original language).
 
 Model processing time, first-chunk wait, final send/receive gap and capture-to-playback latency are different measurements. Review [metric definitions and limitations](../evaluation/README.md) (Chinese) before measuring again.
 

@@ -83,7 +83,7 @@ uv run python examples/websocket/simple_protocol_ws_client.py \
 | RTX 4090D | 12 | 12 | 216.6 | 0.44 |
 | GTX 1080 Ti | 1 | 6 | 252.2 | 0.50 |
 
-原始记录：[4090D](docs/perfermance_tests/version0.1.0_4090D.md)（2025-06-15）、[1080 Ti](docs/perfermance_tests/version0.1.0_1080ti.md)（2025-06-14）、[全部报告](docs/perfermance_tests/README.md)。
+原始记录：[4090D](docs/evaluation/reports/2025-06-15_1803/4090d.md)（2025-06-15）、[1080 Ti](docs/evaluation/reports/2025-06-14_1952/1080ti.md)（2025-06-14）、[全部报告](docs/evaluation/reports/README.md)。
 
 模型处理耗时、首包等待、尾部收发差值和包含采集播放的端到端时延有不同含义。重新测量前请阅读[指标口径与限制](docs/evaluation/README.md)。
 

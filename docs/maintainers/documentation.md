@@ -11,6 +11,7 @@
 | 配置含义与部署操作 | docs/getting-started/configuration.md | prod.yaml 为示例部署值来源，config.py 为字段和类默认值来源，二者分别说明 |
 | 对外字段、消息、错误与时序 | docs/api/ | 操作指南只保留必要示例，完整约定链接 API |
 | 原理、模块职责与约束 | docs/design/ | 用户指南链接相关解释，不复制实现细节 |
+| 评测方法与公开报告 | docs/evaluation/；reports/ 按时间归档报告 | 首页与维护入口链接指南和报告索引，历史结果不作为当前性能保证 |
 | 用户可见的版本变化 | docs/changelog/releases.md | README 保留摘要；工程流水从维护入口访问 |
 | 任务方案、证据与历史 | docs/specs/、docs/changelog/、历史归档 | 保存当时上下文，不作为当前操作指南 |
 
@@ -55,7 +56,7 @@
 - **路径对应**：除项目首页和用户索引外，英文文件在 `docs/en/` 下保持中文文件相对于 `docs/` 的路径，例如 `docs/api/system.md` 对应 `docs/en/api/system.md`。上述用户文档的普通文件名使用小写英文和连字符，目录入口使用 `README.md`；英文用户索引使用 `index.md`。
 - **导航与资源**：已翻译页面在页首链接对应语言版本，正文优先链接同语言页面。英文文档引用仅有中文的页面时明确标注中文；新增译文后同步相关导航。共享图片、音频、源码和配置引用仓库现有文件，不按语言复制。
 
-AGENTS、CONTRIBUTING、设计、Spec、每日 changelog、todo 与评测入口以中文维护。AGENTS 仅保留根目录一份，不在译文目录复制协作规则。历史正文及发布记录保留原语言和位置，包括 `docs/changelog/releases_en.md`；不为统一目录改写历史。
+AGENTS、CONTRIBUTING、设计、Spec、每日 changelog、todo 与评测入口以中文维护。AGENTS 仅保留根目录一份，不在译文目录复制协作规则。历史正文及发布记录保留原语言，包括 `docs/changelog/releases_en.md`；不为统一目录改写历史。迁移历史资料时保留原文并更新维护中的引用。
 
 ## 4. 文档版本与历史
 
@@ -63,4 +64,4 @@ AGENTS、CONTRIBUTING、设计、Spec、每日 changelog、todo 与评测入口�
 
 使用已发布版本时，从 [GitHub Releases](https://github.com/Leroll/fast-vc-service/releases) 进入对应标签，阅读该标签内的 Markdown。发布说明记录版本变化，不替代该版本的接口和操作指南。存在需要同时维护的不同接口版本时再评估多版本网站，本次不引入版本分支或版本目录。
 
-旧文档路径与已公开锚点尽量保留；必须迁移时保留简短指引，更新维护中的引用，不重写历史记录。设计中的演进方向与当前实现分开描述，历史性能结果保留日期与测量条件。
+旧文档路径与已公开锚点尽量保留；迁移时更新维护中的引用，兼容入口按具体迁移方案处理，不重写历史记录。设计中的演进方向与当前实现分开描述，历史性能结果保留日期与测量条件。

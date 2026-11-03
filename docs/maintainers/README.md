@@ -17,6 +17,6 @@
 
 ## 3. 评测与历史资料
 
-[评测指南](../evaluation/README.md)说明当前测量方法；[历史性能报告](../perfermance_tests/README.md)保留当时上下文，不代表当前版本的性能保证或操作指南。
+[评测指南](../evaluation/README.md)说明当前测量方法；[历史性能报告](../evaluation/reports/README.md)保留当时上下文，不代表当前版本的性能保证或操作指南。
 
 日常使用请回到[用户文档](../README.md)。本页及工程维护文档以中文维护，历史资料保留原语言。

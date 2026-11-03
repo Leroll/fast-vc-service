@@ -66,8 +66,11 @@ def check_site(site, site_url):
                 errors.append(f"{source.relative_to(site)}: 锚点不存在: {value}")
 
     for source, page in pages.items():
-        historical_layout = any(part in source.relative_to(site).as_posix()
-                                for part in ("design/archive", "perfermance_tests"))
+        relative = source.relative_to(site).as_posix()
+        historical_layout = relative.startswith("design/archive/") or (
+            relative.startswith("evaluation/reports/")
+            and relative != "evaluation/reports/index.html"
+        )
         if source.name != "404.html" and page.headings != 1 and not historical_layout:
             errors.append(f"{source.relative_to(site)}: 应有一个 H1，实际 {page.headings}")
         for value in page.links:

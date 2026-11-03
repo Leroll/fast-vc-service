@@ -17,7 +17,7 @@
 | 完成第一次转换 | 准备环境、启动服务，用仓库样例验证音频输入与输出。 | [快速开始](getting-started/quick-start.md) |
 | 接入你的应用 | 查询消息、字段和音频格式，接收转换结果及会话数据。 | [语音转换 API](api/voice-conversion.md) · [系统接口](api/system.md) · [会话数据](api/session-data.md) |
 | 配置与部署 | 调整模型、参考音色、设备与 Worker，排查运行问题。 | [配置与部署](getting-started/configuration.md) · [故障排查](getting-started/troubleshooting.md) |
-| 理解原理与评测 | 了解流式处理链路，按统一方法测量效果、延迟与吞吐。 | [总体设计](design/总体设计.md) · [评测指南](evaluation/README.md) |
+| 理解原理与评测 | 了解流式处理链路，按统一方法测量效果、延迟与吞吐。 | [总体设计](design/总体设计.md) · [评测指南](evaluation/README.md) · [评测报告](evaluation/reports/README.md) |
 
 ## 2. 查询接口与理解原理
 
