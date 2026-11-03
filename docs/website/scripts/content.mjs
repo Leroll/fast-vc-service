@@ -77,11 +77,11 @@ export function rewriteHTML(html, source, manifest, root = ROOT) {
 }
 
 export function isHistorical(source) {
-  return /^docs\/(specs\/|changelog\/|design\/archive\/|getting_started\/|perfermance_tests\/)/.test(source)
+  return /^docs\/(specs\/|changelog\/|design\/archive\/|perfermance_tests\/)/.test(source)
 }
 
 export function isSearchable(source) {
-  return !/^docs\/(specs\/|changelog\/20|design\/archive\/|getting_started\/|perfermance_tests\/version)/.test(source)
+  return !/^docs\/(specs\/|changelog\/20|design\/archive\/|perfermance_tests\/version)/.test(source)
 }
 
 export function stripEntryMetadata(text) {

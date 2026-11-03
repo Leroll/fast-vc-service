@@ -16,7 +16,7 @@ for (const name of fs.readdirSync(path.join(site, 'assets/chunks'))) {
   if (!locations.length) throw new Error(`${match[1]} 搜索索引为空`)
   for (const location of locations) {
     if (!location.startsWith(BASE)) throw new Error(`搜索地址缺少项目路径: ${location}`)
-    if (/\/(specs|getting_started)\/|\/design\/archive\/|\/changelog\/20|\/perfermance_tests\/version/.test(location)) throw new Error(`历史资料进入搜索: ${location}`)
+    if (/\/specs\/|\/design\/archive\/|\/changelog\/20|\/perfermance_tests\/version/.test(location)) throw new Error(`历史资料进入搜索: ${location}`)
   }
   records.push(...locations)
 }

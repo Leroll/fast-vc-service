@@ -55,7 +55,7 @@
 - **路径对应**：除项目首页和用户索引外，英文文件在 `docs/en/` 下保持中文文件相对于 `docs/` 的路径，例如 `docs/api/system.md` 对应 `docs/en/api/system.md`。上述用户文档的普通文件名使用小写英文和连字符，目录入口使用 `README.md`；英文用户索引使用 `index.md`。
 - **导航与资源**：已翻译页面在页首链接对应语言版本，正文优先链接同语言页面。英文文档引用仅有中文的页面时明确标注中文；新增译文后同步相关导航。共享图片、音频、源码和配置引用仓库现有文件，不按语言复制。
 
-AGENTS、CONTRIBUTING、设计、Spec、每日 changelog、todo 与评测入口以中文维护。AGENTS 仅保留根目录一份，不在译文目录复制协作规则。历史正文及发布记录保留原语言和位置，包括 `docs/changelog/releases_en.md`；不为统一目录改写历史。原 `docs/getting_started/` 下的历史笔记跳转页继续保留以兼容旧链接。
+AGENTS、CONTRIBUTING、设计、Spec、每日 changelog、todo 与评测入口以中文维护。AGENTS 仅保留根目录一份，不在译文目录复制协作规则。历史正文及发布记录保留原语言和位置，包括 `docs/changelog/releases_en.md`；不为统一目录改写历史。
 
 ## 4. 文档版本与历史
 
