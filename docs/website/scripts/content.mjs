@@ -8,6 +8,11 @@ export const WEBSITE = path.join(ROOT, 'docs/website')
 export const STAGING = path.join(WEBSITE, '.generated')
 export const BASE = '/fast-vc-service/'
 export const REPO = 'https://github.com/Leroll/fast-vc-service'
+const BRAND_ASSETS = {
+  'assets/cover.webp': 'brand/cover.webp',
+  'assets/brand/logo-128.png': 'brand/logo-128.png',
+  'assets/brand/favicon.ico': 'brand/favicon.ico'
+}
 const markdown = new MarkdownIt({ html: true })
 const posix = path.posix
 
@@ -56,6 +61,7 @@ export function rewriteLink(value, source, manifest, root = ROOT, raw = false) {
   }
   const file = path.resolve(root, target)
   if (!file.startsWith(`${root}${path.sep}`) || !fs.existsSync(file)) throw new Error(`${source}: 仓库链接不存在或越界: ${value}`)
+  if (BRAND_ASSETS[target]) return `${raw ? BASE : '/'}${BRAND_ASSETS[target]}${suffix}`
   const encoded = target.split('/').map(encodeURIComponent).join('/')
   if (/\.(png|jpe?g|webp|svg|gif)$/i.test(target)) return `https://raw.githubusercontent.com/Leroll/fast-vc-service/main/${encoded}${suffix}`
   return `${REPO}/${fs.statSync(file).isDirectory() ? 'tree' : 'blob'}/main/${encoded}${suffix}`
@@ -64,7 +70,9 @@ export function rewriteLink(value, source, manifest, root = ROOT, raw = false) {
 export function rewriteHTML(html, source, manifest, root = ROOT) {
   return html.replace(/(<[a-z][^>]*?\s(?:href|src)\s*=\s*)(["'])(.*?)\2/gi, (_, prefix, quote, value) => {
     const decoded = value.replace(/&amp;/g, '&')
-    return prefix + quote + rewriteLink(decoded, source, manifest, root, true).replace(/&/g, '&amp;').replace(/"/g, '&quot;') + quote
+    // 图片 src 交给 Vite 解析 public 资源并添加 base；普通 href 直接带项目路径。
+    const includeBase = !/\bsrc\s*=\s*$/i.test(prefix)
+    return prefix + quote + rewriteLink(decoded, source, manifest, root, includeBase).replace(/&/g, '&amp;').replace(/"/g, '&quot;') + quote
   })
 }
 
@@ -164,6 +172,12 @@ export function prepareContent(root = ROOT, output = STAGING) {
     }
   }
   prune(output)
+  // 仅打包正式品牌素材，不将历史候选或其他仓库资源公开到网站。
+  for (const [source, destination] of Object.entries(BRAND_ASSETS)) {
+    const file = path.join(output, 'public', destination)
+    fs.mkdirSync(path.dirname(file), { recursive: true })
+    fs.copyFileSync(path.join(root, source), file)
+  }
   fs.writeFileSync(path.join(output, 'manifest.json'), JSON.stringify(manifest, null, 2))
   return manifest
 }

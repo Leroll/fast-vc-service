@@ -31,6 +31,7 @@
   --vp-code-color: #4e6017;
   --vp-code-block-bg: #f6f7f2;
   --vp-nav-bg-color: #fff;
+  --vp-nav-logo-height: 40px;
   --vp-sidebar-bg-color: #fafbf7;
   --vp-layout-max-width: 1504px;
   --vp-sidebar-width: 264px;
@@ -69,10 +70,7 @@ a, button, input { -webkit-tap-highlight-color: transparent; }
 ::selection { background: var(--lime-fill); color: var(--lime-ink); }
 .VPNavBar { border-bottom: 1px solid var(--vp-c-divider); }
 .VPNavBar .title { gap: 10px; font-weight: 750; letter-spacing: -.025em; }
-.brand-mark { display: inline-flex; align-items: center; justify-content: center; gap: 2px; width: 29px; height: 29px; border-radius: 8px; background: var(--lime-fill); margin-right: 10px; flex-shrink: 0; }
-.brand-mark i { width: 2px; height: 7px; background: var(--lime-ink); border-radius: 1px; }
-.brand-mark i:nth-child(2n) { height: 15px; }
-.brand-mark i:nth-child(3) { height: 21px; }
+.VPNavBarTitle .title .logo { width: 40px; margin-right: 0; object-fit: contain; flex-shrink: 0; }
 .brand-subtitle { padding-left: 12px; margin-left: 12px; border-left: 1px solid var(--vp-c-divider); color: var(--vp-c-text-2); font-size: 13px; white-space: nowrap; }
 .VPNavBarTranslations, .VPNavScreenTranslations, .VPNavBarExtra .translations { display: none !important; }
 .language-link { font-size: 12px; font-weight: 600; padding: 6px 9px; margin-left: 8px; border: 1px solid var(--vp-c-divider); border-radius: 5px; line-height: 1.4; }

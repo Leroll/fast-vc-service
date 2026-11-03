@@ -8,9 +8,6 @@ const english = computed(() => lang.value.startsWith('en'))
 
 <template>
   <DefaultTheme.Layout>
-    <template #nav-bar-title-before>
-      <span class="brand-mark" aria-hidden="true"><i/><i/><i/><i/><i/></span>
-    </template>
     <template #nav-bar-title-after><span class="brand-subtitle">{{ english ? 'Docs' : '文档' }}</span></template>
     <template #nav-bar-content-after>
       <a class="language-link" :href="frontmatter.translation || (english ? '/fast-vc-service/' : '/fast-vc-service/en/')" :lang="english ? 'zh-CN' : 'en'" :title="english ? '阅读简体中文文档' : frontmatter.translation ? 'Read this page in English' : '本页暂无英文译文，前往英文文档索引'">{{ english ? '中文' : 'EN' }}</a>

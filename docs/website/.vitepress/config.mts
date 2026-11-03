@@ -9,7 +9,11 @@ export default defineConfig({
   title: 'Fast-VC', description: '实时流式语音转换服务：安装、部署、接口与原理',
   base: BASE, srcDir: '.generated', outDir: '../../site',
   appearance: true, lastUpdated: false, ignoreDeadLinks: false,
-  head: [['meta', { name: 'theme-color', content: '#F6F7F2', media: '(prefers-color-scheme: light)' }], ['meta', { name: 'theme-color', content: '#181C16', media: '(prefers-color-scheme: dark)' }]],
+  head: [
+    ['link', { rel: 'icon', type: 'image/x-icon', href: `${BASE}brand/favicon.ico`, sizes: '16x16 32x32 48x48' }],
+    ['meta', { name: 'theme-color', content: '#F6F7F2', media: '(prefers-color-scheme: light)' }],
+    ['meta', { name: 'theme-color', content: '#181C16', media: '(prefers-color-scheme: dark)' }]
+  ],
   locales: {
     root: { label: '简体中文', lang: 'zh-CN', link: '/', themeConfig: {
       nav: zhNav, sidebar: zhSidebar, outline: { label: '本页内容', level: [2, 3] },
@@ -25,6 +29,7 @@ export default defineConfig({
     } }
   },
   themeConfig: {
+    logo: { src: '/brand/logo-128.png', alt: '', width: 40, height: 40 },
     siteTitle: 'Fast-VC', i18nRouting: false, socialLinks: [{ icon: 'github', link: REPO }],
     search: { provider: 'local', options: {
       _render: renderSearch,

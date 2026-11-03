@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'docs/**'
+      - 'assets/**'
       - 'tools/docs/**'
       - 'README.md'
       - 'CONTRIBUTING.md'
@@ -19,6 +20,7 @@ on:
   pull_request:
     paths:
       - 'docs/**'
+      - 'assets/**'
       - 'tools/docs/**'
       - 'README.md'
       - 'CONTRIBUTING.md'

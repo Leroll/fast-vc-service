@@ -40,7 +40,9 @@ test('拒绝不存在与越出仓库的相对链接', () => {
 test('原生 HTML 链接与图片适配，不修改普通文本', () => {
   const manifest = createManifest()
   assert.equal(rewriteHTML('<a href="api/README.md">api/README.md</a>', 'docs/README.md', manifest), '<a href="/fast-vc-service/api/">api/README.md</a>')
-  assert.match(rewriteHTML('<img src="assets/cover.webp" alt="cover">', 'README.md', manifest), /raw\.githubusercontent\.com\/Leroll\/fast-vc-service\/main\/assets\/cover.webp/)
+  assert.equal(rewriteHTML('<img src="assets/cover.webp" alt="cover">', 'README.md', manifest), '<img src="/brand/cover.webp" alt="cover">')
+  assert.equal(rewriteHTML('<img src="../../assets/cover.webp" alt="cover">', 'docs/en/README.md', manifest), '<img src="/brand/cover.webp" alt="cover">')
+  assert.equal(rewriteLink('assets/cover.webp', 'README.md', manifest), '/brand/cover.webp')
 })
 
 test('协议展示从正文提取，简单协议不添加 ready', () => {
@@ -59,6 +61,9 @@ test('构建准备不改原文、不拷贝音频，删除文档后移除对应�
     fs.mkdirSync(path.join(root, 'docs/website'), { recursive: true })
     const original = '# Example\n\n```bash\nprintf "[x](missing.md)"\n```\n'
     for (const name of ['README.md', 'CONTRIBUTING.md', 'docs/README.md', 'docs/guide.md']) fs.writeFileSync(path.join(root, name), original)
+    fs.mkdirSync(path.join(root, 'assets/brand/concepts'), { recursive: true })
+    for (const name of ['assets/cover.webp', 'assets/brand/logo-128.png', 'assets/brand/favicon.ico']) fs.writeFileSync(path.join(root, name), `fixture:${name}`)
+    fs.writeFileSync(path.join(root, 'assets/brand/concepts/draft.png'), 'excluded')
     fs.writeFileSync(path.join(root, 'docs/private.wav'), 'excluded')
     fs.writeFileSync(path.join(root, 'docs/website/internal.md'), 'excluded')
     const output = path.join(root, 'docs/website/.generated')
@@ -67,6 +72,10 @@ test('构建准备不改原文、不拷贝音频，删除文档后移除对应�
     assert.match(fs.readFileSync(path.join(output, 'guide/index.md'), 'utf8'), /printf "\[x\]\(missing\.md\)"/)
     assert.equal(fs.existsSync(path.join(output, 'private.wav')), false)
     assert.equal(fs.existsSync(path.join(output, 'website')), false)
+    assert.deepEqual(fs.readdirSync(path.join(output, 'public/brand')).sort(), ['cover.webp', 'favicon.ico', 'logo-128.png'])
+    assert.equal(fs.readFileSync(path.join(output, 'public/brand/cover.webp'), 'utf8'), 'fixture:assets/cover.webp')
+    assert.equal(fs.readFileSync(path.join(output, 'public/brand/logo-128.png'), 'utf8'), 'fixture:assets/brand/logo-128.png')
+    assert.equal(fs.readFileSync(path.join(output, 'public/brand/favicon.ico'), 'utf8'), 'fixture:assets/brand/favicon.ico')
     fs.unlinkSync(path.join(root, 'docs/guide.md'))
     prepareContent(root, output)
     assert.equal(fs.existsSync(path.join(output, 'guide/index.md')), false)
