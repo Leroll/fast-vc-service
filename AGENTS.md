@@ -4,7 +4,7 @@
 
 本文件适用于本仓库及其子目录。Fast-VC 是独立的公开 GitHub 仓库，开发、运行和文档不依赖仓库外的目录或个人环境。
 
-开始任务先读 [README](README.md)、[文档索引](docs/README.md) 和 [当前设计](docs/design/README.md)，再按修改范围读取源码、配置、相关设计与 Spec。写入前检查目标路径各层是否有更具体的 AGENTS.override.md / AGENTS.md。
+开始任务先读 [README](README.md)、[文档索引](docs/zh/README.md) 和 [当前设计](docs/zh/design/README.md)，再按修改范围读取源码、配置、相关设计与 Spec。写入前检查目标路径各层是否有更具体的 AGENTS.override.md / AGENTS.md。
 
 ## 2. 文档职责
 
@@ -12,24 +12,26 @@
 | --- | --- |
 | README.md | 中文项目首页：项目价值、能力、样例、运行条件、首次调用与文档导航 |
 | CONTRIBUTING.md | 中文贡献指南：开发、验证和提交入口 |
-| docs/design/ | 当前实现、模块职责、约束与明确标注的后续方向 |
-| docs/specs/ | 重要任务的需求、设计、实施与验收证据 |
-| docs/changelog/ | 每日实际变更；releases 文件单独保留版本历史 |
-| docs/todo.md | 已确认且尚未完成的任务 |
-| docs/getting-started/ | 中文安装、首次调用、配置部署与故障排查 |
-| docs/api/ | 中文对外接口合同、字段、消息、错误和接入约定 |
-| docs/maintainers/ | 中文工程维护入口、文档职责、翻译与版本约定 |
+| docs/README.md | 仓库内的文档总入口，链接中英文用户索引，不单独生成网页 |
+| docs/zh/README.md | 中文用户索引，作为网站默认首页 |
+| docs/zh/design/ | 当前实现、模块职责、约束与明确标注的后续方向 |
+| docs/zh/specs/ | 重要任务的需求、设计、实施与验收证据 |
+| docs/zh/changelog/ | 每日实际变更；releases 文件单独保留版本历史 |
+| docs/zh/todo.md | 已确认且尚未完成的任务 |
+| docs/zh/getting-started/ | 中文安装、首次调用、配置部署与故障排查 |
+| docs/zh/api/ | 中文对外接口合同、字段、消息、错误和接入约定 |
+| docs/zh/maintainers/ | 中文工程维护入口、文档职责、翻译与版本约定 |
 | docs/website/ | VitePress 网站工程、主题与构建适配；正文继续维护在原 Markdown 中 |
-| docs/en/ | 约定范围内的英文译文；README.md 为英文项目首页，index.md 为英文用户索引 |
-| docs/evaluation/ | 性能与效果评测方法；reports/ 保存按时间归档的评测报告，命名见[报告索引](docs/evaluation/reports/README.md) |
-| docs/design/archive/ | 历史笔记，不代表当前实现；历史评测报告见 docs/evaluation/reports/，不代表当前验收结果 |
+| docs/en/ | 约定范围内的英文译文与英文版本历史；README.md 为英文项目首页，index.md 为英文用户索引 |
+| docs/zh/evaluation/ | 性能与效果评测方法；reports/ 保存按时间归档的评测报告，命名见[报告索引](docs/zh/evaluation/reports/README.md) |
+| docs/zh/design/archive/ | 历史笔记，不代表当前实现；历史评测报告见 docs/zh/evaluation/reports/，不代表当前验收结果 |
 
 一项规则只在一个位置详细维护，其他文档摘要并链接。README 保持开源项目主页的用途，不堆入完整开发日志或参数字典。
 
 ## 3. 需求、实现与收尾
 
 1. 检查实际代码、工作区变更与需求范围。重要新功能、跨模块重构、协议、配置语义、模型推理行为和部署变更先建 Spec。
-2. 目录采用 `docs/specs/YYYY-MM-DD_HHmm__中文任务名/`，按建档时北京时间命名，后续不改时间戳。默认文件为 `01__设计与验证.md`；复杂任务按需拆分，不建空模板。
+2. 目录采用 `docs/zh/specs/YYYY-MM-DD_HHmm__中文任务名/`，按建档时北京时间命名，后续不改时间戳。默认文件为 `01__设计与验证.md`；复杂任务按需拆分，不建空模板。
 3. 记录背景、目标、完整行为、设计取舍、实施步骤、兼容影响、验收方法、实际验证与剩余事项。已有任务续做更新原 Spec，方案变化先更新设计。
 4. 用户已经授权的工作继续完成，写 Spec 不另设批准关卡。小修复与一般文档调整可仅记 changelog；纯讨论与只读检查不建档。
 5. 行为改变时同步当前设计；接口改变同步双语 API；上手方式改变同步双语 README 和快速开始。完成后记录真实验证，再写当日 changelog。
@@ -60,8 +62,8 @@ Git 操作前确认仓库根目录、分支和未提交变更；合并、变基�
 
 ## 7. 写作与记录
 
-中文为主文档语言：根 README、CONTRIBUTING、AGENTS 及 docs 主目录中的维护文档使用中文，英文译文集中在 docs/en。AGENTS 仅维护根目录这一份中文规则。同一页面不逐段混排两种语言；翻译范围、同步、路径对应和导航规则统一维护在[文档维护](docs/maintainers/documentation.md#3-多语言维护)，新增文档不自动扩展翻译范围，历史资料保留原文。
+中文为主文档语言：根 README、CONTRIBUTING、AGENTS 使用中文，中文文档集中在 docs/zh，英文文档集中在 docs/en；docs/README.md 为语言导航，docs/website 为共用网站工程。AGENTS 仅维护根目录这一份中文规则。同一页面不逐段混排两种语言；翻译范围、同步、路径对应和导航规则统一维护在[文档维护](docs/zh/maintainers/documentation.md#3-多语言维护)，新增文档不自动扩展翻译范围，历史资料保留原文。
 
 维护中的文档使用一个不编号 H1，H2 按“1.”编号，H3 按“1.1”编号；历史快照和版本原文保留原貌。章节调整同步文档内锚点。
 
-每日 changelog 使用 ``序号. **作者** · `HH:mm:ss` · 内容`` 的样式。日期和首次写入时刻取北京时间，作者取写入时本仓库有效的 `git config --get user.name`；未设置时询问用户，不猜测、不自动改身份。不倒填历史时刻，补记说明原日期与依据。完整约定见 [日志索引](docs/changelog/README.md)。
+每日 changelog 使用 ``序号. **作者** · `HH:mm:ss` · 内容`` 的样式。日期和首次写入时刻取北京时间，作者取写入时本仓库有效的 `git config --get user.name`；未设置时询问用户，不猜测、不自动改身份。不倒填历史时刻，补记说明原日期与依据。完整约定见 [日志索引](docs/zh/changelog/README.md)。

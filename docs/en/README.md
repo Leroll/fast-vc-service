@@ -28,7 +28,7 @@ Fast-VC is for developers who want to convert a continuous speech stream to a co
 - **Service deployment**: configured models and reference voices, multiple Workers, device lists and separate service ports.
 - **Sessions and analysis**: audio/timeline recording, health/version/session endpoints and offline analysis tools.
 
-Reference conditions are loaded at service startup and reused by Workers; there is no per-request reference-upload interface. See the [architecture](../design/总体设计.md) (Chinese).
+Reference conditions are loaded at service startup and reused by Workers; there is no per-request reference-upload interface. See the [architecture](../zh/design/总体设计.md) (Chinese).
 
 ## 2. Audio samples
 
@@ -40,7 +40,7 @@ Use the bundled source and reference files to generate a converted result with t
 | Default reference voice | [Reference audio](../../resources/refs/ref-24k.wav) |
 | Converted result | Generated in outputs/quickstart by the example below |
 
-These files provide reproducible inputs; a collection of converted outputs tied to the current version is not bundled. Record the model, configuration and reference when comparing quality. See the [evaluation guide](../evaluation/README.md) (Chinese).
+These files provide reproducible inputs; a collection of converted outputs tied to the current version is not bundled. Record the model, configuration and reference when comparing quality. See the [evaluation guide](../zh/evaluation/README.md) (Chinese).
 
 ## 3. Requirements and scope
 
@@ -83,9 +83,9 @@ The following results are from **v0.1.0**: Seed-VC v1.0 tiny, 16 kHz / 16-bit PC
 | RTX 4090D | 12 | 12 | 216.6 | 0.44 |
 | GTX 1080 Ti | 1 | 6 | 252.2 | 0.50 |
 
-Original reports: [4090D](../evaluation/reports/2025-06-15_1803/4090d.md) (2025-06-15), [1080 Ti](../evaluation/reports/2025-06-14_1952/1080ti.md) (2025-06-14), [all reports](../evaluation/reports/README.md) (Chinese index; reports retain their original language).
+Original reports: [4090D](../zh/evaluation/reports/2025-06-15_1803/4090d.md) (2025-06-15), [1080 Ti](../zh/evaluation/reports/2025-06-14_1952/1080ti.md) (2025-06-14), [all reports](../zh/evaluation/reports/README.md) (Chinese index; reports retain their original language).
 
-Model processing time, first-chunk wait, final send/receive gap and capture-to-playback latency are different measurements. Review [metric definitions and limitations](../evaluation/README.md) (Chinese) before measuring again.
+Model processing time, first-chunk wait, final send/receive gap and capture-to-playback latency are different measurements. Review [metric definitions and limitations](../zh/evaluation/README.md) (Chinese) before measuring again.
 
 ## 6. Documentation
 
@@ -94,15 +94,15 @@ Model processing time, first-chunk wait, final send/receive gap and capture-to-p
 | Install and convert your first file | [Quick start](getting-started/quick-start.md) |
 | Integrate a speech application | [Voice conversion](api/voice-conversion.md) · [System](api/system.md) · [Session data](api/session-data.md) |
 | Configure models, voices and deployment | [Deployment guide](getting-started/configuration.md) |
-| Troubleshoot and evaluate | [Troubleshooting](getting-started/troubleshooting.md) · [Evaluation](../evaluation/README.md) (Chinese) |
-| Understand and contribute | [Design](../design/README.md) (Chinese) · [Contributing](../../CONTRIBUTING.md) (Chinese) |
+| Troubleshoot and evaluate | [Troubleshooting](getting-started/troubleshooting.md) · [Evaluation](../zh/evaluation/README.md) (Chinese) |
+| Understand and contribute | [Design](../zh/design/README.md) (Chinese) · [Contributing](../../CONTRIBUTING.md) (Chinese) |
 | Browse user documentation | [Documentation index](index.md) |
 
 ## 7. Version updates
 
-The repository package version is **0.1.7**. Its main changes include CFM time-step scheduling, 22.05 kHz model post-processing output and configurable WebSocket output sample rates. See the [release history](../changelog/releases_en.md).
+The repository package version is **0.1.7**. Its main changes include CFM time-step scheduling, 22.05 kHz model post-processing output and configurable WebSocket output sample rates. See the [release history](changelog/releases.md).
 
-[GitHub Releases](https://github.com/Leroll/fast-vc-service/releases) · [Daily engineering changes](../changelog/README.md) (Chinese) · [Confirmed tasks](../todo.md) (Chinese)
+[GitHub Releases](https://github.com/Leroll/fast-vc-service/releases) · [Daily engineering changes](../zh/changelog/README.md) (Chinese) · [Confirmed tasks](../zh/todo.md) (Chinese)
 
 ## 8. Help and contributions
 

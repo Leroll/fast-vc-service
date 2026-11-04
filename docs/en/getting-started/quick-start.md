@@ -1,6 +1,6 @@
 # Quick start
 
-[User documentation](../index.md) · [简体中文](../../getting-started/quick-start.md)
+[User documentation](../index.md) · [简体中文](../../zh/getting-started/quick-start.md)
 
 ## 1. Environment and installation
 
@@ -17,7 +17,7 @@ uv sync --locked --python 3.10
 cp .env.example .env
 ```
 
-For an existing clone, run `git submodule update --init --recursive`. Dependencies and pinned versions are maintained in pyproject.toml and uv.lock. Optional GPU quality-evaluation dependencies are described in the [evaluation guide](../../evaluation/README.md) (Chinese).
+For an existing clone, run `git submodule update --init --recursive`. Dependencies and pinned versions are maintained in pyproject.toml and uv.lock. Optional GPU quality-evaluation dependencies are described in the [evaluation guide](../../zh/evaluation/README.md) (Chinese).
 
 Run all following commands from the repository root.
 
@@ -95,5 +95,5 @@ The current api_key check is a placeholder and the default configuration records
 
 - [Voice Conversion API](../api/voice-conversion.md) / [System API](../api/system.md) / [Session Data API](../api/session-data.md)
 - [Troubleshooting](troubleshooting.md)
-- [Performance and quality evaluation](../../evaluation/README.md) (Chinese)
-- [Design](../../design/README.md) (Chinese) / [Contributing](../../../CONTRIBUTING.md) (Chinese)
+- [Performance and quality evaluation](../../zh/evaluation/README.md) (Chinese)
+- [Design](../../zh/design/README.md) (Chinese) / [Contributing](../../../CONTRIBUTING.md) (Chinese)

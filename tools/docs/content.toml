@@ -1,31 +1,31 @@
 # 已约定的译文范围；新增文档不会自动要求翻译。
 [translations]
 "README.md" = "docs/en/README.md"
-"docs/README.md" = "docs/en/index.md"
-"docs/getting-started/quick-start.md" = "docs/en/getting-started/quick-start.md"
-"docs/getting-started/configuration.md" = "docs/en/getting-started/configuration.md"
-"docs/getting-started/troubleshooting.md" = "docs/en/getting-started/troubleshooting.md"
-"docs/api/README.md" = "docs/en/api/README.md"
-"docs/api/voice-conversion.md" = "docs/en/api/voice-conversion.md"
-"docs/api/system.md" = "docs/en/api/system.md"
-"docs/api/session-data.md" = "docs/en/api/session-data.md"
+"docs/zh/README.md" = "docs/en/index.md"
+"docs/zh/getting-started/quick-start.md" = "docs/en/getting-started/quick-start.md"
+"docs/zh/getting-started/configuration.md" = "docs/en/getting-started/configuration.md"
+"docs/zh/getting-started/troubleshooting.md" = "docs/en/getting-started/troubleshooting.md"
+"docs/zh/api/README.md" = "docs/en/api/README.md"
+"docs/zh/api/voice-conversion.md" = "docs/en/api/voice-conversion.md"
+"docs/zh/api/system.md" = "docs/en/api/system.md"
+"docs/zh/api/session-data.md" = "docs/en/api/session-data.md"
 
 # 仅提示复核，不以文件是否同时改动判定语义正确。
 [review]
-"src/fast_vc_service/config.py" = ["docs/getting-started/configuration.md", "docs/getting-started/quick-start.md"]
-"configs/**" = ["docs/getting-started/configuration.md", "docs/getting-started/quick-start.md"]
-".env.example" = ["docs/getting-started/configuration.md", "docs/getting-started/quick-start.md"]
-"src/fast_vc_service/cli.py" = ["docs/getting-started/quick-start.md", "docs/getting-started/configuration.md"]
-"src/fast_vc_service/app.py" = ["docs/api/README.md", "docs/getting-started/configuration.md"]
-"src/fast_vc_service/routers/base.py" = ["docs/api/system.md"]
-"src/fast_vc_service/routers/ws.py" = ["docs/api/voice-conversion.md"]
-"src/fast_vc_service/adapters/**" = ["docs/api/voice-conversion.md"]
-"src/fast_vc_service/routers/tools.py" = ["docs/api/session-data.md"]
-"src/fast_vc_service/session.py" = ["docs/api/voice-conversion.md", "docs/api/session-data.md", "docs/design/会话与状态管理.md"]
-"src/fast_vc_service/tools/session_data_manager.py" = ["docs/api/session-data.md", "docs/design/数据记录与可观测性.md"]
-"src/fast_vc_service/buffer.py" = ["docs/design/音频输入与缓冲.md"]
-"src/fast_vc_service/realtime_vc.py" = ["docs/design/流式转换流水线.md", "docs/evaluation/README.md"]
-"src/fast_vc_service/models.py" = ["docs/design/模型与参考音色.md", "docs/getting-started/configuration.md"]
-"examples/websocket/**" = ["README.md", "docs/getting-started/quick-start.md"]
-"pyproject.toml" = ["README.md", "docs/getting-started/quick-start.md", "docs/getting-started/configuration.md"]
-"uv.lock" = ["docs/getting-started/quick-start.md"]
+"src/fast_vc_service/config.py" = ["docs/zh/getting-started/configuration.md", "docs/zh/getting-started/quick-start.md"]
+"configs/**" = ["docs/zh/getting-started/configuration.md", "docs/zh/getting-started/quick-start.md"]
+".env.example" = ["docs/zh/getting-started/configuration.md", "docs/zh/getting-started/quick-start.md"]
+"src/fast_vc_service/cli.py" = ["docs/zh/getting-started/quick-start.md", "docs/zh/getting-started/configuration.md"]
+"src/fast_vc_service/app.py" = ["docs/zh/api/README.md", "docs/zh/getting-started/configuration.md"]
+"src/fast_vc_service/routers/base.py" = ["docs/zh/api/system.md"]
+"src/fast_vc_service/routers/ws.py" = ["docs/zh/api/voice-conversion.md"]
+"src/fast_vc_service/adapters/**" = ["docs/zh/api/voice-conversion.md"]
+"src/fast_vc_service/routers/tools.py" = ["docs/zh/api/session-data.md"]
+"src/fast_vc_service/session.py" = ["docs/zh/api/voice-conversion.md", "docs/zh/api/session-data.md", "docs/zh/design/会话与状态管理.md"]
+"src/fast_vc_service/tools/session_data_manager.py" = ["docs/zh/api/session-data.md", "docs/zh/design/数据记录与可观测性.md"]
+"src/fast_vc_service/buffer.py" = ["docs/zh/design/音频输入与缓冲.md"]
+"src/fast_vc_service/realtime_vc.py" = ["docs/zh/design/流式转换流水线.md", "docs/zh/evaluation/README.md"]
+"src/fast_vc_service/models.py" = ["docs/zh/design/模型与参考音色.md", "docs/zh/getting-started/configuration.md"]
+"examples/websocket/**" = ["README.md", "docs/zh/getting-started/quick-start.md"]
+"pyproject.toml" = ["README.md", "docs/zh/getting-started/quick-start.md", "docs/zh/getting-started/configuration.md"]
+"uv.lock" = ["docs/zh/getting-started/quick-start.md"]

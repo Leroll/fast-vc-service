@@ -1,6 +1,6 @@
 # Troubleshooting
 
-[User documentation](../index.md) · [简体中文](../../getting-started/troubleshooting.md)
+[User documentation](../index.md) · [简体中文](../../zh/getting-started/troubleshooting.md)
 
 ## 1. Startup and dependencies
 
@@ -29,8 +29,8 @@ Inspect the WAV files in the client output directory, error logs and received da
 - The simple protocol has no ready response; waiting for one will stall the client.
 - End normally with the selected protocol's end message. Disconnecting directly does not guarantee that the remaining tail is processed.
 - Background saving may still be pending after complete; immediately retrieving session files can fail.
-- There is currently no /tools/performance-report route. Use the [offline evaluation guide](../../evaluation/README.md) (Chinese).
-- With output rates other than 16 kHz, the server's timeline audio-duration statistics are inaccurate. See the [measurement limitations](../../design/数据记录与可观测性.md#5-当前测量限制) (Chinese).
+- There is currently no /tools/performance-report route. Use the [offline evaluation guide](../../zh/evaluation/README.md) (Chinese).
+- With output rates other than 16 kHz, the server's timeline audio-duration statistics are inaccurate. See the [measurement limitations](../../zh/design/数据记录与可观测性.md#5-当前测量限制) (Chinese).
 
 ## 4. Reporting an issue
 

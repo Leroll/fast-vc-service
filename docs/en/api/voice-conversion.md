@@ -1,6 +1,6 @@
 # Voice Conversion API
 
-[API reference](README.md) · [简体中文](../../api/voice-conversion.md)
+[API reference](README.md) · [简体中文](../../zh/api/voice-conversion.md)
 
 `WebSocket /ws`
 

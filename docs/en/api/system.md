@@ -1,6 +1,6 @@
 # System API
 
-[API reference](README.md) · [简体中文](../../api/system.md)
+[API reference](README.md) · [简体中文](../../zh/api/system.md)
 
 Query service liveness and version information. These endpoints take no parameters or request body. See [authentication](README.md#3-authentication) for access control.
 

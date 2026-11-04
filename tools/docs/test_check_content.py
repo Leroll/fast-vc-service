@@ -45,7 +45,7 @@ class ContentChecks(unittest.TestCase):
         self.assert_error("配置类不存在字段 buffer.prefill_time")
 
     def test_invalid_json(self):
-        self.replace("docs/api/voice-conversion.md", '"type": "config",', '"type": "config"')
+        self.replace("docs/zh/api/voice-conversion.md", '"type": "config",', '"type": "config"')
         self.assert_error("json 示例语法错误")
 
     def test_bilingual_example_drift(self):
@@ -77,16 +77,16 @@ class ContentChecks(unittest.TestCase):
                          normalized_example("python", "# English\nx = 1"))
 
     def test_one_sided_translation_is_warning(self):
-        warnings = review_warnings({"docs/api/system.md"}, read_policy(self.root))
+        warnings = review_warnings({"docs/zh/api/system.md"}, read_policy(self.root))
         self.assertTrue(any("docs/en/api/system.md" in warning for warning in warnings))
         self.assertEqual(check_content(self.root)[0], [])
 
     def test_code_change_reminds_even_when_document_also_changes(self):
-        warnings = review_warnings({"src/fast_vc_service/routers/ws.py", "docs/api/voice-conversion.md"}, read_policy(self.root))
+        warnings = review_warnings({"src/fast_vc_service/routers/ws.py", "docs/zh/api/voice-conversion.md"}, read_policy(self.root))
         self.assertTrue(any("源码/配置变更" in warning and "docs/en/api/voice-conversion.md" in warning for warning in warnings))
 
     def test_history_does_not_trigger_translation_warning(self):
-        self.assertEqual(review_warnings({"docs/changelog/2026-11-02.md"}, read_policy(self.root)), [])
+        self.assertEqual(review_warnings({"docs/zh/changelog/2026-11-02.md"}, read_policy(self.root)), [])
 
 
 if __name__ == "__main__":

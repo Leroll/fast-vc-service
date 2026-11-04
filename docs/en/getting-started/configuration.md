@@ -1,6 +1,6 @@
 # Configuration and deployment
 
-[User documentation](../index.md) · [简体中文](../../getting-started/configuration.md)
+[User documentation](../index.md) · [简体中文](../../zh/getting-started/configuration.md)
 
 ## 1. Commands and configuration sources
 

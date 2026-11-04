@@ -16,7 +16,7 @@ class SiteChecks(unittest.TestCase):
         self.write("index.html", '<h1>首页</h1><a href="guide/#中文锚点">指南</a>')
         self.write("guide/index.html", '<h1>指南</h1><h2 id="中文锚点">章节</h2>')
         self.write("search-records.json", json.dumps(["/fast-vc-service/guide/#中文锚点"]))
-        self.write("docs-manifest.json", json.dumps({"pages": {"docs/guide.md": "guide/index.md"}}))
+        self.write("docs-manifest.json", json.dumps({"pages": {"docs/zh/guide.md": "guide/index.md"}}))
 
     def write(self, name, text):
         target = self.site / name
@@ -40,7 +40,7 @@ class SiteChecks(unittest.TestCase):
             self.check()
 
     def test_manifest_detects_unlinked_missing_page(self):
-        self.write("docs-manifest.json", '{"pages":{"docs/extra.md":"extra/index.md"}}')
+        self.write("docs-manifest.json", '{"pages":{"docs/zh/extra.md":"extra/index.md"}}')
         with self.assertRaisesRegex(ValueError, "目标不存在"):
             self.check()
 

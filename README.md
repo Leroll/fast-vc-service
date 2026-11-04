@@ -12,7 +12,7 @@
 
 基于 Seed-VC 的实时流式语音转换服务，通过 WebSocket 将音色转换能力接入语音应用，提供音频缓冲、会话管理和多 Worker 部署支持。
 
-简体中文 · [English](docs/en/README.md) · [快速开始](docs/getting-started/quick-start.md) · [API](docs/api/README.md) · [文档索引](docs/README.md)
+简体中文 · [English](docs/en/README.md) · [快速开始](docs/zh/getting-started/quick-start.md) · [API](docs/zh/api/README.md) · [文档索引](docs/zh/README.md)
 
 **在线文档：** 访问 [Fast-VC 文档网站](https://leroll.github.io/fast-vc-service/)，查看快速开始、配置部署、API 接入和故障排查指南。
 
@@ -28,7 +28,7 @@ Fast-VC 面向希望把持续输入的语音转换为指定参考音色、再接
 - **服务部署**：按配置加载模型和参考音色，支持多 Worker、设备列表与不同端口的多实例。
 - **会话与分析**：保存输入/输出和时间线，提供健康检查、版本与会话数据接口，以及离线分析工具。
 
-参考音色在服务启动时配置并由 Worker 复用，当前没有逐请求上传参考音频的接口。内部工作流程见[总体设计](docs/design/总体设计.md)。
+参考音色在服务启动时配置并由 Worker 复用，当前没有逐请求上传参考音频的接口。内部工作流程见[总体设计](docs/zh/design/总体设计.md)。
 
 ## 2. 音频样例
 
@@ -40,7 +40,7 @@ Fast-VC 面向希望把持续输入的语音转换为指定参考音色、再接
 | 默认参考音色 | [参考音频](resources/refs/ref-24k.wav) |
 | 转换结果 | 运行下方示例后保存在 outputs/quickstart |
 
-这里提供的是复现输入，尚未附带与当前版本绑定的转换结果合集。效果比较时应记录模型、配置和参考音频；方法见[评测指南](docs/evaluation/README.md)。
+这里提供的是复现输入，尚未附带与当前版本绑定的转换结果合集。效果比较时应记录模型、配置和参考音频；方法见[评测指南](docs/zh/evaluation/README.md)。
 
 ## 3. 运行要求与范围
 
@@ -49,11 +49,11 @@ Fast-VC 面向希望把持续输入的语音转换为指定参考音色、再接
 - 默认配置使用 cuda:0、2 个 Worker、tiny 模型和仓库参考音频。Windows 原生及 CPU 实时性能没有当前验证保证。
 - 当前内置 api_key 仅检查非空；外部访问需由部署层提供认证和访问控制。默认会保存会话音频，部署时按用途配置。
 
-详见[配置与部署](docs/getting-started/configuration.md)。
+详见[配置与部署](docs/zh/getting-started/configuration.md)。
 
 ## 4. 快速开始
 
-先按[快速开始](docs/getting-started/quick-start.md#1-环境与安装)安装系统与 Python 依赖、克隆仓库及子模块并准备 .env，然后在仓库根目录启动：
+先按[快速开始](docs/zh/getting-started/quick-start.md#1-环境与安装)安装系统与 Python 依赖、克隆仓库及子模块并准备 .env，然后在仓库根目录启动：
 
 ```bash
 uv run fast-vc serve -c configs/prod.yaml
@@ -71,7 +71,7 @@ uv run python examples/websocket/simple_protocol_ws_client.py \
   --url ws://localhost:8042/ws
 ```
 
-检查终端的 Output saved to 路径和 outputs/quickstart 中生成的 WAV。此示例使用简单协议、PCM 输入和 16000 Hz PCM 输出；需要 Opus、22050 Hz 输出或并发时，按[完整快速开始](docs/getting-started/quick-start.md)使用标准客户端。
+检查终端的 Output saved to 路径和 outputs/quickstart 中生成的 WAV。此示例使用简单协议、PCM 输入和 16000 Hz PCM 输出；需要 Opus、22050 Hz 输出或并发时，按[完整快速开始](docs/zh/getting-started/quick-start.md)使用标准客户端。
 
 ## 5. 历史性能参考
 
@@ -83,26 +83,26 @@ uv run python examples/websocket/simple_protocol_ws_client.py \
 | RTX 4090D | 12 | 12 | 216.6 | 0.44 |
 | GTX 1080 Ti | 1 | 6 | 252.2 | 0.50 |
 
-原始记录：[4090D](docs/evaluation/reports/2025-06-15_1803/4090d.md)（2025-06-15）、[1080 Ti](docs/evaluation/reports/2025-06-14_1952/1080ti.md)（2025-06-14）、[全部报告](docs/evaluation/reports/README.md)。
+原始记录：[4090D](docs/zh/evaluation/reports/2025-06-15_1803/4090d.md)（2025-06-15）、[1080 Ti](docs/zh/evaluation/reports/2025-06-14_1952/1080ti.md)（2025-06-14）、[全部报告](docs/zh/evaluation/reports/README.md)。
 
-模型处理耗时、首包等待、尾部收发差值和包含采集播放的端到端时延有不同含义。重新测量前请阅读[指标口径与限制](docs/evaluation/README.md)。
+模型处理耗时、首包等待、尾部收发差值和包含采集播放的端到端时延有不同含义。重新测量前请阅读[指标口径与限制](docs/zh/evaluation/README.md)。
 
 ## 6. 使用与开发文档
 
 | 目标 | 入口 |
 | --- | --- |
-| 安装并完成首次转换 | [快速开始](docs/getting-started/quick-start.md) |
-| 接入语音应用 | [语音转换](docs/api/voice-conversion.md) · [系统接口](docs/api/system.md) · [会话数据](docs/api/session-data.md) |
-| 调整模型、音色与部署 | [配置与部署](docs/getting-started/configuration.md) |
-| 排查问题与评估效果 | [故障排查](docs/getting-started/troubleshooting.md) · [评测](docs/evaluation/README.md) |
-| 理解实现与参与贡献 | [设计](docs/design/README.md) · [贡献指南](CONTRIBUTING.md) |
-| 浏览用户文档 | [文档索引](docs/README.md) |
+| 安装并完成首次转换 | [快速开始](docs/zh/getting-started/quick-start.md) |
+| 接入语音应用 | [语音转换](docs/zh/api/voice-conversion.md) · [系统接口](docs/zh/api/system.md) · [会话数据](docs/zh/api/session-data.md) |
+| 调整模型、音色与部署 | [配置与部署](docs/zh/getting-started/configuration.md) |
+| 排查问题与评估效果 | [故障排查](docs/zh/getting-started/troubleshooting.md) · [评测](docs/zh/evaluation/README.md) |
+| 理解实现与参与贡献 | [设计](docs/zh/design/README.md) · [贡献指南](CONTRIBUTING.md) |
+| 浏览用户文档 | [文档索引](docs/zh/README.md) |
 
 ## 7. 版本动态
 
-仓库包版本为 **0.1.7**。该版本的主要变化包括 CFM 时间步安排、22.05 kHz 模型后处理输出及可配置的 WebSocket 输出采样率，详细内容见[版本历史](docs/changelog/releases.md)。
+仓库包版本为 **0.1.7**。该版本的主要变化包括 CFM 时间步安排、22.05 kHz 模型后处理输出及可配置的 WebSocket 输出采样率，详细内容见[版本历史](docs/zh/changelog/releases.md)。
 
-[GitHub Releases](https://github.com/Leroll/fast-vc-service/releases) · [每日工程变更](docs/changelog/README.md) · [已确认待办](docs/todo.md)
+[GitHub Releases](https://github.com/Leroll/fast-vc-service/releases) · [每日工程变更](docs/zh/changelog/README.md) · [已确认待办](docs/zh/todo.md)
 
 ## 8. 问题与贡献
 

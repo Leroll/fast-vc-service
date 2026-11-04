@@ -25,7 +25,9 @@ export function routeFor(source) {
   if (source === 'README.md') return 'project/index.md'
   if (source === 'CONTRIBUTING.md') return 'contributing/index.md'
   if (source === 'docs/en/README.md') return 'en/project/index.md'
-  const name = source.replace(/^docs\//, '')
+  // 源文档按语言归档，公开网址保持迁移前的路径。
+  if (source === 'docs/en/changelog/releases.md') return 'changelog/releases_en/index.md'
+  const name = source.replace(/^docs\/(?:zh\/)?/, '')
   if (/(^|\/)(README|index)\.md$/.test(name)) return name.replace(/(README|index)\.md$/, 'index.md')
   return name.replace(/\.md$/, '/index.md')
 }
@@ -35,12 +37,13 @@ export function collectSources(root = ROOT) {
   function walk(directory) {
     for (const item of fs.readdirSync(path.join(root, directory), { withFileTypes: true })) {
       const source = `${directory}/${item.name}`
-      if (source === 'docs/website' || item.isSymbolicLink()) continue
+      if (item.isSymbolicLink()) continue
       if (item.isDirectory()) walk(source)
       else if (item.isFile() && source.endsWith('.md')) sources.push(source)
     }
   }
-  walk('docs')
+  // docs/README.md 仅作仓库语言入口；网站首页来自中文用户索引。
+  for (const directory of ['docs/zh', 'docs/en']) walk(directory)
   return sources.sort()
 }
 
@@ -77,11 +80,11 @@ export function rewriteHTML(html, source, manifest, root = ROOT) {
 }
 
 export function isHistorical(source) {
-  return /^docs\/(specs\/|changelog\/|design\/archive\/|evaluation\/reports\/(?!README\.md$))/.test(source)
+  return /^docs\/(?:zh|en)\/(specs\/|changelog\/|design\/archive\/|evaluation\/reports\/(?!README\.md$))/.test(source)
 }
 
 export function isSearchable(source) {
-  return !/^docs\/(specs\/|changelog\/20|design\/archive\/|evaluation\/reports\/(?!README\.md$))/.test(source)
+  return !/^docs\/(?:zh|en)\/(specs\/|changelog\/20|design\/archive\/|evaluation\/reports\/(?!README\.md$))/.test(source)
 }
 
 export function stripEntryMetadata(text) {
@@ -126,9 +129,9 @@ export function extractProtocol(text, source, manifest, root = ROOT) {
 }
 
 export function pageMetadata(source, text, manifest, root = ROOT) {
-  const english = source.startsWith('docs/en/') || source === 'docs/changelog/releases_en.md'
-  const home = ['docs/README.md', 'docs/en/index.md'].includes(source)
-  const api = /\/(?:en\/)?api\//.test(source)
+  const english = source.startsWith('docs/en/')
+  const home = ['docs/zh/README.md', 'docs/en/index.md'].includes(source)
+  const api = /^docs\/(?:zh|en)\/api\//.test(source)
   const metadata = {
     repoSource: source, lang: english ? 'en' : 'zh-CN', historical: isHistorical(source),
     search: isSearchable(source), pageClass: home ? 'home-page' : api ? 'api-page' : 'reading-page',

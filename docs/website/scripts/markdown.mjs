@@ -19,7 +19,7 @@ export function repositoryMarkdown(md) {
         if (child.type === 'html_inline') child.content = rewriteHTML(child.content, source, manifest)
       }
     }
-    if (!['docs/README.md', 'docs/en/index.md'].includes(source) || state.env.searchRender) return
+    if (!['docs/zh/README.md', 'docs/en/index.md'].includes(source) || state.env.searchRender) return
     let paragraph = 0
     for (const token of state.tokens) {
       if (token.type !== 'paragraph_open') continue

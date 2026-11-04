@@ -1,6 +1,6 @@
 # Session Data API
 
-[API reference](README.md) · [简体中文](../../api/session-data.md)
+[API reference](README.md) · [简体中文](../../zh/api/session-data.md)
 
 `GET /tools/session/{session_id}`
 
@@ -88,4 +88,4 @@ Missing files currently return `500`, not `404`. Check the session ID, save date
 
 After voice conversion sends `complete` / `completed`, the server starts background saving during cleanup. An immediate query may report missing files or include only some of the files already written.
 
-This endpoint does not wait for saving or provide a completion marker or atomic snapshot. Retrieve files after they have been saved; do not retry every `500` unconditionally. See [deployment settings](../getting-started/configuration.md) for storage configuration and the [recording design](../../design/数据记录与可观测性.md#31-保存内容) (Chinese) for recording details.
+This endpoint does not wait for saving or provide a completion marker or atomic snapshot. Retrieve files after they have been saved; do not retry every `500` unconditionally. See [deployment settings](../getting-started/configuration.md) for storage configuration and the [recording design](../../zh/design/数据记录与可观测性.md#31-保存内容) (Chinese) for recording details.

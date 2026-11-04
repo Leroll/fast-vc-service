@@ -1,3 +1,4 @@
+// 导航使用公开网址；docs/zh 与 docs/en 的源码路径由 content.mjs 映射。
 const page = (text, link) => ({ text, link })
 export const guide = [
   page('快速开始', '/getting-started/quick-start/'), page('配置与部署', '/getting-started/configuration/'),

@@ -92,7 +92,7 @@ def check_config_tables(root, errors):
     fields = {section: {node.target.id for node in classes[cls].body
                        if isinstance(node, ast.AnnAssign)} for section, cls in sections.items()}
     checked = 0
-    for path in ("docs/getting-started/configuration.md", "docs/en/getting-started/configuration.md"):
+    for path in ("docs/zh/getting-started/configuration.md", "docs/en/getting-started/configuration.md"):
         rows = 0
         for number, line in enumerate((root / path).read_text(encoding="utf-8").splitlines(), 1):
             cells = [cell.strip().strip("`") for cell in line.strip().strip("|").split("|")]

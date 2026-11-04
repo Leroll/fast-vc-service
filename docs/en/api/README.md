@@ -1,6 +1,6 @@
 # API Reference
 
-[简体中文](../../api/README.md) · [Quick start](../getting-started/quick-start.md) · [User documentation](../index.md)
+[简体中文](../../zh/api/README.md) · [Quick start](../getting-started/quick-start.md) · [User documentation](../index.md)
 
 Fast-VC provides streaming voice conversion, service status queries and saved session files. This reference covers service version `0.1.7`.
 
@@ -34,4 +34,4 @@ The service does not implement full authentication. The standard protocol only c
 
 - [Quick start](../getting-started/quick-start.md): installation, startup and a first conversion.
 - [Configuration and deployment](../getting-started/configuration.md): models, reference voices, recording settings and server options. The reference voice is configured at startup; there is no per-request reference-upload or model-switching endpoint.
-- [Design](../../design/README.md) (Chinese): internal buffering, conversion and session management.
+- [Design](../../zh/design/README.md) (Chinese): internal buffering, conversion and session management.
